@@ -1,9 +1,16 @@
-#!/bin/sh
+#!/bin/bash
 
+rm -rf /var/tmp/xmltv.old
+cp -a /var/tmp/xmltv /var/tmp/xmltv.old
 cd /home/mattias/development/nonametv
 tools/nonametv-import-allhttp
 perl -I lib/ tools/nonametv-export Xmltv
 perl -I lib/ tools/nonametv-export Xmltv --remove-old
-gzip -f /var/tmp/xmltv/*.xml
-rsync -c --delete -r /var/tmp/xmltv/ /media/xmltv/
+
+for f in /var/tmp/xmltv/*_*.xml; do echo Checking $f; tv_sort $f > /dev/null; done
+gzip -f -n /var/tmp/xmltv/*.xml
+rsync -c --delete -r --size-only -v /var/tmp/xmltv/ /media/xmltv/
 sitecopy --update tv.swedb.se
+cd /var/www/xmltv_compare
+rm /var/www/xmltv_compare/*
+/home/mattias/development/nonametv/tools/nonametv-xmltv-compare /var/tmp/xmltv /var/tmp/xmltv.old > 00output.html
