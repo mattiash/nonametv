@@ -182,6 +182,8 @@ sub Import
 
     } while( not $done );
   }
+
+  $sth->finish();
 }
 
 sub FetchDataFromSite

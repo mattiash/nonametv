@@ -107,7 +107,10 @@ sub Import
           my $enddate = $tm_p->findvalue( './/end[1]/TIMEINSTANT[1]/@date' );
           my $endtime = $tm_p->findvalue( './/end[1]/TIMEINSTANT[1]/@time' );
           my $end = create_dt( $enddate, $endtime );
-          
+
+          round_dt( $start );
+          round_dt( $end );
+
           my $description = $tm->findvalue( './/shortdescription[1]' );
           
           $ds->AddProgramme( {
@@ -132,6 +135,9 @@ sub Import
 
     } while( defined( $content ) );
   }
+
+  $sth->finish();
+
 }
 
 sub create_dt
@@ -166,6 +172,18 @@ sub create_dt
   $dt->set_time_zone( "UTC" );
   
   return $dt;
+}
+
+sub round_dt
+{
+  my( $dt ) = @_;
+
+  my( $sec ) = $dt->second;
+  $dt->set( second => 0 );
+  if( $sec > 30 )
+  {
+    $dt->add( minutes => 1 );
+  }
 }
 
 sub FetchDataFromSite

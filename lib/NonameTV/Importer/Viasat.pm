@@ -159,6 +159,8 @@ sub Import
       $dt = $dt->add( days => 7 );
     } while( defined( $content ) );
   }
+
+  $sth->finish();
 }
 
 sub FetchDataFromSite
