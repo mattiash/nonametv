@@ -52,20 +52,29 @@ sub Import
       my $batch_id = "kanal5_" . $dt->week_year . '-' . 
         $dt->week_number;
 
-      my $url = $self->{UrlRoot} . "tab" . $dt->strftime("%W%y") . ".xml";
-
       print "Fetching listings for $batch_id\n"
         if( $p->{verbose} );
 
-      ( $content, $code ) = MyGet( $url );
+      ( $content, $code ) = $self->FetchData( $batch_id, $data );
             
       if ( defined( $content ) and
            ($p->{'force-update'} or ($code) ) )
       {
+        print "Processing listings for $batch_id\n"
+          if $p->{verbose};
+
+        my $xml = XML::LibXML->new;
+        my $doc;
+        eval { $doc = $xml->parse_string($content); };
+        if( $@ ne "" )
+        {
+          print STDERR "$batch_id Failed to parse\n";
+          $done = 1;
+          goto nextDay;
+        }
+
         $ds->StartBatch( $batch_id );
         
-        my $xml = XML::LibXML->new;
-        my $doc = $xml->parse_string($content);
         # Find all "TRANSMISSION"-entries.
         my $ns = $doc->find( "//TRANSMISSION" );
         
@@ -81,7 +90,7 @@ sub Import
             ($tm->find( '(.//TRANSMISSIONPART)[1]' )->get_nodelist)[0];
           
           my $title =$tm->findvalue(
-            './/PRODUCTTITLE[.//PSIPRODUCTTITLETYPE/@oid="131708570"]/@title');
+            './/PRODUCTTITLE[.//PSIPRODUCTTITLETYPE/@oid="131708570"][1]/@title');
           
           if( $title =~ /^\s*$/ )
           {
@@ -117,6 +126,7 @@ sub Import
         }
         
         $ds->EndBatch( 1 );
+      nextDay:
       }  
        
       $dt = $dt->add( days => 7 );
@@ -157,6 +167,19 @@ sub create_dt
   $dt->set_time_zone( "UTC" );
   
   return $dt;
+}
+
+sub FetchDataFromSite
+{
+  my $self = shift;
+  my( $batch_id, $data ) = @_;
+
+  my( $year, $week ) = ($batch_id =~ /_20(\d+)-(\d+)/);
+
+  my $url = sprintf( "%stab%02d%02d.xml", $self->{UrlRoot}, $week, $year );
+
+  my( $content, $code ) = MyGet( $url );
+  return( $content, $code );
 }
 
 # Delete leading and trailing space from a string.

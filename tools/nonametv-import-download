@@ -1,0 +1,37 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+use NonameTV;
+use NonameTV::DataStore;
+use HTTP::TransparentCache;
+
+# Read configuration
+my $conf = NonameTV::ReadConfig();
+
+# Create Datastore
+my $ds = NonameTV::DataStore->new( $conf->{DataStore} );
+
+# Initialize cache
+HTTP::TransparentCache::init( $conf->{Cache} );
+
+my( $imp_name, $batch_id ) = @ARGV;
+
+# Create the right importer
+my $imp_data = $conf->{Importers}->{$imp_name};
+my $imp_type = $imp_data->{Type};
+
+my $imp = eval "use NonameTV::Importer::$imp_type; 
+                NonameTV::Importer::${imp_type}->new( \$imp_data );"
+        or die $@;
+
+my( $xmltvid ) = ($batch_id =~ /(.*)_/); 
+
+my $data = $ds->Lookup( 'channels', { xmltvid => $xmltvid } );
+
+my $file = "/var/tmp/nonametv/override/new/$batch_id.org";
+
+# Run importer
+open OUT, "> $file" or die "Failed to write to $file";
+print OUT $imp->FetchDataFromSite( $batch_id, $data );
+close OUT;

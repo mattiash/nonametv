@@ -48,20 +48,21 @@ sub Import
       my $batch_id = $data->{'grabber_info'} . $dt->week_year . '-' . 
         $dt->week_number;
 
-      my $url = $self->{UrlRoot} . $batch_id . '_tab.txt';
-
       print "Fetching listings for $batch_id\n"
         if( $p->{verbose} );
 
-      ( $content, $code ) = MyGet( $url );
+      ( $content, $code ) =  $self->FetchData( $batch_id, $data );
 
       if ( defined( $content ) and
            ($p->{'force-update'} or ($code) ) )
       {
-        my @rows = split("\n", $content);
-        my $columns = [ split( "\t", $rows[0] ) ];
+        print "Processing listings for $batch_id\n"
+          if $p->{verbose};
 
         $ds->StartBatch( $batch_id );
+
+        my @rows = split("\n", $content);
+        my $columns = [ split( "\t", $rows[0] ) ];
 
         my $previous_start = undef;
         my $prev_entry = undef;
@@ -158,6 +159,17 @@ sub Import
       $dt = $dt->add( days => 7 );
     } while( defined( $content ) );
   }
+}
+
+sub FetchDataFromSite
+{
+  my $self = shift;
+  my( $batch_id, $data ) = @_;
+
+  my $url = $self->{UrlRoot} . $batch_id . '_tab.txt';
+  
+  my( $content, $code ) = MyGet( $url );
+  return( $content, $code );
 }
 
 sub row_to_hash

@@ -11,7 +11,7 @@ use NonameTV::DataStore;
 
 use base 'NonameTV::Exporter';
 
-use constant LANG => 'SV';
+use constant LANG => 'sv';
 our $OptionSpec     = [ qw/export-channels remove-old/ ];
 our %OptionDefaults = ( 
                         'export-channels' => 0,
@@ -88,10 +88,10 @@ where (batch_id=b.id) and (b.last_update > $last_update)" );
   
     $w->start({ 'generator-info-name' => 'nonametv' });
     
-    $w->write_channel( {
-      id => $chd->{xmltvid},
-      'display-name' => [[ $chd->{display_name}, LANG ]],
-    } );
+#    $w->write_channel( {
+#      id => $chd->{xmltvid},
+#      'display-name' => [[ $chd->{display_name}, LANG ]],
+#   } );
     
     my( $res, $sth ) = $ds->Sql( "
       SELECT * from programs

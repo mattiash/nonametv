@@ -90,27 +90,32 @@ sub Import
     {
       my $batch_id = $data->{xmltvid} . "_" . $dt->ymd();
 
-      my $url = $self->{UrlRoot} . '?todo=search&r1=XML'
-       . '&firstdate=' . $dt->ymd('-')
-       . '&lastdate=' . $dt->ymd('-') 
-       . '&channel=' . $data->{grabber_info};
-
       print "Fetching listings for $batch_id\n"
         if( $p->{verbose} );
 
-      my( $content, $code ) = MyGet( $url );;
+      my( $content, $code ) = $self->FetchData( $batch_id, $data );
 
       # Should we process entries for this batch or can we skip them?
       $process = ($process or $p->{'force-update'} or ($code) );
       
       if (defined( $content ) ) 
-      {
+      {        
+        my $xml = XML::LibXML->new;
+        my $doc;
+        eval { $doc = $xml->parse_string($content); };
+        if( $@ ne "" )
+        {
+          print STDERR "$batch_id Failed to parse\n";
+          $done = 1;
+          goto nextDay;
+        }
+
         $ds->StartBatch( $batch_id ) 
           if $process;
-        
-        my $xml = XML::LibXML->new;
-        my $doc = $xml->parse_string($content);
 
+        print "Processing listings for $batch_id\n"
+          if( $process and $p->{verbose} );
+        
         # Find all "program"-entries.
         my $ns = $doc->find( "//program" );
         if( $ns->size() == 0 )
@@ -173,8 +178,26 @@ sub Import
        
       $dt = $dt->add( days => 1 );
 
+    nextDay:
+
     } while( not $done );
   }
+}
+
+sub FetchDataFromSite
+{
+  my $self = shift;
+  my( $batch_id, $data ) = @_;
+
+  my( $date ) = ($batch_id =~ /_(.*)/);
+
+  my $url = $self->{UrlRoot} . '?todo=search&r1=XML'
+    . '&firstdate=' . $date
+    . '&lastdate=' . $date 
+    . '&channel=' . $data->{grabber_info};
+    
+  my( $content, $code ) = MyGet( $url );
+  return( $content, $code );
 }
 
 sub create_dt
