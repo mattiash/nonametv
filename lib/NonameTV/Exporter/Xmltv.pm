@@ -11,11 +11,31 @@ use NonameTV::DataStore;
 
 use base 'NonameTV::Exporter';
 
+=pod
+
+Export data in xmltv format.
+
+Options:
+
+  --export-channels
+    Print a list of all channels in xml-format to stdout.
+
+  --remove-old
+    Remove any old xmltv files from the output directory.
+
+  --force-export
+    Recreate all output files, not only the ones where data has
+    changed.
+
+=cut 
+
 use constant LANG => 'sv';
-our $OptionSpec     = [ qw/export-channels remove-old/ ];
+our $OptionSpec     = [ qw/export-channels remove-old force-export help/ ];
 our %OptionDefaults = ( 
                         'export-channels' => 0,
                         'remove-old' => 0,
+                        'force-export' => 0,
+                        'help' => 0,
                         );
 
 sub new {
@@ -32,7 +52,30 @@ sub new {
 sub Export
 {
   my( $self, $ds, $p ) = @_;
-  
+
+  if( $p->{'help'} )
+  {
+    print << 'EOH';
+Export data in xmltv-format with one file per day and channel.
+
+Options:
+
+  --export-channels
+    Generate an xml-file listing all channels and their corresponding
+    base url.
+
+  --remove-old
+    Remove all data-files for dates that have already passed.
+
+  --force-export
+    Export all data. Default is to only export data for batches that
+    have changed since the last export.
+
+EOH
+
+    return;
+  }
+
   if( $p->{'export-channels'} )
   {
     $self->ExportChannels( $ds );
@@ -59,6 +102,11 @@ sub Export
   if( not defined( $last_update ) )
   {
     $ds->Add( 'state', { name => "xmltv_last_update", value => 0 } );
+    $last_update = 0;
+  }
+
+  if( $p->{'force-export'} )
+  {
     $last_update = 0;
   }
 
@@ -120,9 +168,13 @@ where (batch_id=b.id) and (b.last_update > $last_update)" );
       $w->write_programme( $d );
     }
 
+    $sth->finish();
+
     # Close the output-file
     $w->end();
   }
+
+  $ch_sth->finish();
 }
 
 #
@@ -132,9 +184,13 @@ sub ExportChannels
 {
   my( $self, $ds ) = @_;
 
-  my %w_args = ( encoding => 'ISO-8859-1',
+  my $output = new IO::File("> $self->{Root}channels.xml");
+  
+  my %w_args = ( encoding    => 'ISO-8859-1',
                  DATA_INDENT => 2, 
-                 DATA_MODE => 1);
+                 DATA_MODE   => 1,
+                 OUTPUT      => $output,
+                 );
   my $w = new XML::Writer( %w_args );
 
   $w->xmlDecl( 'iso-8859-1' );
