@@ -1,6 +1,11 @@
 Clarify copyright and license (GPL)
 Add more importers
 Implement database locking
-Implement HTTP::Cache locking
 Clean up STDOUT/STDERR messages
-Move HTTP::Cache to a separate project
+
+Speed up import and export
+Implement an off-line setting for the importers that doesn't
+contact the servers.
+Replace XMLTV::Writer with something faster.
+Remove old data from the database.
+Limit Importers to max 14 days ahead.
