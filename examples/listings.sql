@@ -4,7 +4,7 @@
 
 CREATE TABLE `batches` (
   `id` int(11) NOT NULL auto_increment,
-  `name` varchar(20) NOT NULL default '',
+  `name` varchar(50) NOT NULL default '',
   `last_update` int(11) NOT NULL default '0',
   PRIMARY KEY  (`id`)
 ) TYPE=MyISAM;
