@@ -223,7 +223,7 @@ sub Delete
   my $where = join " and ", @where;
   my $sql = "delete from $table where $where";
 
-  my $sth = $dbh->prepare( $sql )
+  my $sth = $dbh->prepare_cached( $sql )
       or die "Prepare failed. $sql\nError: " . $dbh->errstr;
 
   my $res = $sth->execute( @values );
@@ -256,12 +256,14 @@ sub Add
   my $fields = join ", ", @fields;
   my $sql = "insert into $table set $fields";
 
-  my $sth = $dbh->prepare( $sql )
+  my $sth = $dbh->prepare_cached( $sql )
       or die "Prepare failed. $sql\nError: " . $dbh->errstr;
 
   $sth->execute( @values ) 
       or die "Execute failed. $sql\nError: " . $dbh->errstr;
-  
+
+  $sth->finish();
+
   return $sth->{'mysql_insertid'};
 }
 
@@ -305,7 +307,9 @@ sub Update
 
   my $res = $sth->execute( @setvalues, @values ) 
       or die "Execute failed. $sql\nError: " . $dbh->errstr;
-  
+
+  $sth->finish();
+
   return $res;
 }
 
@@ -347,17 +351,24 @@ sub Lookup
     $sql = "SELECT * FROM $table WHERE $where";
   }
 
-  my $sth = $dbh->prepare( $sql )
+  my $sth = $dbh->prepare_cached( $sql )
       or die "Prepare failed. $sql\nError: " . $dbh->errstr;
 
   my $res = $sth->execute( @values ) 
       or die "Execute failed. $sql\nError: " . $dbh->errstr;
   
-  return undef if $res == 0;
+  if( $res == 0 )
+  {
+    $sth->finish();
+    return undef;
+  }
+
   die "More than one record returned by $sql (" . join( ", ", @values) . ")"
       if( $res > 1 );
 
   my $row = $sth->fetchrow_hashref;
+
+  $sth->finish();
 
   return $row->{$field} if defined $field;
   return $row;
