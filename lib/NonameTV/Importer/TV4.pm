@@ -35,9 +35,10 @@ use NonameTV::Importer;
 
 use base 'NonameTV::Importer';
 
-our $OptionSpec = [ qw/force-update/ ];
+our $OptionSpec = [ qw/force-update verbose/ ];
 our %OptionDefaults = ( 
                         'force-update' => 0,
+                        'verbose'      => 0,
                         );
 
 my $conv = Text::Iconv->new("UTF-8", "ISO-8859-1" );
@@ -94,7 +95,8 @@ sub Import
        . '&lastdate=' . $dt->ymd('-') 
        . '&channel=' . $data->{grabber_info};
 
-      print "Fetching listings for $batch_id\n";
+      print "Fetching listings for $batch_id\n"
+        if( $p->{verbose} );
 
       my( $content, $code ) = MyGet( $url );;
 

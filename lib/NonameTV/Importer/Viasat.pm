@@ -11,9 +11,10 @@ use NonameTV::Importer;
 
 use base 'NonameTV::Importer';
 
-our $OptionSpec = [ qw/force-update/ ];
+our $OptionSpec = [ qw/force-update verbose/ ];
 our %OptionDefaults = ( 
                         'force-update' => 0,
+                        'verbose'      => 0,
                         );
 
 sub new {
@@ -49,7 +50,8 @@ sub Import
 
       my $url = $self->{UrlRoot} . $batch_id . '_tab.txt';
 
-      print "Fetching listings for $batch_id\n";
+      print "Fetching listings for $batch_id\n"
+        if( $p->{verbose} );
 
       ( $content, $code ) = MyGet( $url );
 
@@ -68,8 +70,6 @@ sub Import
         {
           my $inrow = row_to_hash($rows[$i], $columns );
                     
-          #print "Title: " . $inrow->{'name'} . "\n";
-          #-----------------CALCULATE START TIME -------------------
           my $start_time;
           
           if ( exists($inrow->{'Date'}) )
@@ -106,8 +106,6 @@ sub Import
           my $st = $start_time->clone();
           $st->set_time_zone( 'UTC' );
           my $start_time_str = $st->ymd('-') . " " . $st->hms(':');
-
-          #print "Start time done: " . $start_time->strftime('%F %T') . "\n";
 
           # The starttime of this show is the endtime of the previous show,
           # so now we can add the previous show
@@ -153,7 +151,8 @@ sub Import
       }
       elsif( not defined( $code ) )
       {
-        print "No changes.\n";
+        print "No changes.\n"
+          if( $p->{verbose} );
       }
 
       $dt = $dt->add( days => 7 );
