@@ -125,14 +125,21 @@ where (batch_id=b.id) and (b.last_update > $last_update)" );
   }
 }
 
+#
+# Write description of all channels to stdout.
+#
 sub ExportChannels
 {
   my( $self, $ds ) = @_;
 
-  my %w_args = ( encoding => 'ISO-8859-1' );
-  my $w = new XMLTV::Writer( %w_args );
+  my %w_args = ( encoding => 'ISO-8859-1',
+                 DATA_INDENT => 2, 
+                 DATA_MODE => 1);
+  my $w = new XML::Writer( %w_args );
 
-  $w->start( { 'generator-info-name' => 'nonametv' } );
+  $w->xmlDecl( 'iso-8859-1' );
+
+  $w->startTag( 'tv', 'generator-info-name' => 'nonametv' );
 
   my( $res, $sth ) = $ds->Sql( "
       SELECT * from channels 
@@ -141,13 +148,17 @@ sub ExportChannels
   
   while( my $data = $sth->fetchrow_hashref() )
   {
-    $w->write_channel( {
-      id => $data->{xmltvid},
-      'display-name' => [[ $data->{display_name}, 'sv' ]],
-      'base-url' => $self->{RootUrl},
-    } );
+    $w->startTag( 'channel', id => $data->{xmltvid} );
+    $w->startTag( 'display-name', lang => 'sv' );
+    $w->characters( $data->{display_name} );
+    $w->endTag( 'display-name' );
+    $w->startTag( 'base-url' );
+    $w->characters( $self->{RootUrl} );
+    $w->endTag( 'base-url' );
+    $w->endTag( 'channel' );
   }
   
+  $w->endTag( 'tv' );
   $w->end();
 }
 
