@@ -69,7 +69,6 @@ sub Import
         if( $@ ne "" )
         {
           print STDERR "$batch_id Failed to parse\n";
-          $done = 1;
           goto nextDay;
         }
 
