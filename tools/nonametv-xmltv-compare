@@ -66,9 +66,12 @@ foreach my $file (keys %files)
   system( "diff -U 5 /tmp/$file.xml.old /tmp/$file.xml.new > $file.diff" );
   if( $? == 0 )
   {
-    # unlink "$file.diff";
+    unlink "$file.diff";
     next;
   }
+
+  unlink "/tmp/$file.xml.old";
+  unlink "/tmp/$file.xml.new";
 
   # The xml-file has been updated.
   $files{$file} = "U";
