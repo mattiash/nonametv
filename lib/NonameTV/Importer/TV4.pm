@@ -29,6 +29,8 @@ use DateTime;
 use XML::LibXML;
 use Text::Iconv;
 
+use NonameTV qw/MyGet/;
+
 use NonameTV::Importer;
 
 use base 'NonameTV::Importer';
@@ -54,7 +56,7 @@ sub new {
 sub Import
 {
   my $self = shift;
-  my( $ds, $cache, $p ) = @_;
+  my( $ds, $p ) = @_;
   
   my $sth = $ds->Iterate( 'channels', { grabber => 'tv4' },
                           qw/xmltvid id grabber_info/ )
@@ -94,10 +96,10 @@ sub Import
 
       print "Fetching listings for $batch_id\n";
 
-      my( $content, $error ) = $cache->get( $url );;
+      my( $content, $code ) = MyGet( $url );;
 
       # Should we process entries for this batch or can we skip them?
-      $process = ($process or $p->{'force-update'} or ($error==2) );
+      $process = ($process or $p->{'force-update'} or ($code) );
       
       if (defined( $content ) ) 
       {

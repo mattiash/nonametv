@@ -4,7 +4,7 @@ use strict;
 
 use NonameTV;
 use NonameTV::DataStore;
-use HTTP::Cache;
+use HTTP::TransparentCache;
 
 use Getopt::Long;
 
@@ -14,8 +14,8 @@ my $conf = NonameTV::ReadConfig();
 # Create Datastore
 my $ds = NonameTV::DataStore->new( $conf->{DataStore} );
 
-# Create Cache
-my $cache = HTTP::Cache->new( $conf->{Cache} );
+# Initialize cache
+HTTP::TransparentCache::init( $conf->{Cache} );
 
 # Create the right importer
 my $imp_name = shift @ARGV;
@@ -33,4 +33,4 @@ my $res = GetOptions( \%opt, @{$option_spec} );
 
 
 # Run importer
-$imp->Import( $ds, $cache, \%opt );
+$imp->Import( $ds, \%opt );

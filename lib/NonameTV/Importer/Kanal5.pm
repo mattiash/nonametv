@@ -7,6 +7,8 @@ use DateTime;
 use XML::LibXML;
 use Text::Iconv;
 
+use NonameTV qw/MyGet/;
+
 use NonameTV::Importer;
 
 use base 'NonameTV::Importer';
@@ -32,7 +34,7 @@ sub new {
 sub Import
 {
   my $self = shift;
-  my( $ds, $cache, $p ) = @_;
+  my( $ds, $p ) = @_;
   
   my $sth = $ds->Iterate( 'channels', { grabber => 'kanal5' },
                           qw/id grabber_info/ )
@@ -42,7 +44,7 @@ sub Import
   {
     my $dt = DateTime->today->set_time_zone( 'Europe/Stockholm' );
 
-    my( $content, $error );
+    my( $content, $code );
 
     do
     {
@@ -53,10 +55,10 @@ sub Import
 
       print "Fetching listings for $batch_id\n";
 
-      ( $content, $error ) = $cache->get( $url );
+      ( $content, $code ) = MyGet( $url );
             
       if ( defined( $content ) and
-           ($p->{'force-update'} or ($error==2) ) )
+           ($p->{'force-update'} or ($code) ) )
       {
         $ds->StartBatch( $batch_id );
         

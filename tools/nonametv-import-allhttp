@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # NONAMETV=nonametv-import
-NONAMETV="perl -I lib/ tools/nonametv-import"
+NONAMETV="perl -I lib/ -I ../HTTP-TransparentCache/lib tools/nonametv-import"
 
 $NONAMETV Kanal5 $1
 $NONAMETV Viasat $1
