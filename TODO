@@ -3,3 +3,4 @@ Add more importers
 Implement database locking
 Implement HTTP::Cache locking
 Clean up STDOUT/STDERR messages
+Move HTTP::Cache to a separate project
