@@ -1,0 +1,5 @@
+Clarify copyright and license (GPL)
+Add more importers
+Implement database locking
+Implement HTTP::Cache locking
+Clean up STDOUT/STDERR messages

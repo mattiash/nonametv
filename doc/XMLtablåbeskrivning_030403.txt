@@ -1,0 +1,52 @@
+Allmän information
+schedule company = Sveriges Television
+schedule extract_date = datum/klockslag för datauttag
+schedule start_date = första dagen i uttagsintervallet
+schedule stop_date = sista dagen i uttagsintervallet
+schedule start_week = Veckonummer för första dagen i uttagsintervallet
+schedule stop_week = Veckonummer för sista dagen i uttagsintervallet
+
+Period Nod
+name = Veckonummer, ex "Vecka 34"
+
+Day Nod
+week_number = Veckonummer, ex "34" 
+name = Veckodag, ex "tisdag"
+date = Datum, ex "2002-08-20"
+
+Program Nod
+title_header = samlingsrubrik, ex "Seriestart:"
+title = programtitel, ex "Vita Huset" 
+title_original = originaltitel, ex "West Wing"
+title_english = engelsk titel, ex "West Wing"
+channel = kanal, ex "SVT 2"
+date_schedule = tablådatum, ex "2002-08-28"
+date_real = kalenderdatum, ex "2002-08-28"
+date_utc = tablådatum enligt UTC ex "2002-08-27"
+date_int = antal dagar från 1899-12-30 (underlättar vid sorteringar och jämförelser)
+day = veckodag, ex "tisdag"
+week_number = veckonummer, ex "17"
+start_time = starttid, ex "23:15:00"
+start_time_utc = starttid UTC, ex "21:15:00"
+end_time " sluttid, ex "23:55:00"
+length_time = längd, ex 00:45:00
+length_minutes = längd i minuter, ex 45
+long_description_complete = komplett tablåtext
+long_description_header = tablåtext inledning, ex en avsnittstitel
+long_description_body = tablåtext huvudtext
+long_description_footer = tablåtext avslutning, ex reprisuppgifter
+long_description_complete_reduced_40 = tablåtext klippt vid 40 tecken
+long_description_complete_reduced_90 = tablåtext klippt vid 90 tecken
+long_description_complete_reduced_140 = tablåtext klippt vid 140 tecken
+rerun_number = sändningsnivå, ex "1"
+rerun_number_description " sändningsnivå beskrivning, ex "1:a repris"
+program_producer = programmets producent/ansvarig inom SVT, ex "Gudrun Kjellberg"
+originated = produktionsland, ex "Storbrittanien"
+design_type = programutformning, ex "Magasin"
+epg_genre = genre, ex "Drama"
+live_broadcast = direktsändning, ex "no"
+widescreen = bredbildssändning, ex "no"
+unique_id = unikt idnummer för sändningstiden
+
+-- 2003-04-03
+-- Sofia Bruhn, SVT UTveckling=

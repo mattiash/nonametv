@@ -1,0 +1,44 @@
+<!ELEMENT schedule (period ,programs ) >
+   <!ATTLIST schedule company CDATA #IMPLIED  >
+   <!ATTLIST schedule extract_date CDATA #IMPLIED  >
+   <!ATTLIST schedule start_date CDATA #IMPLIED  >
+   <!ATTLIST schedule stop_date CDATA #IMPLIED  >
+   <!ATTLIST schedule start_week CDATA #IMPLIED  >
+   <!ATTLIST schedule stop_week CDATA #IMPLIED  >
+<!ELEMENT period (name ,day*) >
+<!ELEMENT name (#PCDATA) >
+<!ELEMENT day (week_number ,name ,date ) >
+<!ELEMENT week_number (#PCDATA) >
+<!ELEMENT date (#PCDATA) >
+<!ELEMENT programs (program*) >
+<!ELEMENT program (title_header ,title ,title_original ,title_english ,channel ,date_schedule ,date_real ,date_int ,date_utc ,day ,week_number ,start_time ,start_time_utc ,end_time ,length_time ,length_minutes ,long_description_complete ,long_description_header ,long_description_body ,long_description_footer ,long_description_complete_reduced_40 ,long_description_complete_reduced_90 ,long_description_complete_reduced_140 ,rerun_number ,rerun_number_description ,program_producer ,originated ,design_type ,epg_genre ,live_broadcast ,widescreen ,unique_id ) >
+<!ELEMENT title_header (#PCDATA) >
+<!ELEMENT title (#PCDATA) >
+<!ELEMENT title_original (#PCDATA) >
+<!ELEMENT title_english (#PCDATA) >
+<!ELEMENT channel (#PCDATA) >
+<!ELEMENT date_schedule (#PCDATA) >
+<!ELEMENT date_real (#PCDATA) >
+<!ELEMENT date_int (#PCDATA) >
+<!ELEMENT date_utc (#PCDATA) >
+<!ELEMENT start_time (#PCDATA) >
+<!ELEMENT start_time_utc (#PCDATA) >
+<!ELEMENT end_time (#PCDATA) >
+<!ELEMENT length_time (#PCDATA) >
+<!ELEMENT length_minutes (#PCDATA) >
+<!ELEMENT long_description_complete (#PCDATA) >
+<!ELEMENT long_description_header (#PCDATA) >
+<!ELEMENT long_description_body (#PCDATA) >
+<!ELEMENT long_description_footer (#PCDATA) >
+<!ELEMENT long_description_complete_reduced_40 (#PCDATA) >
+<!ELEMENT long_description_complete_reduced_90 (#PCDATA) >
+<!ELEMENT long_description_complete_reduced_140 (#PCDATA) >
+<!ELEMENT rerun_number (#PCDATA) >
+<!ELEMENT rerun_number_description (#PCDATA) >
+<!ELEMENT program_producer (#PCDATA) >
+<!ELEMENT originated (#PCDATA) >
+<!ELEMENT design_type (#PCDATA) >
+<!ELEMENT epg_genre (#PCDATA) >
+<!ELEMENT live_broadcast (#PCDATA) >
+<!ELEMENT widescreen (#PCDATA) >
+<!ELEMENT unique_id (#PCDATA) >

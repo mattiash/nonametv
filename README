@@ -1,0 +1,58 @@
+Requirements
+
+Update data from each source independently. Some sources need to be updated
+hourly, while others are updated weekly.
+
+Only upload files to the website that have actually changed.
+
+Keep the latest set of data in a database.
+
+Use UTC times in the database (?) or include timezone information.
+
+Have as little redundant data as possible.
+
+Use a format that can be converted into the current xmltv-format.
+
+All records must have a starttime and a stoptime. Or length instead? 
+Not both!
+
+Keep all sensitive data (usernames/passwords and in some cases url:s)
+in configuration files to avoid distributing them with the source-code.
+
+One input plugin per inputformat. Each plugin in a separate file.
+
+One output plugin per outputformat. Each plugin in a separate file.
+
+Well documented interfaces between inputs and outputs.
+
+Importer
+--------
+
+Command-line: nonametv-import Viasat
+
+NonameTV::Importer::Viasat
+
+sub import( $conf, $ds )
+
+Calls delete_batch, start_batch, add_programme*, end_batch.
+
+DataStore
+---------
+
+start_batch( $batch_id );
+end_batch( $batch_id );
+
+delete_batch( $batch_id );
+
+add_programme( $data );
+
+Exporter
+--------
+
+Command-line: nonametv-export XmlTV
+
+NonameTV::Exporter::XmlTV
+
+export( $conf, $ds );
+
+How can it extract data from the datastore? Raw SQL?

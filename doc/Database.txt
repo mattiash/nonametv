@@ -1,0 +1,31 @@
+Notes regarding the database format
+===================================
+
+The database consists of three tables:
+
+channels
+--------
+
+One record for each channel that we have data for. The channels
+table must be updated manually and is only read by the nonametv-
+programs.
+
+batches
+-------
+
+Data is imported in batches. A batch is the smallest unit of data
+that can be changed. If anything changes in the programming data
+(such as a new movie being shown), an entire batch of programmes
+must be removed and then added again.
+
+Each batch has a unique name that must be consistent between
+updates. The name should contain the name of the tv-company
+or channel (depending on if data arrives in one batch per
+channel or per tv-company) and some kind of period-identifier
+such as year and week or date.
+
+programs
+--------
+
+One record per program. Each record contains a channel_id and a 
+batch_id. All times are represented in UTC timezone.

@@ -1,0 +1,15 @@
+#!/usr/bin/perl
+use strict;
+use MIME::Parser;
+use Date::Format;
+
+my $datadir = '/home/user/tmp';
+
+my @lt = localtime(time);
+my $date = strftime("%Y%m%d-%k%M", @lt);
+my $parser = new MIME::Parser;
+
+system('mkdir -p '.$datadir.'/'.$date);
+$parser->output_dir($datadir.'/'.$date);
+my $entity = $parser->parse(\*STDIN) or die;
+

@@ -1,0 +1,31 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+use NonameTV;
+use NonameTV::DataStore;
+
+use Getopt::Long;
+
+# Read configuration
+my $conf = NonameTV::ReadConfig();
+
+# Create Datastore
+my $ds = NonameTV::DataStore->new( $conf->{DataStore} );
+
+# Create the right exporter
+my $exp_name = shift @ARGV;
+my $exp_data = $conf->{Exporters}->{$exp_name};
+my $exp_type = $exp_data->{Type};
+
+my $exp = eval "use NonameTV::Exporter::$exp_type; 
+                NonameTV::Exporter::${exp_type}->new( \$exp_data );"
+        or die $@;
+
+my %opt = eval "\%NonameTV::Exporter::${exp_type}::OptionDefaults";
+my $option_spec = eval "\$NonameTV::Exporter::${exp_type}::OptionSpec";
+
+my $res = GetOptions( \%opt, @{$option_spec} );
+
+# Run importer
+$exp->Export( $ds, \%opt );

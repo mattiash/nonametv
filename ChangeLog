@@ -1,0 +1,133 @@
+2004-09-24 13:28  mattias
+
+	* lib/HTTP/Cache.pm: Remove unused cruft.
+
+2004-09-23 20:21  mattias
+
+	* MANIFEST: Added new files to MANIFEST
+
+2004-09-23 20:13  mattias
+
+	* lib/NonameTV.pm: Version 0.3
+
+2004-09-23 20:12  mattias
+
+	* examples/nonametv.conf, test/cache: Move output files to /var
+
+2004-09-23 20:12  mattias
+
+	* tools/nonametv-import-allhttp: Minor fix
+
+2004-09-23 20:11  mattias
+
+	* tools/nonametv-export: Fix command-line parameter handling
+
+2004-09-23 20:10  mattias
+
+	* lib/NonameTV/Exporter/Xmltv.pm: Add --remove-old and
+	  --export-channels
+
+2004-09-23 20:09  mattias
+
+	* lib/HTTP/Cache.pm: Remove get_if_modified. Fix return value in
+	  scalar context.
+
+2004-09-22 15:58  mattias
+
+	* test/cache: Test program for HTTP::Cache added.
+
+2004-09-20 20:28  mattias
+
+	* examples/listings.sql: Regenerated sql dump with new channels
+
+2004-09-20 20:24  mattias
+
+	* examples/nonametv.conf, lib/NonameTV/Importer/TV4.pm: Add
+	  Importer for TV4
+
+2004-09-20 20:24  mattias
+
+	* tools/nonametv-import-allhttp: Add nonametv-import-allhttp
+
+2004-09-20 20:23  mattias
+
+	* lib/NonameTV/Importer/: Kanal5.pm, Viasat.pm: Improve handling of
+	  unchanged pages
+
+2004-09-20 20:23  mattias
+
+	* lib/HTTP/Cache.pm: Add ways of detecting servers that return
+	  unchanged pages as if they had changed.
+
+2004-09-06 16:39  mattias
+
+	* lib/NonameTV.pm: BUmp version number.
+
+2004-09-06 16:38  mattias
+
+	* tools/nonametv-import-svt: Add nonametv-import-svt. It sorts the
+	  xml-file before sending it to nonametv-import.
+
+2004-09-06 16:13  mattias
+
+	* examples/nonametv.conf, lib/NonameTV/Importer/Svt.pm: Make
+	  Svt-importer work.
+
+2004-09-06 16:13  mattias
+
+	* lib/HTTP/Cache.pm: Store metadata for each cache-object together
+	  with the data for the cache object. This means that there is no
+	  single file that can be corrupted of many clients write to it at
+	  the same time.
+
+2004-07-26 19:32  mattias
+
+	* lib/HTTP/Cache.pm: More docs.
+
+2004-07-26 16:26  mattias
+
+	* lib/HTTP/Cache.pm: Added documentation.
+
+2004-07-14 08:49  mattias
+
+	* MANIFEST: Updated automatically by MakeMaker
+
+2004-07-14 08:48  mattias
+
+	* MANIFEST: Must have a MANIFEST file for make dist to work.
+
+2004-07-14 08:39  mattias
+
+	* Makefile.PL: makefile
+
+2004-07-14 08:37  mattias
+
+	* TODO: todo-list
+
+2004-07-14 08:37  mattias
+
+	* lib/NonameTV/: Importer.pm, Importer/Kanal5.pm,
+	  Importer/Viasat.pm: Fix package variables for option-handling.
+
+2004-07-13 21:54  mattias
+
+	* README, doc/Database.txt, doc/XMLtablåbeskrivning_030403.txt,
+	  doc/nodedescription_20030403.dtd, lib/NonameTV.pm,
+	  lib/NonameTV/DataStore.pm, lib/NonameTV/Exporter.pm,
+	  lib/NonameTV/Importer.pm, lib/NonameTV/Importer/Kanal5.pm,
+	  lib/NonameTV/Importer/Svt.pm, lib/NonameTV/Importer/Viasat.pm,
+	  examples/listings.sql, examples/nonametv.conf, lib/HTTP/Cache.pm,
+	  lib/NonameTV/Exporter/Xmltv.pm, tools/nonametv-export,
+	  tools/nonametv-import: Initial import.
+
+2004-07-13 21:54  mattias
+
+	* README, doc/Database.txt, doc/XMLtablåbeskrivning_030403.txt,
+	  doc/nodedescription_20030403.dtd, lib/NonameTV.pm,
+	  lib/NonameTV/DataStore.pm, lib/NonameTV/Exporter.pm,
+	  lib/NonameTV/Importer.pm, lib/NonameTV/Importer/Kanal5.pm,
+	  lib/NonameTV/Importer/Svt.pm, lib/NonameTV/Importer/Viasat.pm,
+	  examples/listings.sql, examples/nonametv.conf, lib/HTTP/Cache.pm,
+	  lib/NonameTV/Exporter/Xmltv.pm, tools/nonametv-export,
+	  tools/nonametv-import: Initial revision
+

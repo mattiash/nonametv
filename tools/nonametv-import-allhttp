@@ -1,0 +1,8 @@
+#!/bin/sh
+
+# NONAMETV=nonametv-import
+NONAMETV="perl -I lib/ tools/nonametv-import"
+
+$NONAMETV Kanal5 $1
+$NONAMETV Viasat $1
+$NONAMETV TV4 $1

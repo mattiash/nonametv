@@ -1,0 +1,36 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+use NonameTV;
+use NonameTV::DataStore;
+use HTTP::Cache;
+
+use Getopt::Long;
+
+# Read configuration
+my $conf = NonameTV::ReadConfig();
+
+# Create Datastore
+my $ds = NonameTV::DataStore->new( $conf->{DataStore} );
+
+# Create Cache
+my $cache = HTTP::Cache->new( $conf->{Cache} );
+
+# Create the right importer
+my $imp_name = shift @ARGV;
+my $imp_data = $conf->{Importers}->{$imp_name};
+my $imp_type = $imp_data->{Type};
+
+my $imp = eval "use NonameTV::Importer::$imp_type; 
+                NonameTV::Importer::${imp_type}->new( \$imp_data );"
+        or die $@;
+
+my %opt = eval "\%NonameTV::Importer::${imp_type}::OptionDefaults";
+my $option_spec = eval "\$NonameTV::Importer::${imp_type}::OptionSpec";
+
+my $res = GetOptions( \%opt, @{$option_spec} );
+
+
+# Run importer
+$imp->Import( $ds, $cache, \%opt );

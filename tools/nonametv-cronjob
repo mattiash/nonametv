@@ -1,0 +1,7 @@
+#!/bin/sh
+
+cd /home/mattias/development/nonametv
+tools/nonametv-import-allhttp
+perl -I lib/ tools/nonametv-export Xmltv
+gzip -f /var/tmp/xmltv/*.xml
+rsync -c --delete -r /var/tmp/xmltv/ /media/xmltv/
