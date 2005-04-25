@@ -1,0 +1,49 @@
+#!/usr/bin/perl -w
+
+# Update the channels-table with information about which channels
+# have an icon.
+
+use strict;
+
+use NonameTV;
+use NonameTV::DataStore;
+
+use LWP::Simple;
+
+# Read configuration
+my $conf = NonameTV::ReadConfig();
+
+# Create Datastore
+my $ds = NonameTV::DataStore->new( $conf->{DataStore} );
+
+my $iconroot = $conf->{Exporters}->{Xmltv}->{IconRootUrl};
+
+my $sth = $ds->Iterate( 'channels' );
+
+while( my $entry = $sth->fetchrow_hashref() )
+{
+  my $xmltvid = $entry->{xmltvid};
+  my $logo = $entry->{logo};
+
+#  print "Processing $xmltvid\n";
+
+  my $url = "$iconroot$xmltvid.png";
+  if( head( $url ) )
+  {
+    if( not $logo )
+    {
+      $ds->Update( 'channels', { xmltvid => $xmltvid }, { logo => 1 } );
+      print "Added icon for $xmltvid\n";
+    }
+  }
+  else
+  {
+    if( $logo )
+    {
+      $ds->Update( 'channels', { xmltvid => $xmltvid }, { logo => 0 } );
+      print "Removed icon for $xmltvid\n";
+    }
+  }
+}
+
+$sth->finish();
