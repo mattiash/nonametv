@@ -1,0 +1,60 @@
+Installing NonameTV
+-------------------
+
+PREREQUISITES
+
+MySQL-server, at least version 4.0. This is necessary since transactions
+are used. The MySQL-server must be configured with support for InnoDB
+tables.
+
+A lot of perl-modules... You will find out which ones along the way.
+
+wvHtml from http://wvware.sourceforge.net/
+
+sitecopy from http://www.lyra.org/sitecopy/
+
+INSTALLATION
+
+Create a new mysql database.
+
+Create tables in the database and populate them with data by running the
+commands in examples/listings.sql.
+
+Create a directory called /var/local/nonametv.
+
+Create the following directories under /var/local/nonametv:
+
+cache
+xmltv
+xmltv_staging
+xmltv_compare
+data
+override
+override/data
+override/delete
+override/new
+xmltv_old
+
+Make sure that the user you intend to run the scripts as can read/write the
+directories above.
+
+Copy examples/nonametv.conf to /etc/nonametv.conf.
+
+Edit /etc/nonametv.conf to match your installation.
+
+Setup sitecopy to upload files from /var/local/nonametv/xmltv to your
+webserver. This is the data that is downloaded by tv_grab_se_swedb.
+
+Explore the commands in tools/. Start by looking at nonametv-cronjob.
+The only command that must be run manually is
+
+perl -I lib tools/nonametv-export Xmltv --export-channels
+
+(run from the nonametv-directory). It creates the channels.xml.gz file.
+Additionally, some of the Importers (Discovery) must be run manually
+to import data from files received via email.
+
+Note that not all commands in tools/ are actually working...
+
+
+
