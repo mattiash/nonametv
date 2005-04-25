@@ -3,19 +3,30 @@ package NonameTV::Importer::Viasat;
 use strict;
 use warnings;
 
+=pod
+
+Import data from Viasat's press-site. The data is downloaded in
+tab-separated text-files.
+
+Features:
+
+Proper episode and season fields. The episode-field contains a
+number that is relative to the start of the series, not to the
+start of this season.
+
+program_type
+
+=cut
+
+
 use DateTime;
 
-use NonameTV qw/MyGet/;
+use NonameTV qw/MyGet expand_entities AddCategory/;
+use NonameTV::DataStore::Helper;
 
-use NonameTV::Importer;
+use NonameTV::Importer::BaseWeekly;
 
-use base 'NonameTV::Importer';
-
-our $OptionSpec = [ qw/force-update verbose/ ];
-our %OptionDefaults = ( 
-                        'force-update' => 0,
-                        'verbose'      => 0,
-                        );
+use base 'NonameTV::Importer::BaseWeekly';
 
 sub new {
     my $proto = shift;
@@ -23,144 +34,81 @@ sub new {
     my $self  = $class->SUPER::new( @_ );
     bless ($self, $class);
 
+    $self->{grabber_name} = 'Viasat';
+
     defined( $self->{UrlRoot} ) or die "You must specify UrlRoot";
+
+    my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore} );
+    $self->{datastorehelper} = $dsh;
 
     return $self;
 }
 
-sub Import
+sub ImportContent
 {
   my $self = shift;
-  my( $ds, $p ) = @_;
+
+  my( $batch_id, $cref, $chd ) = @_;
+
+  my $l = $self->{logger};
+  my $ds = $self->{datastore};
+  my $dsh = $self->{datastorehelper};
+
+  $dsh->StartBatch( $batch_id, $chd->{id} );
   
-  my $sth = $ds->Iterate( 'channels', { grabber => 'viasat' },
-                          qw/id grabber_info/ )
-    or die "Failed to fetch grabber data";
-
-  while( my $data = $sth->fetchrow_hashref )
+  my @rows = split("\n", $$cref);
+  my $columns = [ split( "\t", $rows[0] ) ];
+  
+  for ( my $i = 1; $i < scalar @rows; $i++ )
   {
-    my $dt = DateTime->today->set_time_zone( 'Europe/Stockholm' );
-
-    my( $content, $code );
-
-    do
+    my $inrow = row_to_hash($rows[$i], $columns );
+    
+    if ( exists($inrow->{'Date'}) )
     {
-      my $batch_id = $data->{'grabber_info'} . $dt->week_year . '-' . 
-        $dt->week_number;
+      $dsh->StartDate( $inrow->{'Date'} );
+    }
+    
+    my $start = $inrow->{'Start time'};
+    
+    my $description = $inrow->{'Synopsis this episode'}
+    || $inrow->{'Synopsis'}; 
+    
+    $description = norm( $description );
+    
+    # Episode info in xmltv-format
+    my $ep_nr = $inrow->{'episode nr'} || 0;
+    my $ep_se = $inrow->{'Season number'} || 0;
+    my $episode = undef;
+    
+    if( ($ep_nr > 0) and ($ep_se > 0) )
+    {
+      $episode = sprintf( "%d . %d .", $ep_se-1, $ep_nr-1 );
+    }
+    elsif( $ep_nr > 0 )
+    {
+      $episode = sprintf( ". %d .", $ep_nr-1 );
+    }
+        
+    my $ce = {
+      title => $inrow->{'name'},
+      description => $description,
+      start_time => $start,
+      episode => $episode,
+      Viasat_category => $inrow->{Category},
+      Viasat_genre => $inrow->{Genre},
+    };
 
-      print "Fetching listings for $batch_id\n"
-        if( $p->{verbose} );
-
-      ( $content, $code ) =  $self->FetchData( $batch_id, $data );
-
-      if ( defined( $content ) and
-           ($p->{'force-update'} or ($code) ) )
-      {
-        print "Processing listings for $batch_id\n"
-          if $p->{verbose};
-
-        $ds->StartBatch( $batch_id );
-
-        my @rows = split("\n", $content);
-        my $columns = [ split( "\t", $rows[0] ) ];
-
-        my $previous_start = undef;
-        my $prev_entry = undef;
-
-        for ( my $i = 1; $i < scalar @rows; $i++ )
-        {
-          my $inrow = row_to_hash($rows[$i], $columns );
-                    
-          my $start_time;
-          
-          if ( exists($inrow->{'Date'}) )
-          {
-            $start_time = DateTime->new( 
-                  year   => substr($inrow->{'Date'},0,4),
-                  month  => substr($inrow->{'Date'},5,2),
-                  day    => substr($inrow->{'Date'},8,2),
-                  time_zone => 'Europe/Stockholm',
-                                         );
-          }
-          elsif (defined($previous_start))
-          {
-            $start_time = $previous_start->clone;
-          }
-          else
-          {
-            die "No time in this or previous";
-          }
-          
-          $start_time->set (	hour => substr($inrow->{'Start time'}, 0, 2),
-                                minute => substr($inrow->{'Start time'}, 3, 2),
-                                second => 0,
-                                );
-
-          if (defined($previous_start))
-          {
-            if (DateTime->compare( $start_time, $previous_start) == -1)
-            {
-              $start_time = $start_time->add( days => 1 );
-            }
-          }
-
-          my $st = $start_time->clone();
-          $st->set_time_zone( 'UTC' );
-          my $start_time_str = $st->ymd('-') . " " . $st->hms(':');
-
-          # The starttime of this show is the endtime of the previous show,
-          # so now we can add the previous show
-          if( defined $prev_entry )
-          {
-            $prev_entry->{end_time} = $start_time_str;
-            $ds->AddProgramme( $prev_entry );
-            $prev_entry = undef;
-          }
-
-          if ($inrow->{'name'} eq "SLUT")
-          {
-            next;
-          }
-
-          #---------------FIX DESCRIPTION-----------------------
-          my $description = $inrow->{Logline}; 
-
-          if (exists( $inrow->{'Synopsis this episode'} ) )
-          {
-            $description .=  " " . $inrow->{'Synopsis this episode'};
-          }
-
-          $description = norm( $description );
-
-          #-----------------WRAP IT UP ---------------------------
-          $prev_entry = {
-            channel_id => $data->{id},
-            title => $inrow->{'name'},
-            description => $description,
-            start_time => $start_time_str,
-            episode_nr => $inrow->{'episode nr'},
-            season_nr => $inrow->{'Season number'},
-            Bline => $inrow->{'B-line'},
-            Category => $inrow->{'Category'},
-            Genre => $inrow->{'Genre'},
-            };
-
-          $previous_start = $start_time;
-        }
-
-        $ds->EndBatch( 1 );
-      }
-      elsif( not defined( $code ) )
-      {
-        print "No changes.\n"
-          if( $p->{verbose} );
-      }
-
-      $dt = $dt->add( days => 7 );
-    } while( defined( $content ) );
+    if( defined( $inrow->{'Production Year'} ) and
+        $inrow->{'Production Year'} =~ /(\d\d\d\d)/ )
+    {
+      $ce->{production_date} = "$1-01-01";
+    }
+    
+    $self->extract_extra_info( $ce );
+    $dsh->AddProgramme( $ce );
   }
 
-  $sth->finish();
+  $dsh->EndBatch( 1 );
 }
 
 sub FetchDataFromSite
@@ -168,7 +116,11 @@ sub FetchDataFromSite
   my $self = shift;
   my( $batch_id, $data ) = @_;
 
-  my $url = $self->{UrlRoot} . $batch_id . '_tab.txt';
+  my( $year, $week ) = ( $batch_id =~ /(\d+)-(\d+)$/ );
+ 
+  my $url = sprintf( "%s%s%02d-%02d_tab.txt",
+                     $self->{UrlRoot}, $data->{grabber_info}, 
+                     $year, $week );
   
   my( $content, $code ) = MyGet( $url );
   return( $content, $code );
@@ -190,6 +142,36 @@ sub row_to_hash
   return \%res;
 }
 
+sub extract_extra_info
+{
+  my $self = shift;
+
+  my( $ce ) = @_;
+
+  my $ds = $self->{datastore};
+
+  my $ltitle = lc $ce->{title};
+
+  if ( ($ltitle eq "slut") or
+       ($ltitle eq "godnatt") or
+       ($ltitle eq "end") or
+       ($ltitle eq "close") )               
+  {
+    $ce->{title} = "end-of-transmission";
+  }
+
+  my( $pty, $cat ) = $ds->LookupCat( 'Viasat_category', 
+                                     $ce->{Viasat_category} );
+  AddCategory( $ce, $pty, $cat );
+  
+  ( $pty, $cat ) = $ds->LookupCat( 'Viasat_genre', 
+                                   $ce->{Viasat_genre} );
+  AddCategory( $ce, $pty, $cat );
+  
+  delete( $ce->{Viasat_category} );
+  delete( $ce->{Viasat_genre} );
+}
+
 # Delete leading and trailing space from a string.
 # Convert all whitespace to spaces. Convert multiple
 # spaces to a single space.
@@ -198,6 +180,10 @@ sub norm
     my( $str ) = @_;
 
     return "" if not defined( $str );
+
+    
+#    $str = decode_entities( $str );
+    $str = expand_entities( $str );
 
     $str =~ s/^\s+//;
     $str =~ s/\s+$//;

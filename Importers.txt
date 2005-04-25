@@ -1,0 +1,23 @@
+Importing from mail
+
+- Run getmail to fetch mail from pop-server.
+- getmail pipes all downloaded messages to nonametv-mailfilter
+- nonametv-mailfilter figures out which Importer should handle this
+  mail and places all attached files under /var/nonametv/data/<Importer>/.
+  The filename should be an integer that is stored in the state-table
+  for each Importer.
+- Run nonametv-import-mail from cron. It looks under 
+  /var/nonametv/data/ and runs
+  nonametv-import <Importer> <filename>
+  for each file that it finds. Make sure that the files are processed 
+  in alphabetical order.
+
+- The importer runs.
+
+Dummy importer
+
+Run nonametv-import-test <importer> <contentname> <filename>
+Call Importer::ImportFile( <contentname>, <filename> );
+Some grabbers will use the contentname as batchname, some of them will
+disregard the contentname and find the batchnames inside the file.
+

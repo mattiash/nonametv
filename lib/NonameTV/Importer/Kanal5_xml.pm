@@ -3,9 +3,12 @@ package NonameTV::Importer::Kanal5;
 use strict;
 use warnings;
 
+# Don't include programs shorter than this.
+use constant MIN_PROGRAM_SECONDS => 60;
+
 use DateTime;
 use XML::LibXML;
-use Text::Iconv;
+use POSIX qw/floor/;
 
 use NonameTV qw/MyGet/;
 
@@ -19,8 +22,6 @@ our %OptionDefaults = (
                         'verbose'      => 0,
                         );
 
-my $conv = Text::Iconv->new("UTF-8", "ISO-8859-1" );
-
 sub new {
     my $proto = shift;
     my $class = ref($proto) || $proto;
@@ -28,6 +29,7 @@ sub new {
     bless ($self, $class);
 
     defined( $self->{UrlRoot} ) or die "You must specify UrlRoot";
+    $self->{MaxWeeks} = 52 unless defined $self->{MaxWeeks};
 
     return $self;
 }
@@ -35,21 +37,26 @@ sub new {
 sub Import
 {
   my $self = shift;
-  my( $ds, $p ) = @_;
+  my( $p ) = @_;
   
+  my $ds = $self->{datastore};
+
   my $sth = $ds->Iterate( 'channels', { grabber => 'kanal5' },
-                          qw/id grabber_info/ )
-    or die "Failed to fetch grabber data";
+                          qw/id grabber_info xmltvid/ )
+     or die "Failed to fetch grabber data";
 
   while( my $data = $sth->fetchrow_hashref )
   {
     my $dt = DateTime->today->set_time_zone( 'Europe/Stockholm' );
 
     my( $content, $code );
+    my $weeks = 0;
 
     do
     {
-      my $batch_id = "kanal5_" . $dt->week_year . '-' . 
+      $weeks ++;
+
+      my $batch_id = $data->{xmltvid} . "_" . $dt->week_year . '-' . 
         $dt->week_number;
 
       print "Fetching listings for $batch_id\n"
@@ -72,11 +79,17 @@ sub Import
           goto nextDay;
         }
 
-        $ds->StartBatch( $batch_id );
-        
         # Find all "TRANSMISSION"-entries.
         my $ns = $doc->find( "//TRANSMISSION" );
-        
+
+        if( $ns->size() == 0 )
+        {
+          print STDERR "$batch_id: No programme entries found.\n";
+          next;
+        }
+
+        $ds->StartBatch( $batch_id );
+
         foreach my $tm ($ns->get_nodelist)
         {
           # Sanity check. 
@@ -112,7 +125,29 @@ sub Import
           round_dt( $end );
 
           my $description = $tm->findvalue( './/shortdescription[1]' );
-          
+
+          my $category = $tm->findvalue( './/CATEGORY/@name' );
+
+          if( $end->subtract_datetime_absolute( $start )->delta_seconds 
+              < MIN_PROGRAM_SECONDS )
+          {
+            # This program is too short. Skip it.
+            next;
+          }
+
+          if( $title eq "natt 5:an" )
+          {
+            # This show has the wrong stop-time a lot of the time.
+            # Skip it.
+            next;
+          }
+
+          if( $title =~ /^\s*$/ )
+          {
+            # No title. Skip it.
+            next;
+          }
+
           $ds->AddProgramme( {
             channel_id  => $data->{id},
             title       => norm($title),
@@ -133,7 +168,7 @@ sub Import
        
       $dt = $dt->add( days => 7 );
 
-    } while( defined( $content ) );
+    } while( defined( $content ) and ($weeks <= $self->{MaxWeeks}));
   }
 
   $sth->finish();
@@ -178,11 +213,14 @@ sub round_dt
 {
   my( $dt ) = @_;
 
-  my( $sec ) = $dt->second;
+  my $sec  = $dt->second;
+  my $min = $dt->min;
+
+  my $newmin = floor((($min*60 + $sec) / 60 / 5) + 0.5) * 5;
   $dt->set( second => 0 );
-  if( $sec > 30 )
+  if( $min != $newmin )
   {
-    $dt->add( minutes => 1 );
+    $dt->add( minutes => $newmin-$min );
   }
 }
 
@@ -208,7 +246,7 @@ sub norm
 
     return "" if not defined( $str );
 
-    $str = $conv->convert( $str );
+    $str = Utf8Conv( $str );
 
     $str =~ s/^\s+//;
     $str =~ s/\s+$//;

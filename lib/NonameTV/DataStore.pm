@@ -2,6 +2,7 @@ package NonameTV::DataStore;
 
 use strict;
 
+use NonameTV::Log qw/get_logger/;
 use Carp;
 use DBI;
 
@@ -38,6 +39,8 @@ dbhost, dbname, username, password
 Specifies how to connect to the MySQL database.
 
 =cut
+
+my $l=get_logger(__PACKAGE__ );
 
 sub new
 {
@@ -76,7 +79,8 @@ sub DESTROY
 {
   my $self = shift;
 
-  $self->{dbh}->disconnect();
+  $self->{dbh}->disconnect() 
+    if defined( $self->{dbh} );
 }
 
 =item StartBatch
@@ -91,6 +95,7 @@ sub StartBatch
 {
   my( $self, $batchname ) = @_;
   
+  $self->DoSql( "START TRANSACTION" );
   my $id = $self->Lookup( 'batches', { name => $batchname }, 'id' );
   if( defined( $id ) )
   {
@@ -102,6 +107,9 @@ sub StartBatch
   }
     
   $self->{currbatch} = $id;
+  $self->{currbatchname} = $batchname;
+  $self->{last_end} = "1970-01-01 00:00:00";
+  $self->{last_start} = "1970-01-01 00:00:00";
 }
 
 =item EndBatch
@@ -117,8 +125,17 @@ sub EndBatch
 {
   my( $self, $success ) = @_;
   
-  $self->Update( 'batches', { id => $self->{currbatch} }, 
-               { last_update => time() } );
+  if( $success )
+  {
+    $self->Update( 'batches', { id => $self->{currbatch} }, 
+                   { last_update => time() } );
+    $self->DoSql("Commit");
+  }
+  else
+  {
+    $self->DoSql("Rollback");
+    $l->error( $self->{currbatchname} . ": Rolling back changes" );
+  }
 
   delete $self->{currbatch};
 }
@@ -130,27 +147,188 @@ Called by an importer to add a programme for the current batch.
 Takes a single parameter contining a hashref with information
 about the programme.
 
+  $ds->AddProgramme( {
+    channel_id => 1,
+    start_time => "2004-12-24 14:00:00",
+    end_time   => "2004-12-24 15:00:00", # Optional
+    title      => "Kalle Anka och hans vänner",
+    subtitle   => "Episode title"        # Optional
+    description => "Traditionsenligt julfirande",
+    episode    =>  "0 . 12/13 . 0/3", # Season, episode and part as xmltv_ns
+                                      # Optional
+    category   => [ "sport" ],        # Optional
+  } );
+
+The times must be in UTC. The strings must be encoded in iso-8859-1.
+
 =cut
 
 sub AddProgramme
 {
   my( $self, $data ) = @_;
   
-  die "You must call StartBatch before AddProgramme" 
+  $l->logdie( "You must call StartBatch before AddProgramme" ) 
     unless exists $self->{currbatch};
 
-  $self->Add( 'programs',
-              {
-                channel_id  => $data->{channel_id},
-                start_time  => $data->{start_time},
-                end_time    => $data->{end_time},
-                title       => $data->{title},
-                description => $data->{description},
-                episode_nr  => $data->{episode_nr},
-                season_nr   => $data->{season_nr},
-                batch_id    => $self->{currbatch},
-              }
-              );
+  if( $data->{start_time} le $self->{last_start} )
+  {
+    $l->error( $self->{currbatchname} . 
+      ": Starttime must be later than last starttime: " . 
+      $self->{last_start} . " -> " . $data->{start_time} );
+    return;
+  }
+
+  if( defined( $self->{last_end} ) and 
+      ($self->{last_end} gt $data->{start_time}) )
+  {
+    $l->error( $self->{currbatchname} . 
+      " Starttime must be later than or equal to last endtime: " . 
+      $self->{last_end} . " -> " . $data->{start_time} );
+    return;
+  }
+
+  $self->{last_start} = $data->{start_time};
+  $self->{last_end} = undef;
+
+  if( exists( $data->{end_time} ) )
+  {
+    if( $data->{start_time} ge $data->{end_time} )
+    {
+      $l->error( $self->{currbatchname} . 
+	  ": Stoptime must be later than starttime: " . 
+	  $data->{start_time} . " -> " . $data->{end_time} );
+      return;
+    }
+    $self->{last_end} = $data->{end_time};
+  }
+
+  fix_programme_data( $data );
+
+  $self->AddProgrammeRaw( $data );
+}
+
+=item AddProgrammeRaw
+
+Same as AddProgramme but doesn't check for overlapping programmes or
+require that the programmes are added in order.
+
+=cut
+
+sub AddProgrammeRaw
+{
+  my( $self, $data ) = @_;
+  
+  $l->logdie( "You must call StartBatch before AddProgramme" ) 
+    unless exists $self->{currbatch};
+
+  if( $data->{title} !~ /\S/ )
+  {
+    $l->error( $self->{currbatchname} . ": Empty title at " . $data->{start_time} );
+    $data->{title} = "end-of-transmission";
+  }
+
+  $data->{batch_id} = $self->{currbatch};
+
+  if( not defined( $data->{category} ) )
+  {
+    delete( $data->{category} );
+  }
+
+  if( not defined( $data->{program_type} ) )
+  {
+    delete( $data->{program_type} );
+  }
+
+  $self->Add( 'programs', $data );
+}
+
+sub fix_programme_data
+{
+  my( $d ) = @_;
+
+  $d->{title} =~ s/^s.songs+tart\s*:*\s*//gi;
+  $d->{title} =~ s/^seriestart\s*:*\s*//gi;
+  $d->{title} =~ s/^reprisstart\s*:*\s*//gi;
+  $d->{title} =~ s/^programstart\s*:*\s*//gi;
+
+  $d->{title} =~ s/^s.songs*avslutning\s*:*\s*//gi;
+  $d->{title} =~ s/^sista\s+delen\s*:*\s*//gi;
+
+  if( $d->{title} =~ s/^((matin.)|(fredagsbio))\s*:\s*//gi )
+  {
+    $d->{program_type} = 'movie';
+    $d->{category} = 'Movies';
+  }
+
+  # Set program_type to series if the entry has an episode-number
+  # but doesn't have a program_type.
+  if( exists( $d->{episode} ) and defined( $d->{episode} ) and
+      ( (not defined($d->{program_type})) or ($d->{program_type} =~ /^\s*$/) ) )
+  {
+    $d->{program_type} = "series";
+  }
+}
+
+=item LookupCat
+
+Lookup a category found in an infile and translate it to
+a proper program_type and category for use in AddProgramme.
+
+  my( $pty, $cat ) = $ds->LookupCat( 'Viasat', 'MUSIK' );
+  $ds->AddProgramme( { ..., category => $cat, program_type => $pty } );
+
+=cut
+
+sub LookupCat
+{
+  my $self = shift;
+  my( $type, $org ) = @_;
+
+  return (undef, undef) if (not defined( $org )) or ($org !~ /\S/);
+
+  $self->LoadCategories()
+    if not exists( $self->{categories} );
+
+  $self->AddCategory( $type, $org )
+    if not exists( $self->{categories}->{"$type++$org"} );
+
+  if( defined( $self->{categories}->{"$type++$org"} ) )
+  {
+    return @{($self->{categories}->{"$type++$org"})};
+  }
+  else
+  {
+    return (undef,undef);
+  }
+        
+}
+
+sub LoadCategories
+{
+  my $self = shift;
+
+  my $d = {};
+
+  my $sth = $self->Iterate( 'trans_cat', {} );
+
+  while( my $data = $sth->fetchrow_hashref() )
+  {
+    $d->{$data->{type} . "++" . $data->{original}} = [$data->{program_type},
+                                                      $data->{category} ];
+  }
+  $sth->finish();
+
+  $self->{categories} = $d;
+}
+
+sub AddCategory
+{
+  my $self = shift;
+  my( $type, $org ) = @_;
+
+  $self->Add( 'trans_cat', { type => $type,
+                             original => $org } );
+  $self->{categories}->{"$type++$org"} = [undef,undef];
 }
 
 =back 
@@ -434,6 +612,15 @@ sub Sql
   return ($res, $sth);
 }
 
+sub DoSql
+{
+  my $self = shift;
+  my( $sqlexpr, $values ) = @_;
+
+  my( $res, $sth ) = $self->Sql( $sqlexpr, $values );
+
+  $sth->finish();
+}
 
 =head1 COPYRIGHT
 

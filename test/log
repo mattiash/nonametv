@@ -1,0 +1,18 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+use NonameTV::Log qw/get_logger start_output/;
+
+
+my $l = get_logger("NonameTV::Tester");
+start_output( "NonameTV::Tester", ($ARGV[0] || "") eq '--verbose' );
+
+$l->error( "Error" );
+$l->warn( "Warning" );
+$l->info( "Information" );
+
+my $l2=get_logger("NonameTV::Test2");
+$l2->error( "Error 2" );
+$l2->warn( "Warning 2" );
+$l2->info( "Information 2" );

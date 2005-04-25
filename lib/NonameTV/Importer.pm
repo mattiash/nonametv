@@ -30,9 +30,9 @@ parameters to the object in other keys.
 
 =item new
 
-The constructor for the object. Called with a hashref as the only parameter.
+The constructor for the object. Called with a hashref as the first parameter.
 This is a ref to the configuration for the object from the nonametv.conf-
-file.
+file. The second parameter is a NonameTV::DataStore object.
 
 =cut
 
@@ -49,13 +49,15 @@ sub new
       $self->{$key} = ($_[1])->{$key};
   }
 
+  $self->{datastore} = $_[2];
+
   return $self;
 }
 
 =item Import
 
-Import is called from the nonametv-import executable. It takes a reference
-to a NonameTV::Datasource-object and a hashref as a parameter. The hashref 
+Import is called from the nonametv-import executable. It takes a hashref as 
+the only parameter. The hashref 
 points to a hash with the command-line parameters decoded by Getopt::Long 
 using the $NonameTV::Importer::*::Options arrayref as format specification.
 
@@ -63,9 +65,47 @@ using the $NonameTV::Importer::*::Options arrayref as format specification.
 
 sub Import
 {
-  my( $self, $ds, $param ) = @_;
+  my( $self, $param ) = @_;
   
   die "You must override Import in your own class"
+}
+
+=item ImportFile
+
+Import the content from a single file.
+
+=cut
+
+sub ImportFile
+{
+  my $self = shift;
+  my( $contentname, $filename, $p ) = @_;
+
+  my $content;
+
+  # Load data from file
+  {
+    local( $/ ) ;
+    open( my $fh, "$filename" ) 
+        or die "Failed to read from $filename: $@";
+    $content = <$fh>;
+  }
+
+  return $self->ImportContent( $contentname, \$content, $p );
+}
+
+=item ImportContent
+
+Import the content from a string reference.
+
+=cut
+
+sub ImportContent
+{
+  my $self = shift @ARGV;
+  my( $contentname, $filename, $p ) = @_;
+
+  die "You must override ImportContent in your own class";
 }
 
 sub FetchData
@@ -73,7 +113,7 @@ sub FetchData
   my $self = shift;
   my( $batch_id, $data ) = @_;
 
-  my $root = "/var/tmp/nonametv/override";
+  my $root = "/var/local/nonametv/override";
   my $code = 0;
   my $content;
 
@@ -105,10 +145,18 @@ sub FetchData
   else
   {
     ( $content, $code ) = $self->FetchDataFromSite( $batch_id, $data );
+    if( -f( "$root/delete/$batch_id" ) )
+    {
+      # Delete the old override and force update from site.
+      unlink( "$root/delete/$batch_id" );
+      $code = 1;
+    }
   }
   
   return ($content, $code);
 }
+
+
 
 =head1 CLASS VARIABLES
 

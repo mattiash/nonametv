@@ -1,47 +1,81 @@
 package NonameTV::Importer::TV4;
 
-#
-# This importer imports data from TV4's press service. 
-#
-# Note that the importer always skips the last programme in the
-# dataset, since programmes have no stop-time. This is usually four weeks
-# from now. 
-# 
-# Furthermore, the last programme for each days schedule (as grouped by TV4) 
-# gets a batch-id belonging to the next day, since that is where the stop-time 
-# can be found.
-#
-# The assumption that a program stops when the next program starts is
-# sometimes wrong, but there is no better data available.
-#
+=pod
 
-# BUG!! If TV4 simply adds more data, we will always miss the last show
-# of each day, since the last show for the last day is not stored the first 
-# time it is seen (unknown stoptime) and when the schedule for another day 
-# is released, we don't re-process the schedule for the old last day since it
-# hasn't changed.
-#
+This importer imports data from TV4's press service. The data is fetched
+as one xml-file per day and channel.
+
+Features:
+
+Episode numbers parsed from description.
+
+previously-shown-date info available but not currently used.
+
+   <program>
+      <transmissiontime>15:45</transmissiontime>
+      <title>Säsongsstart: Melrose Place </title>
+      <description>Amerikansk dramaserie från 1995 i 34 avsnitt.  Om en grupp unga 
+människor som bor i ett hyreshus på Melrose Place i Los Angeles. Frågan är vem de kan 
+lita på bland sina grannar, för på Melrose Place kan den man tror är ens bästa vän 
+visa sig vara ens värsta fiende.      Del 17 av 34.  Bobby får ett ultimatum av 
+Peter. Kimberley berättar för Alan om Matts tidigare kärleksaffärer vilket får Alan 
+att ta avstånd från Matt. Billy har skuldkänslor efter Brooks självmordsförsök och 
+kräver att Amanda tar henne tillbaka.</description>
+      <episode_description> Del 17 av 34.  Bobby får ett ultimatum av Peter. 
+Kimberley berättar för Alan om Matts tidigare kärleksaffärer vilket får Alan att ta 
+avstånd från Matt. Billy har skuldkänslor efter Brooks självmordsförsök och kräver 
+att Amanda tar henne tillbaka.</episode_description>
+<program_description>Amerikansk dramaserie från 1995 i 34 avsnitt.  Om en grupp unga 
+människor som bor i ett hyreshus på Melrose Place i Los Angeles. Frågan är vem de kan 
+lita på bland sina grannar, för på Melrose Place kan den man tror är ens bästa vän 
+visa sig vara ens värsta fiende.     </program_description>
+<creditlist>
+  <person>
+    <role_played>Michael Mancini</role_played>
+    <real_name>Thomas Calabro</real_name>
+  </person>
+  <person>
+    <role_played>Billy Campbell</role_played>
+    <real_name>Andrew Shue</real_name>
+  </person>
+  <person>
+    <role_played>Alison Parker</role_played>
+   <real_name>Courtney Thorne-Smith</real_name>
+  </person>
+  <person>
+    <role_played>Jake Hanson</role_played>
+    <real_name>Grant Show</real_name>
+  </person>
+  <person>
+    <role_played>Jane Mancini</role_played>
+    <real_name>Josie Bissett</real_name>
+  </person>
+  <person>
+    <role_played>Matt Fielding Jr</role_played>
+    <real_name>Doug Savant</real_name>
+  </person>
+  <person>
+    <role_played>Amanda Woodward</role_played>
+    <real_name>Heather Locklear</real_name>
+  </person>
+</creditlist>
+<next_transmissiondate>2005-01-11</next_transmissiondate>
+</program>
+
+=cut
 
 use strict;
 use warnings;
 
 use DateTime;
 use XML::LibXML;
-use Text::Iconv;
 
-use NonameTV qw/MyGet/;
+use NonameTV qw/MyGet Utf8Conv ParseDescCatSwe AddCategory/;
+use NonameTV::DataStore::Helper;
 
-use NonameTV::Importer;
+use NonameTV::Importer::BaseDaily;
 
-use base 'NonameTV::Importer';
-
-our $OptionSpec = [ qw/force-update verbose/ ];
-our %OptionDefaults = ( 
-                        'force-update' => 0,
-                        'verbose'      => 0,
-                        );
-
-my $conv = Text::Iconv->new("UTF-8", "ISO-8859-1" );
+use base 'NonameTV::Importer::BaseDaily';
 
 sub new {
     my $proto = shift;
@@ -49,141 +83,80 @@ sub new {
     my $self  = $class->SUPER::new( @_ );
     bless ($self, $class);
 
+    $self->{grabber_name} = "TV4";
     defined( $self->{UrlRoot} ) or die "You must specify UrlRoot";
+
+    my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore} );
+    $self->{datastorehelper} = $dsh;
 
     return $self;
 }
 
-sub Import
+sub ImportContent
 {
   my $self = shift;
-  my( $ds, $p ) = @_;
-  
-  my $sth = $ds->Iterate( 'channels', { grabber => 'tv4' },
-                          qw/xmltvid id grabber_info/ )
-    or die "Failed to fetch grabber data";
+  my( $batch_id, $cref, $chd ) = @_;
 
-  while( my $data = $sth->fetchrow_hashref )
+  my $l = $self->{logger};
+  my $ds = $self->{datastore};
+  my $dsh = $self->{datastorehelper};
+
+  my( $date ) = ($batch_id =~ /_(.*)$/);
+
+  my $xml = XML::LibXML->new;
+  my $doc;
+  eval { $doc = $xml->parse_string($$cref); };
+  if( $@ ne "" )
   {
-    
-    # Start with yesterdays schedule, since it contains data
-    # for today as well.
-
-    my $dt = DateTime->today->set_time_zone( 'Europe/Stockholm' );
-    $dt = $dt->subtract( days => 1 );
-
-    my $done = 0;
-
-    # Keep track if anything has changed for this channel.
-    # If we detect changes for one day, we must keep on updating
-    # all the following days, since the changes spill over due
-    # to the stop time of the last show being on the schedule for
-    # tomorrow.
-    # 
-    # This algorithm could be improved a lot, but is it worth it?
-    #
-    my $process = 0;
-
-    my $curr_entry = undef;
-
-    do
-    {
-      my $batch_id = $data->{xmltvid} . "_" . $dt->ymd();
-
-      print "Fetching listings for $batch_id\n"
-        if( $p->{verbose} );
-
-      my( $content, $code ) = $self->FetchData( $batch_id, $data );
-
-      # Should we process entries for this batch or can we skip them?
-      $process = ($process or $p->{'force-update'} or ($code) );
-      
-      if (defined( $content ) ) 
-      {        
-        my $xml = XML::LibXML->new;
-        my $doc;
-        eval { $doc = $xml->parse_string($content); };
-        if( $@ ne "" )
-        {
-          print STDERR "$batch_id Failed to parse\n";
-          $done = 1;
-          goto nextDay;
-        }
-
-        $ds->StartBatch( $batch_id ) 
-          if $process;
-
-        print "Processing listings for $batch_id\n"
-          if( $process and $p->{verbose} );
-        
-        # Find all "program"-entries.
-        my $ns = $doc->find( "//program" );
-        if( $ns->size() == 0 )
-        {
-          # This means that there is no data for this day or any 
-          # of the following days. Exit.
-          $done = 1;
-          $ds->EndBatch(0)
-            if $process;
-          next;
-        }
-
-        my $curr_date = $dt->clone();
-        my $last_start_dt = $curr_date;
-
-        foreach my $pgm ($ns->get_nodelist)
-        {
-          my $starttime = $pgm->findvalue( 'transmissiontime' );
-          
-          my $start_dt = create_dt( $curr_date, $starttime );
-
-          if( $start_dt < $last_start_dt )
-          {
-            $curr_date = $curr_date->add(days => 1);
-            $start_dt = $start_dt->add(days => 1);
-          }
-          
-          $last_start_dt = $start_dt;
-
-          if( defined $curr_entry )
-          {
-            $curr_entry->{end_time} = $start_dt->ymd("-") . " " . 
-                                        $start_dt->hms(":");
-
-            $ds->AddProgramme( $curr_entry )
-              if $process;
-          }
-
-          my $title =$pgm->findvalue( 'title' );
-          my $description = $pgm->findvalue( 'description' );
-
-          $curr_entry = 
-            {
-              channel_id  => $data->{id},
-              title       => norm($title),
-              description => norm($description),
-              start_time  => $start_dt->ymd("-") . " " . 
-                               $start_dt->hms(":"),
-            };
-        }
-        
-        $ds->EndBatch( 1 )
-          if $process;
-      }
-      else
-      {
-        print STDERR "Failed to fetch data for $batch_id\n";
-        $done = 1;
-      }
-       
-      $dt = $dt->add( days => 1 );
-
-    nextDay:
-
-    } while( not $done );
+    $l->error( "$batch_id: Failed to parse" );
+    next;
   }
+  
+  # Find all "program"-entries.
+  my $ns = $doc->find( "//program" );
+  if( $ns->size() == 0 )
+  {
+    $l->error( "$batch_id: No data found" );
+    next;
+  }
+  
+  $dsh->StartBatch( $batch_id, $chd->{id} );
+  $dsh->StartDate( $date );
+  
+  foreach my $pgm ($ns->get_nodelist)
+  {
+    my $starttime = $pgm->findvalue( 'transmissiontime' );
+    my $title =$pgm->findvalue( 'title' );
+    my $desc = $pgm->findvalue( 'description' );
+    my $ep_desc = $pgm->findvalue( 'episode_description' );
+    my $pr_desc = $pgm->findvalue( 'program_description' );
+    
+    my $prev_shown_date = $pgm->findvalue( 'previous_transmissiondate' );
+    
+    my $description = $ep_desc || $desc || $pr_desc;
+    
+    if( ($title =~ /^[- ]*s.ndningsuppeh.ll[- ]*$/i) )
+    {
+      $title = "end-of-transmission";
+    }
+    
+    my $ce = {
+      title       => norm($title),
+      description => norm($description),
+      start_time  => $starttime,
+      ep_desc     => norm($ep_desc),
+      pr_desc     => norm($pr_desc),
+    };
+    
+#     $ce->{prev_shown_date} = norm($prev_shown_date)
+#     if( $prev_shown_date =~ /\S/ );
 
-  $sth->finish();
+    extract_extra_info( $ce );
+    
+    $dsh->AddProgramme( $ce );
+  }
+  
+  $dsh->EndBatch( 1 );
 }
 
 sub FetchDataFromSite
@@ -202,18 +175,90 @@ sub FetchDataFromSite
   return( $content, $code );
 }
 
-sub create_dt
+sub extract_extra_info
 {
-  my( $date, $time ) = @_;
+  my( $ce ) = shift;
+
+  extract_episode( $ce );
+
+  #
+  # Try to extract category and program_type by matching strings
+  # in the description.
+  #
+  my @pr_sentences = split_text( $ce->{pr_desc} );
+  my @ep_sentences = split_text( $ce->{ep_desc} );
   
-  my( $hour, $minute ) = split( ":", $time );
+  my( $program_type, $category ) = ParseDescCatSwe( $pr_sentences[0] );
+  AddCategory( $ce, $program_type, $category );
+  ( $program_type, $category ) = ParseDescCatSwe( $ep_sentences[0] );
+  AddCategory( $ce, $program_type, $category );
+
+  # Find production year from description.
+  if( $pr_sentences[0] =~ /\bfr.n (\d\d\d\d)\b/ )
+  {
+    $ce->{production_date} = "$1-01-01";
+  }
+  elsif( $ep_sentences[0] =~ /\bfr.n (\d\d\d\d)\b/ )
+  {
+    $ce->{production_date} = "$1-01-01";
+  }
+
+  # Remove control characters {\b Text in bold}
+  $ce->{description} =~ s/\{\\b\s+//g;
+  $ce->{description} =~ s/\}//g;
+
+  # Remove temporary fields
+  delete $ce->{pr_desc};
+  delete $ce->{ep_desc};
+
+  if( $ce->{title} =~ /^Pokemon\s+(\d+)\s*$/ )
+  {
+    $ce->{title} = "Pokémon";
+    $ce->{subtitle} = $1;
+  }
+}
+
+# Split a string into individual sentences.
+sub split_text
+{
+  my( $t ) = @_;
+
+  return $t if $t !~ /\./;
+
+  $t =~ s/\n/ . /g;
+  $t =~ s/\.\.\./..../;
+  my @sent = grep( /\S/, split( /\.\s+/, $t ) );
+  map { s/\s+$// } @sent;
+  $sent[-1] =~ s/\.\s*$//;
+  return @sent;
+}
+
+sub extract_episode
+{
+  my( $ce ) = @_;
+
+  return if not defined( $ce->{description} );
+
+  my $d = $ce->{description};
+
+  # Try to extract episode-information from the description.
+  my( $ep, $eps );
+  my $episode;
+
+  # Del 2
+  ( $ep ) = ($d =~ /\bDel\s+(\d+)/ );
+  $episode = sprintf( " . %d .", $ep-1 ) if defined $ep;
+
+  # Del 2 av 3
+  ( $ep, $eps ) = ($d =~ /\bDel\s+(\d+)\s*av\s*(\d+)/ );
+  $episode = sprintf( " . %d/%d . ", $ep-1, $eps ) 
+    if defined $eps;
   
-  my $dt = $date->clone();
-  
-  $dt->set( hour => $hour, minute => $minute );
-  $dt->set_time_zone( "UTC" );
-  
-  return $dt;
+  if( defined( $episode ) )
+  {
+    $ce->{episode} = $episode;
+    $ce->{program_type} = 'series';
+  }
 }
 
 # Delete leading and trailing space from a string.
@@ -225,7 +270,7 @@ sub norm
 
     return "" if not defined( $str );
 
-    $str = $conv->convert( $str );
+    $str = Utf8Conv( $str );
 
     $str =~ s/^\s+//;
     $str =~ s/\s+$//;

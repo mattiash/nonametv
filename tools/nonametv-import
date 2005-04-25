@@ -4,33 +4,83 @@ use strict;
 
 use NonameTV;
 use NonameTV::DataStore;
+use NonameTV::DataStore::Dummy;
 use HTTP::TransparentCache;
 
 use Getopt::Long;
 
+if( scalar( @ARGV ) == 0 )
+{
+  print << 'EOHELP';
+nonametv-import [test] [Importer] [Importer-options] [Filename]
+
+Import data into the database. [Importer] is the name of an entry under
+the Importers-section in /etc/nonametv.conf.
+
+The keyword "test" means that NonameTV::DataStore::Dummy is used. 
+
+Typical Importer-options include
+
+--verbose
+
+--force-update  Import data even if the data hasn't changed since the
+                last import.
+
+Some importers import data from files specified on the command-line,
+other importers fetch their data via http.
+
+EOHELP
+
+  exit 1;
+}
+
 # Read configuration
 my $conf = NonameTV::ReadConfig();
 
+my $run_test = 0;
+
+my $imp_name = shift @ARGV;
+if( $imp_name eq "test" )
+{
+  $run_test = 1;
+  $imp_name = shift @ARGV;
+}
+
+if( not exists( $conf->{Importers}->{$imp_name} ) )
+{
+  print STDERR "No such importer $imp_name\n";
+  exit 1;
+}
+
 # Create Datastore
-my $ds = NonameTV::DataStore->new( $conf->{DataStore} );
+my $ds;
+
+if( $run_test )
+{
+  $ds = NonameTV::DataStore::Dummy->new( $conf->{DataStore} );
+  $conf->{Cache}->{Verbose} = 1;
+}
+else
+{
+  $ds = NonameTV::DataStore->new( $conf->{DataStore} );
+}
 
 # Initialize cache
 HTTP::TransparentCache::init( $conf->{Cache} );
 
 # Create the right importer
-my $imp_name = shift @ARGV;
 my $imp_data = $conf->{Importers}->{$imp_name};
 my $imp_type = $imp_data->{Type};
 
 my $imp = eval "use NonameTV::Importer::$imp_type; 
-                NonameTV::Importer::${imp_type}->new( \$imp_data );"
+                NonameTV::Importer::${imp_type}->new( \$imp_data, \$ds );"
         or die $@;
 
-my %opt = eval "\%NonameTV::Importer::${imp_type}::OptionDefaults";
-my $option_spec = eval "\$NonameTV::Importer::${imp_type}::OptionSpec";
+my %opt = %{$imp->{OptionDefaults}};
+my $option_spec = $imp->{OptionSpec};
 
 my $res = GetOptions( \%opt, @{$option_spec} );
 
 
 # Run importer
-$imp->Import( $ds, \%opt );
+$imp->Import( \%opt );

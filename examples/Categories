@@ -1,0 +1,189 @@
+program_type: series, movie, sports, tvshow
+genre: se lista langst ner...
+
+MythTVs kategorier:
+Educational
+Adult
+Musical
+News
+Reality
+Cooking
+Documentary
+Doc
+Sports
+Mystery
+Crime/Mystery
+Music
+Movies
+Drama
+Classic
+Crime
+Talk
+Comedy
+Animals
+Nature
+Science/Nature
+SciFi
+Sci-fi/Fantasy
+Horror
+Action
+Action/Adv
+Food/Travel
+Home/How-to
+Game
+Children's
+Kids 
+
+From: Oscar
+
+>>> Så, catType är en intern mythkategori som anger typen. dessa måste alltså vara "movie", "series", "sports" eller "tvshows".
+>>
+>>
+>>
+>>
+>> istället för "sports" blir det "sport" nu. Detta är en "vanlig" genre så att säga, själva typen jag behöver ska heta "sports". hoppas du fattar, är lite trött.
+>
+>
+>
+> Nej, jag fattade inte... Ska jag bara byta ut "sports" mot "sport"?
+>
+> Har vi några bra namn på de olika "kategorityperna"? Dvs "series/movie/tvshows" respektive "comedy/drama etc". Det blir lite förvirrande att kalla dem båda för kategori...
+
+
+series, movie, sports, tvshow är de "reserverade" specialkategorierna. Problemet är ju att XMLTV's dtd inte har något stöd för detta, därför det får bli en kategori. (alltså, sport ska byta till sports).
+
+Resten är ju sen som vi kan kalla "genre". Här får vi göra en mappning sen för att likrikta dem mellan de olika kanalerna.
+
+tvshow är alltså sådant som inte faller inom de andra kategorierna, t.ex. enstaka program som inte är en serie osv. men det kan vi inte göra så värst mycket åt just nu, tar det efterhand sen. t.ex. så kan vi ju märka det som "series" om det finns "Del 2 av 9" osv. och sports märker vi t.ex. genom sportkategorier. filmerna verkar vara märkte i de flesta data vi får ju så det ska nog lösa sig
+
+dax för kusinglögg nu, hörs!
+
+/O
+
+
+Subject: kategorier
+From: Oscar Carlsson <oscar.carlsson@home.se>
+Date: Thu, 25 Nov 2004 02:53:29 +0100
+To: Mattias Holmlund <mattias@holmlund.se>
+
+hör kommer kategorierna från DTV.
+
+dock tycker jag nog att vi klarar oss bättre med att köra två kategorier, Film och Action t.ex. istället för en Actionfilm kategori.
+
+Actionfilm
+Actionserie
+Alpint
+Amerikansk fotboll
+
+Backhoppning
+Barn
+Basket
+Bordtennis
+Bowling
+Boxning
+Brottning
+
+Café & magasin
+Curling
+Cykel
+
+Data & IT
+Djur & Natur
+Dokumentärfilm
+Dokumentärserie
+Dokusåpa
+Dramadokumentär
+Dramafilm
+Dramaserie
+
+Ekonomi & finans
+Erotik
+Extremsport
+
+Familjefilm
+Familjeserie
+Fantasyfilm
+Fantasyserie
+Filmmagasin
+Fotboll
+Friidrott
+Frågesport
+
+Golf
+Gymnastik
+
+Handboll
+Hem & trädgård
+Historia & kultur
+Hälsa
+
+Information
+Ishockey
+
+Kampsport
+Kanot
+Komedifilm
+Komediserie
+Konståkning
+Konsument
+Kortfilm
+Kraftsport
+Krigsfilm
+Krigsserie
+Kriminalfilm
+Kriminalserie
+
+Litteratur & konst
+Livsåskådning
+Längdåkning
+
+Mat & dryck
+Motorsport
+Musik
+Musikal
+
+Nyheter
+Nöje
+Nöjesnytt
+
+Porträtt
+Pratshow
+På teckenspråk
+
+Resor & äventyr
+Ridsport
+
+Samhälle & debatt
+Science-fiction serie
+Segling
+Science-fiction film
+Simning
+Skidskytte
+Skridsko
+Skräckfilm
+Skräckserie
+Spel & lotteri
+Sportnyheter
+Såpopera
+
+Tecknad film
+Teknik & vetenskap
+Tennis
+Thrillerfilm
+Thrillerserie
+Trav
+Tv-lek
+Tv-teater
+
+Ungdom
+Utbildning
+
+Westernfilm
+Westernserie
+
+Volleyboll
+
+Äventyrsfilm
+Äventyrsserie
+
+

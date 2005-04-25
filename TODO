@@ -1,11 +1,38 @@
 Clarify copyright and license (GPL)
 Add more importers
-Implement database locking
-Clean up STDOUT/STDERR messages
 
-Speed up import and export
-Implement an off-line setting for the importers that doesn't
-contact the servers.
-Replace XMLTV::Writer with something faster.
-Remove old data from the database.
-Limit Importers to max 14 days ahead.
+Add time-shifted channels
+
+Validate data for AddProgramme and mark the batch so that it will be retried
+until it succeeds.
+ 
+Mailfilter for data from svt.
+
+Töm mailboxar hos swedb.se.
+
+TV4: Stabilt. Den gör en falblack till <program_description> om det inte finns episode_desc eller? du kan skriva upp på din todo då med att om den gör denna fallback, kan vi uppenbarligen inte identifiera ett specifikt avsnitt. då ska episodeid sättas till "0000", en indikation på just detta.
+
+Hamta data for idag oftare?
+
+Use Namespaces for channels.xml? This would make it easy to add more info to channels.xml in the future that can be removed by tv_grab_se_swedb without specific knowledge about the tags.
+
+Implement some way of specifying alternate sources for listings to allow
+load-balancing.
+
+Xmltv-export should use string-comparisons instead of DateTime comparisons
+to decide if a file should be removed.
+
+Xmltv-export should warn when creating empty xml-files unless the channel is marked as "intermittent".
+
+Eurosport: Subtitles are sometimes empty, sometimes NULL. Should be NULL.
+
+end_time is sometimes NULL, sometimes 00-00-00 00:00:00. Differs between grabbers. Should be NULL.
+
+Change Xmltv-exporter to
+1. Export file.xml
+2. Compare file.xml with file.xml.gz and delete file.xml if they are equal.
+3. Validate file.xml
+4. Compress file.xml
+5. Print an info-message saying that file.xml was exported.
+This would give better log-messages and would make it unnecessary to log
+the output from sitecopy.

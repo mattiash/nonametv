@@ -1,0 +1,101 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+use NonameTV;
+use NonameTV::DataStore;
+
+use MIME::Parser;
+use MIME::Head;
+use File::Temp qw/tempdir/;
+use File::Copy qw/move/;
+
+my $nonametv_base = '/var/tmp/nonametv';
+
+# Read configuration
+my $conf = NonameTV::ReadConfig();
+
+# Create Datastore
+my $ds = NonameTV::DataStore->new( $conf->{DataStore} );
+
+sub get_counter
+{
+  my( $importer ) = @_;
+
+  $ds->DoSql( 'update state set value=value+1 where name=? and @v:=value',
+              [ "mf_cnt_$importer" ] );
+
+  my( $res, $sth ) = $ds->Sql( 'select @v' );
+  
+  die "More than one record returned for mf_cnt_$importer"
+      if( $res > 1 );
+
+  my $row = $sth->fetchrow_hashref;
+  $sth->finish();
+
+  if( not defined( $row->{'@v'} ) )
+  {
+    $ds->Add( 'state', { name => "mf_cnt_$importer",
+                         value => 2 } );
+    return 1;
+  }
+
+  print $row->{'@v'} . "\n";
+  return $row->{'@v'};
+}
+
+sub move_files 
+{
+  my( $ent, $imp ) = @_;
+
+  my @parts = $ent->parts;
+
+  if (@parts) 
+  {        
+    # multipart...
+    map { move_files($_, $imp) } @parts;
+  }
+  else 
+  {
+    # single part...
+    my $cnt = sprintf('%05d', get_counter( $imp ) );
+    my $recfn = $ent->head->recommended_filename || "noname";
+    print "mv ", $ent->bodyhandle->path, " $nonametv_base/data/new/$imp/${cnt}_" . $recfn . "\n"; 
+    move( $ent->bodyhandle->path, "$nonametv_base/data/new/$imp/${cnt}_$recfn" );
+  }
+}
+
+
+my $msgdir = tempdir( CLEANUP => 1 );
+print STDERR "Message: $msgdir\n";
+
+# Create a new parser object:
+my $parser = new MIME::Parser;
+$parser->output_dir($msgdir);
+    
+my $entity = $parser->read(\*STDIN) or 
+  print STDERR "Couldn't parse MIME\n";
+
+# Find out which TV-company this mail is from
+
+my $h = $entity->head;
+my $from = $h->get( 'from' );
+
+my $importer;
+if( $from =~ /\@text100\.se/ )
+{
+  $importer = "Discovery";
+}
+elsif( $from =~ /\@svt\.se/ )
+{
+  $importer = "Svt";
+}
+else
+{
+  print STDERR "Unknown importer.\n  From: $from\n";
+  exit 1;
+}
+
+# Congratulations: you now have a (possibly multipart) MIME entity!
+move_files($entity, $importer);
+

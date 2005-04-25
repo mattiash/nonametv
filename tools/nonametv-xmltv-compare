@@ -1,5 +1,8 @@
 #!/usr/bin/perl -w
 
+# How large an empty xmltv-file can be.
+use constant EMPTY_SIZE => 140;
+
 use strict;
 
 if( scalar( @ARGV ) != 2 )
@@ -26,6 +29,9 @@ foreach my $file (glob("$newdir/*.xml.gz"),glob("$olddir/*.xml.gz") )
   $files{$name} = "?" if defined $name;
 }
 
+# Remove old diff-files.
+unlink( "*.diff" );
+
 foreach my $file (keys %files)
 {
   if( not -f "$newdir/$file.xml.gz" )
@@ -39,6 +45,14 @@ foreach my $file (keys %files)
   {
     # File is new.
     $files{$file} = "N";
+    next;
+  }
+
+  if( (-s( "$olddir/$file.xml.gz" ) < EMPTY_SIZE ) and
+      (-s( "$newdir/$file.xml.gz" ) < EMPTY_SIZE ) )
+  {
+    # File is empty.
+    $files{$file} = "E";
     next;
   }
 
@@ -88,15 +102,19 @@ foreach my $file (keys %files)
   $dates{$date} = 1;
 }
 
-print << "EOHEAD";
+open OUT, "> 00output.html" 
+  or die "Failed to open output file: $@";
+
+print OUT << "EOHEAD";
 <html>
 <head>
 <style type="text/css">
-  .S { color:white; }
+  .S { }
   .M { background-color: blue; }
   .T { background-color: yellow; }
   .Z { background-color: red; }
   .U { background-color: green; }
+  .E { background-color: grey; }
 </style>
 </head>
 <body>
@@ -110,10 +128,10 @@ EOHEAD
 foreach my $date (sort keys %dates)
 {
   my( $s ) = ($date =~ m/(\d\d-\d\d)$/);
-  print "    <td>$s</td>\n";
+  print OUT "    <td>$s</td>\n";
 }
 
-print << "EOD";
+print OUT << "EOD";
   </tr>
 </thead>
 <tbody>
@@ -122,7 +140,7 @@ EOD
 
 foreach my $channel (sort keys %channels)
 {
-  print << "EOD";
+  print OUT << "EOD";
 <tr>
   <td>$channel</td>
 
@@ -135,18 +153,18 @@ EOD
 
     if( $files{$file} eq 'U' )
     {
-      print "<td class='$files{$file}'><a href='$file.diff'>$files{$file}</a></td>";
+      print OUT "<td class='$files{$file}'><a href='$file.diff'>$files{$file}</a></td>";
     }
     else
     {
-      print "<td class='$files{$file}'>$files{$file}</td>";
+      print OUT "<td class='$files{$file}'><a href='displayfile.html?$file'>$files{$file}</a></td>";
     }
   }
 
-  print "</tr>\n";
+  print OUT "</tr>\n";
 }
 
-print << "EOD";
+print OUT << "EOD";
 
 </tbody>
 </table>

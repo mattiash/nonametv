@@ -1,0 +1,20 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+use NonameTV;
+use NonameTV::DataStore;
+
+use Getopt::Long;
+
+# Read configuration
+my $conf = NonameTV::ReadConfig();
+
+# Create Datastore
+my $ds = NonameTV::DataStore->new( $conf->{DataStore} );
+
+print "Clearing all listings from database\n";
+$ds->Delete( "batches", {} );
+$ds->Delete( "programs", {} );
+$ds->Delete( "state", {} );
+

@@ -1,0 +1,91 @@
+<html> <head> <script type="text/javascript">
+
+function transformXml(xmlurl, xslturl, nodeid){
+  // load the xslt file
+  try {
+    // First try to use the Internet-Explorer method.
+    // If this fails, an exception will be thrown and we
+    // will test the Mozilla method instead.
+    var xslt = new ActiveXObject("Msxml2.XSLTemplate");
+
+    // Load stylesheet
+    var xslDoc = new ActiveXObject("Msxml2.FreeThreadedDOMDocument");
+    xslDoc.async = false;
+    xslDoc.resolveExternals = false;
+    xslDoc.load(xslturl);
+//    alert( "Stylesheet loaded" );
+    xslt.stylesheet = xslDoc;
+
+
+    var xmlDoc = new ActiveXObject("Msxml2.DOMDocument");
+    xmlDoc.async = false;
+    xmlDoc.resolveExternals = false;
+    xmlDoc.validateOnParse = false;
+    xmlDoc.load(xmlurl);
+//    alert( "Xml loaded" );
+
+    var xslProc = xslt.createProcessor();
+    xslProc.input = xmlDoc;
+//    xslProc.addParameter("subj", subject);
+    xslProc.transform();
+    document.getElementById(nodeid).innerHTML = xslProc.output;
+  }
+  catch(e) {
+    try{
+      var xslStylesheet;
+      var xsltProcessor = new XSLTProcessor();
+      var myDOM;
+      var xmlDoc;
+
+      var myXMLHTTPRequest = new XMLHttpRequest();
+      myXMLHTTPRequest.open("GET", xslturl, false);
+      myXMLHTTPRequest.send(null);
+
+      xslStylesheet = myXMLHTTPRequest.responseXML;
+      xsltProcessor.importStylesheet(xslStylesheet);
+
+      // load the xml file
+      myXMLHTTPRequest = new XMLHttpRequest();
+      myXMLHTTPRequest.open("GET", xmlurl, false);
+      myXMLHTTPRequest.send(null);
+      xmlDoc = myXMLHTTPRequest.responseXML;
+
+      // xsltProcessor.setParameter(null,"subj",subject);
+      var fragment = xsltProcessor.transformToFragment(xmlDoc,document);
+      document.getElementById(nodeid).innerHTML = "";
+      // myDOM = fragment; 
+      document.getElementById(nodeid).appendChild(fragment);
+    }
+    catch(e) {
+      alert(e);
+    }
+  }
+} 
+
+function loadListing()
+{
+  var file = document.location.search.substring(1);
+  
+  document.getElementById('heading').innerHTML = file;
+
+  listingUrl = "http://" + document.location.host + "/xmltv/" + file + ".xml.gz" 
+  transformXml( listingUrl, 'listing.xsl', 'listing' );
+  return false;
+}
+
+</script>
+<style type="text/css">
+.startdate { display: none; }
+.enddate { display: none; }
+</style>
+
+</head>  
+<body onload="loadListing()">
+
+<h2><span id="heading"></span></h2>
+<div id="listing">
+Loading programmes...
+</div>
+
+</body>
+</html>

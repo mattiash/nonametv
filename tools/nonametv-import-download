@@ -6,6 +6,39 @@ use NonameTV;
 use NonameTV::DataStore;
 use HTTP::TransparentCache;
 
+if( scalar( @ARGV ) != 2 )
+{
+  print << 'EODOC';
+nonametv-import-download <importer> <batch-id>
+
+Download the data for a batch and put it in the "new"-section in the
+override directory as batchid.org.
+
+The override directory is currently hardcoded as 
+
+var/local/nonametv/override
+
+To override the input for a batch:
+
+nonametv-import-download TV4 plus.tv4.se_2004-11-10
+cd /var/local/nonametv/override/new
+cp plus.tv4.se_2004-11-10.org plus.tv4.se_2004-11-10
+emacs plus.tv4.se_2004-11-10
+nonametv-import TV4
+
+The plus.tv4.se_2004-11-10 will be moved from new/ to data/ 
+by nonametv-import. The .org-file will never be touched or processed.
+
+To update an override, do the same as for a new override.
+
+To remove an override, move the file in data/ to delete/. This forces
+the importer to process data from the original site.
+
+EODOC
+
+exit 1;
+}
+
 # Read configuration
 my $conf = NonameTV::ReadConfig();
 
@@ -29,9 +62,8 @@ my( $xmltvid ) = ($batch_id =~ /(.*)_/);
 
 my $data = $ds->Lookup( 'channels', { xmltvid => $xmltvid } );
 
-my $file = "/var/tmp/nonametv/override/new/$batch_id.org";
+my $file = "/var/local/nonametv/override/new/$batch_id.org";
 
-# Run importer
 open OUT, "> $file" or die "Failed to write to $file";
 print OUT $imp->FetchDataFromSite( $batch_id, $data );
 close OUT;

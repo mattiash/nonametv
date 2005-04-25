@@ -1,0 +1,41 @@
+#!/usr/bin/perl -w
+
+=pod
+
+Svts websidor har radbrytningar i beskrivningarna som man bor ta hansyn till nar man parsar. Radbrytning mellan avsnittsbeskrivning och ovrig info.
+
+=cut
+
+use strict;
+
+sub split_desc
+{
+  my( $t ) = @_;
+
+  $t =~ s/\n/ . /g;
+  $t =~ s/\.\.\./..../;
+  my @sent = grep( /\S/, split( /\.\s+/, $t ) );
+  map { s/\s+$// } @sent;
+  $sent[-1] =~ s/\.\s*$//;
+  return @sent;
+}
+
+sub join_desc
+{
+  my $t = join( ". ", grep( /\S/, @_ ) );
+  $t .= "." if $t =~ /\S/;
+  $t =~ s/\.\.\.\./.../g;
+  return $t;
+}
+
+while( <> )
+{
+  chomp;
+  my @s = split_desc( $_ );
+  foreach my $l (@s)
+  {
+    print "-$l-\n";
+  }
+  print join_desc( @s ) . "\n";
+}
+  

@@ -1,0 +1,86 @@
+<html> <head> <script type="text/javascript">
+
+function transformXml(xmlurl, xslturl, nodeid){
+  // load the xslt file
+  try {
+    var xslt = new ActiveXObject("Msxml2.XSLTemplate");
+    var xslDoc = new ActiveXObject("Msxml2.FreeThreadedDOMDocument");
+    var xslProc;
+    xslDoc.async = false;
+    xslDoc.resolveExternals = false;
+    xslDoc.load(xslturl);
+    xslt.stylesheet = xslDoc;
+    var xmlDoc = new ActiveXObject("Msxml2.DOMDocument");
+    xmlDoc.async = false;
+    xmlDoc.resolveExternals = false;
+    xmlDoc.load(xmlurl);
+    xslProc = xslt.createProcessor();
+    xslProc.input = xmlDoc;
+//    xslProc.addParameter("subj", subject);
+    xslProc.transform();
+    document.getElementById(nodeid).innerHTML = xslProc.output;
+  }
+  catch(e) {
+    try{
+      var xslStylesheet;
+      var xsltProcessor = new XSLTProcessor();
+      var myDOM;
+      var xmlDoc;
+
+      var myXMLHTTPRequest = new XMLHttpRequest();
+      myXMLHTTPRequest.open("GET", xslturl, false);
+      myXMLHTTPRequest.send(null);
+
+      xslStylesheet = myXMLHTTPRequest.responseXML;
+      xsltProcessor.importStylesheet(xslStylesheet);
+
+      // load the xml file
+      myXMLHTTPRequest = new XMLHttpRequest();
+      myXMLHTTPRequest.open("GET", xmlurl, false);
+      myXMLHTTPRequest.send(null);
+      xmlDoc = myXMLHTTPRequest.responseXML;
+
+      // xsltProcessor.setParameter(null,"subj",subject);
+      var fragment = xsltProcessor.transformToFragment(xmlDoc,document);
+      document.getElementById(nodeid).innerHTML = "";
+      // myDOM = fragment; 
+      document.getElementById(nodeid).appendChild(fragment);
+    }
+    catch(e) {
+      alert(e);
+    }
+  }
+} 
+
+function loadListing()
+{
+  var channel = document.main.channel.value;
+  var date = document.main.date.value;
+
+  listingUrl = channel + "_" + date + ".xml.gz" 
+  transformXml( listingUrl, 'listing.xsl', 'listing' );
+  return false;
+}
+
+</script>
+<style type="text/css">
+.startdate { display: none; }
+.enddate { display: none; }
+</style>
+
+</head>  
+<body onload="transformXml( 'channels.xml.gz', 'channels.xsl', 'channels')">
+<form name="main" onsubmit="return loadListing();">
+<span id="channels">
+Loading channels.xml.gz...
+</span>
+<input type="text" name="date"/>
+<input type="submit" value="Load"/>
+</form>
+
+<div id="listing">
+Select a channel and a date above.
+</div>
+
+</body>
+</html>

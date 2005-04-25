@@ -1,16 +1,51 @@
 #!/bin/bash
 
-rm -rf /var/tmp/xmltv.old
-cp -a /var/tmp/xmltv /var/tmp/xmltv.old
-cd /home/mattias/development/nonametv
-tools/nonametv-import-allhttp
-perl -I lib/ tools/nonametv-export Xmltv
-perl -I lib/ tools/nonametv-export Xmltv --remove-old
+NROOT=/var/local/nonametv
+PROOT=/home/mattias/development/nonametv
 
-for f in /var/tmp/xmltv/*_*.xml; do echo Checking $f; tv_sort $f > /dev/null; done
-gzip -f -n /var/tmp/xmltv/*.xml
-rsync -c --delete -r --size-only -v /var/tmp/xmltv/ /media/xmltv/
-sitecopy --update tv.swedb.se
-cd /var/www/xmltv_compare
-rm /var/www/xmltv_compare/*
-/home/mattias/development/nonametv/tools/nonametv-xmltv-compare /var/tmp/xmltv /var/tmp/xmltv.old > 00output.html
+h=true
+d=true
+
+cd $PROOT
+
+if [ $1x = --weeklyx ]
+then
+  # Run weekly commands.
+  perl -I lib tools/nonametv-remove-old
+  exit
+fi
+
+if [ $1x = --dailyx ]
+then
+  # Run daily commands
+  d=
+fi
+
+if [ $1x = --hourlyx ]
+then
+  # Run hourly commands
+  h=
+fi
+
+$d tools/nonametv-import-allhttp
+$h tools/nonametv-import-allhttp --short-grab
+#$h perl -I lib tools/nonametv-import TV4
+#$h perl -I lib tools/nonametv-import Kanal5
+
+$d perl -I lib/ tools/nonametv-export Xmltv --remove-old
+$d tools/nonametv-xmltv-genhtml $NROOT/xmltv_staging
+
+tools/nonametv-updatesite
+
+# Update the Combiner-channels as well.
+$d perl -I lib tools/nonametv-import Combiner
+$h perl -I lib tools/nonametv-import Combiner --short-grab
+
+tools/nonametv-updatesite
+
+$d tools/nonametv-xmltv-compare-run
+
+$d perl -I lib tools/nonametv-import Combiner
+# This shouldn't produce any output, but there seems to be a bug
+# somewhere.
+$d perl -I lib tools/nonametv-export Xmltv --force-export --verbose 2>&1 | grep -v INFO

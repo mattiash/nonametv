@@ -1,0 +1,5 @@
+#!/bin/sh
+
+mysqldump -uroot --add-drop-table --no-data listings
+mysqldump -uroot --no-create-info listings channels trans_cat
+
