@@ -1,0 +1,15 @@
+/var/log/nonametv.log {
+  rotate 5
+  size 200k
+  compress
+  missingok
+  prerotate
+    invoke-rc.d dire-encoder stop || true
+  endscript
+
+  postrotate
+    # Only starts dire-encoder if it is supposed to
+    # run in the current run-level
+    invoke-rc.d dire-encoder start || true
+  endscript
+}
