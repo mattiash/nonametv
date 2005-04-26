@@ -67,7 +67,7 @@ sub Import
 
   foreach my $file (@ARGV)
   {
-    $l->warn( "Discovery: Processing $file" );
+    print  "Discovery: Processing $file\n";
     $self->ImportFile( "", $file, $p );
   } 
 }
