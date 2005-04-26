@@ -78,7 +78,7 @@ sub ImportContent
   my( $day ) = ($daytext =~ /\b(\d{1,2})\D+(\d{4})\b/);
   my( $dateday ) = ($date =~ /(\d\d)$/);
 
-  if( $day ne $dateday )
+  if( $day != $dateday )
   {
     $l->error( "$batch_id: Wrong day: $daytext" );
     return;
