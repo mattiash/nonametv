@@ -1,8 +1,6 @@
 Clarify copyright and license (GPL)
 Add more importers
 
-Add time-shifted channels
-
 Validate data for AddProgramme and mark the batch so that it will be retried
 until it succeeds.
  
@@ -19,20 +17,14 @@ Use Namespaces for channels.xml? This would make it easy to add more info to cha
 Implement some way of specifying alternate sources for listings to allow
 load-balancing.
 
-Xmltv-export should use string-comparisons instead of DateTime comparisons
-to decide if a file should be removed.
-
-Xmltv-export should warn when creating empty xml-files unless the channel is marked as "intermittent".
-
 Eurosport: Subtitles are sometimes empty, sometimes NULL. Should be NULL.
 
 end_time is sometimes NULL, sometimes 00-00-00 00:00:00. Differs between grabbers. Should be NULL.
 
-Change Xmltv-exporter to
-1. Export file.xml
-2. Compare file.xml with file.xml.gz and delete file.xml if they are equal.
-3. Validate file.xml
-4. Compress file.xml
-5. Print an info-message saying that file.xml was exported.
-This would give better log-messages and would make it unnecessary to log
-the output from sitecopy.
+Add aspect-info.
+
+Update the trans_cat table with categories for more channels.
+
+Write MythTV wiki page about categories.
+
+Add sport-name to title for Eurosport.

@@ -1,58 +1,93 @@
-Requirements
+README for NonameTV
+-------------------
 
-Update data from each source independently. Some sources need to be updated
-hourly, while others are updated weekly.
+LICENSE
 
-Only upload files to the website that have actually changed.
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
 
-Keep the latest set of data in a database.
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
 
-Use UTC times in the database (?) or include timezone information.
+    You should have received a copy of the GNU General Public License
+    along with this program; if not, write to the Free Software
+    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-Have as little redundant data as possible.
 
-Use a format that can be converted into the current xmltv-format.
+The system consists of three main parts: the Importers, the Database
+and the Exporters.
 
-All records must have a starttime and a stoptime. Or length instead? 
-Not both!
+IMPORTERS
 
-Keep all sensitive data (usernames/passwords and in some cases url:s)
-in configuration files to avoid distributing them with the source-code.
+Importers are used to import data from different sources into the database.
+There is one importers for each data provider. All importers inherit
+from the NonameTV::Importer class and thus provide a consistent interface.
 
-One input plugin per inputformat. Each plugin in a separate file.
+Data is imported in batches. A batch is the smallest unit of data that
+can be identified by the importer. Usually, a batch corresponds to
+a file provided by the data provider.
 
-One output plugin per outputformat. Each plugin in a separate file.
+All Importers that import data via HTTP inherit from one of
+NonameTV::Importer::BaseOne, BaseDaily or BaseWeekly. These baseclasses
+provide helper-functions that handle data provided in a single file per
+channel, one file per day and channel or one file per week and channel.
 
-Well documented interfaces between inputs and outputs.
+There is an override-mechanism implemented in the importers that can be
+used to override faulty data provided by the data-providers. Sometimes
+the data is plain wrong and you need to edit it before feeding it to
+the importers. See tools/nonametv-import-download for instructions.
 
-Importer
---------
+The Importers are run via the command-line tool tools/nonametv-import:
 
-Command-line: nonametv-import Viasat
+perl -I lib tools/nonametv-import Infomedia --verbose
 
-NonameTV::Importer::Viasat
+DATABASE
 
-sub import( $conf, $ds )
+All data is stored in a MySQL-database in a consistent format. All strings
+are encoded in iso-8859-1 and all times are stored in UTC-timezone. The
+channels and trans_cat tables are updated manually (using the mysql frontend
+of your choice.) The programs and batches tables are updated by the Importers
+and cannot be updated manually.
 
-Calls delete_batch, start_batch, add_programme*, end_batch.
+EXPORTERS
 
-DataStore
----------
+The Exporters take the data in the database and export it in another format.
+The only Exporter that exist today is the Xmltv exporter that exports data
+in a format that tv_grab_se_swedb can utilize.
 
-start_batch( $batch_id );
-end_batch( $batch_id );
+AVOIDING UNNECESSARY UPDATES
 
-delete_batch( $batch_id );
+tv_grab_se_swedb utilizes http-caching to avoid downloading data that
+hasn't changed since the last time tv_grab_se_swedb was run. This
+saves a lot of bandwidth for the server if utilized correctly.
 
-add_programme( $data );
+Additionally, some of the Importers take a lot of time to run and we want
+to avoid Importing data if nothing has changed. There are a number of
+mechanisms in place to avoid doing unnecessary work:
 
-Exporter
---------
+All Importers use HTTP-caching (if they fetch data via HTTP) and only
+processes data if it has actually changed since it was last downloaded.
+To force an update (for example if the Importer-code has been improved),
+use the parameter --force-update:
 
-Command-line: nonametv-export XmlTV
+perl -I lib tools/nonametv-import Infomedia --force-update
 
-NonameTV::Exporter::XmlTV
+The Exporter only exports data for batches that have actually changed.
+Furthermore, after exporting a file, the Exporter checks to see if the
+exported file is different from the previous file for that period. If
+the new file is identical to the old file, the old file is left untouched.
 
-export( $conf, $ds );
-
-How can it extract data from the datastore? Raw SQL?
+After the export-step, rsync is used to copy the data from the
+xmltv_staging directory to the xmltv-directory. Once more, only files
+that have actually changed (detected by checking file contents) are
+copied. This can be useful during development, since you can do an
+export, see that something went wrong (for example by using 
+tools/nonametv-xmltv-compare-run and look at the changes). Then revert
+your changes and run export again. Since the newly exported files are
+then identical to the files in the xmltv/directory, the next run of
+rsync will not copy any files even though the date on the files has been
+updated.
