@@ -109,7 +109,7 @@ sub ImportContent
   if( $@ ne "" )
   {
     $l->error( "$batch_id: Failed to parse" );
-    next;
+    return;
   }
   
   # Find all "program"-entries.
@@ -117,7 +117,7 @@ sub ImportContent
   if( $ns->size() == 0 )
   {
     $l->error( "$batch_id: No data found" );
-    next;
+    return;
   }
   
   $dsh->StartBatch( $batch_id, $chd->{id} );
