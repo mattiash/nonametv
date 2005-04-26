@@ -315,8 +315,10 @@ sub extract_extra_info
   # Try to remove any prefix such as "SERIESTART:" from the title.
   # These prefixes are only available in the doc-data, not in the
   # xml-files.
-  my( $short_title ) = ($ce->{title} =~ /:\s*(.*)/);
-  if( defined($short_title) and defined( $cat->{$short_title} ) )
+  my( $prefix, $short_title ) = ($ce->{title} =~ /(.*):\s*(.*)/);
+  if( (defined($short_title) and defined( $cat->{$short_title} )) or
+      ( lc($prefix) eq "seriestart" ) or
+      ( lc($prefix) =~ /^premi.r$/ ) )
   {
     $ce->{title} = $short_title;
   }
