@@ -83,6 +83,7 @@ my %ent = (
            8220 => '"',
            8221 => '"',
            8230 => '...',
+           8364 => "(euro)",
            );
 
 sub _expand
@@ -222,6 +223,8 @@ sub Wordfile2Xml
 sub Utf8Conv
 {
   my( $str ) = @_;
+
+  return undef unless defined( $str );
 
   $str =~ tr/\x{201d}\x{201c}/""/;
   $str =~ tr/\x{2013}\x{2019}/-'/;
