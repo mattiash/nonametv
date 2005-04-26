@@ -110,6 +110,7 @@ sub StartBatch
   $self->{currbatchname} = $batchname;
   $self->{last_end} = "1970-01-01 00:00:00";
   $self->{last_start} = "1970-01-01 00:00:00";
+  $self->{batcherror} = 0;
 }
 
 =item EndBatch
@@ -125,7 +126,7 @@ sub EndBatch
 {
   my( $self, $success ) = @_;
   
-  if( $success )
+  if( $success and not $self->{batcherror} )
   {
     $self->Update( 'batches', { id => $self->{currbatch} }, 
                    { last_update => time() } );
@@ -166,10 +167,12 @@ The times must be in UTC. The strings must be encoded in iso-8859-1.
 sub AddProgramme
 {
   my( $self, $data ) = @_;
-  
+
   $l->logdie( "You must call StartBatch before AddProgramme" ) 
     unless exists $self->{currbatch};
 
+  return if $self->{batcherror};
+  
   if( $data->{start_time} le $self->{last_start} )
   {
     $l->error( $self->{currbatchname} . 
@@ -221,6 +224,8 @@ sub AddProgrammeRaw
   $l->logdie( "You must call StartBatch before AddProgramme" ) 
     unless exists $self->{currbatch};
 
+  return if $self->{batcherror};
+  
   if( $data->{title} !~ /\S/ )
   {
     $l->error( $self->{currbatchname} . ": Empty title at " . $data->{start_time} );
@@ -239,7 +244,15 @@ sub AddProgrammeRaw
     delete( $data->{program_type} );
   }
 
-  $self->Add( 'programs', $data );
+  eval {
+    $self->Add( 'programs', $data );
+  };
+
+  if( $@ )
+  {
+    $l->error( $self->{currbatchname} . ": " . $@ );
+    $self->{batcherror} = 1;
+  }
 }
 
 sub fix_programme_data
@@ -285,6 +298,13 @@ sub LookupCat
   my( $type, $org ) = @_;
 
   return (undef, undef) if (not defined( $org )) or ($org !~ /\S/);
+
+  $org =~ s/^\s+//;
+  $org =~ s/\s+$//;
+
+  # I should be using locales, but I don't dare turn them on.
+  $org = lc( $org );
+  $org =~ tr/ÅÄÖ/åäö/;
 
   $self->LoadCategories()
     if not exists( $self->{categories} );
