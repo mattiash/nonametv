@@ -74,7 +74,9 @@ sub ImportContent
   {
     $l->error( "$batch_id: Failed to parse" );
   }
-  
+
+  $self->LoadSportId( $xml );
+
   $ds->StartBatch( $batch_id );
   
   my $ns = $doc->find( "//TVSchedule" );
@@ -134,6 +136,51 @@ sub FetchDataFromSite
 
   my( $content, $code ) = MyGet( $url );
   return( $content, $code );
+}
+
+sub LoadSportId
+{
+  my $self = shift;
+  my( $xml ) = @_;
+
+  return if( defined( $self->{sportidname} ) );
+
+  my $l = $self->{logger};
+
+  my( $content, $code ) = MyGet( $self->{SportIdUrl} );
+
+  if( not defined $content )
+  {
+    $l->error( "Eurosport: Failed to fetch sport_id mappings" );
+    exit 1;
+  }
+
+  my $doc;
+  eval { $doc = $xml->parse_string($content); };
+  if( $@ ne "" )
+  {
+    $l->error( "Eurosport: Failed to parse sport_id mappings" );
+    exit 1;
+  }
+  
+  my %id;
+  my $ns = $doc->find( '//SPTR[@LAN_ID="7"]' );
+  
+  if( $ns->size() == 0 )
+  {
+    $l->error( "Eurosport: No sport_id mappings found" );
+    exit 1;
+  }
+  
+  foreach my $p ($ns->get_nodelist)
+  {
+    my $short_name = norm( $p->findvalue('@SPTR_SHORTNAME') );
+    my $sport_id = norm( $p->findvalue( '@SPO_ID' ) );
+    $id{$sport_id} = $short_name;
+    print "$sport_id $short_name\n";
+  }
+
+  $self->{sportidname} = \%id;
 }
 
 sub create_dt
