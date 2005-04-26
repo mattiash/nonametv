@@ -65,7 +65,7 @@ sub ImportContent
   if( $channelname ne $chd->{grabber_info} )
   {
     $l->error( "$batch_id: Wrong channel found: $channelname" );
-#          next;
+#    return;
   }
   
   # Find all "ShowItem"-entries.
