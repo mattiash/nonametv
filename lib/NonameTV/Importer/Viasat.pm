@@ -184,12 +184,13 @@ sub extract_extra_info
   my $viasat_cat = $ce->{Viasat_category};
   $viasat_cat =~ s/\.\s*$//;
   
-  my( $pty, $cat ) = $ds->LookupCat( 'Viasat_category', 
-                                      );
+  my( $pty, $cat ) = $ds->LookupCat( 'Viasat_category', $viasat_cat );
   AddCategory( $ce, $pty, $cat );
   
-  ( $pty, $cat ) = $ds->LookupCat( 'Viasat_genre', 
-                                   $ce->{Viasat_genre} );
+  my $viasat_genre = $ce->{Viasat_genre};
+  $viasat_genre =~ s/\.\s*$//;
+
+  ( $pty, $cat ) = $ds->LookupCat( 'Viasat_genre', $viasat_genre );
   AddCategory( $ce, $pty, $cat );
   
   delete( $ce->{Viasat_category} );
