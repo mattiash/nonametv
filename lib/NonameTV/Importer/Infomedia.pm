@@ -53,7 +53,7 @@ sub ImportContent
   if( not defined( $doc ) )
   {
     $l->error( "$batch_id: Failed to parse." );
-    next;
+    return;
   }
   
   # The data really looks like this...
@@ -61,7 +61,7 @@ sub ImportContent
   if( $ns->size() == 0 )
   {
     $l->error( "$batch_id: No data found" );
-    next;
+    return;
   }
   
   $dsh->StartBatch( $batch_id, $chd->{id} );
