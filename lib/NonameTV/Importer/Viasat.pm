@@ -20,6 +20,7 @@ program_type
 
 
 use DateTime;
+use Encode;
 
 use NonameTV qw/MyGet expand_entities AddCategory/;
 use NonameTV::DataStore::Helper;
@@ -56,12 +57,23 @@ sub ImportContent
 
   $dsh->StartBatch( $batch_id, $chd->{id} );
   
-  my @rows = split("\n", $$cref);
+  # Decode the string into perl's internal format.
+  # see perldoc Encode
+
+#  my $str = decode( "utf-8", $$cref );
+  my $str = decode( "iso-8859-1", $$cref );
+ 
+ 
+  # The encode step should really be performed as the last
+  # step before sending the data outside of perl.
+  $str = encode( "iso-8859-1", $str );
+
+  my @rows = split("\n", $str );
   my $columns = [ split( "\t", $rows[0] ) ];
   
   for ( my $i = 1; $i < scalar @rows; $i++ )
   {
-    my $inrow = row_to_hash($rows[$i], $columns );
+    my $inrow = $self->row_to_hash($batch_id, $rows[$i], $columns );
     
     if ( exists($inrow->{'Date'}) )
     {
@@ -90,12 +102,12 @@ sub ImportContent
     }
         
     my $ce = {
-      title => $inrow->{'name'},
+      title => norm( $inrow->{'name'} ),
       description => $description,
       start_time => $start,
       episode => $episode,
-      Viasat_category => $inrow->{Category},
-      Viasat_genre => $inrow->{Genre},
+      Viasat_category => norm( $inrow->{Category} ),
+      Viasat_genre => norm( $inrow->{Genre} ),
     };
 
     if( defined( $inrow->{'Production Year'} ) and
@@ -128,12 +140,20 @@ sub FetchDataFromSite
 
 sub row_to_hash
 {
-  my( $row, $columns ) = @_;
+  my $self = shift;
+  my( $batch_id, $row, $columns ) = @_;
 
   my @coldata = split( "\t", $row );
   my %res;
   
-  for( my $i=0; $i<scalar(@coldata); $i++ )
+  if( scalar( @coldata ) != scalar( @{$columns} ) )
+  {
+    $self->{logger}->error( "$batch_id: Wrong number of columns " .
+                            scalar( @coldata ) . " != " . 
+                            scalar( @{$columns} ) );
+  }
+
+  for( my $i=0; $i<scalar(@coldata) and $i<scalar(@{$columns}); $i++ )
   {
     $res{$columns->[$i]} = norm($coldata[$i])
       if $coldata[$i] =~ /\S/; 
@@ -160,8 +180,12 @@ sub extract_extra_info
     $ce->{title} = "end-of-transmission";
   }
 
+  # Remove trailing . from category.
+  my $viasat_cat = $ce->{Viasat_category};
+  $viasat_cat =~ s/\.\s*$//;
+  
   my( $pty, $cat ) = $ds->LookupCat( 'Viasat_category', 
-                                     $ce->{Viasat_category} );
+                                      );
   AddCategory( $ce, $pty, $cat );
   
   ( $pty, $cat ) = $ds->LookupCat( 'Viasat_genre', 
@@ -181,6 +205,9 @@ sub norm
 
     return "" if not defined( $str );
 
+# This doesn't work. The Utf8Conv is now performed on the whole input-file
+# at once instead.
+#    $str = Utf8Conv( $str );
     
 #    $str = decode_entities( $str );
     $str = expand_entities( $str );
