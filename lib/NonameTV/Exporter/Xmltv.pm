@@ -489,11 +489,6 @@ sub close_writer
 
   $w->end();
 
-  if( $self->{writer_entries} == 0 )
-  {
-    $l->warn( "Xmltv: $filename.gz is empty" );
-  }
-
   system("gzip -f -n $path$filename.new");
   if( -f "$path$filename.gz" )
   {
@@ -502,7 +497,11 @@ sub close_writer
     {
       move( "$path$filename.new.gz", "$path$filename.gz" );
       $l->warn( "Exported $filename.gz" );
-      if( $self->{writer_entries} > 0 )
+      if( $self->{writer_entries} == 0 )
+      {
+        $l->warn( "Xmltv: $filename.gz is empty" );
+      }
+      else
       {
         (xmltv_validate_file( "$path$filename.gz" ) == 0) 
           or $l->error( "Xmltv: $filename.gz contains errors\n" );
