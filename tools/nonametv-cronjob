@@ -33,19 +33,19 @@ $h tools/nonametv-import-allhttp --short-grab
 #$h perl -I lib tools/nonametv-import Kanal5
 
 $d perl -I lib/ tools/nonametv-export Xmltv --remove-old
-$d tools/nonametv-xmltv-genhtml $NROOT/xmltv_staging
 
 tools/nonametv-updatesite
+
+# This shouldn't produce any output, but there seems to be a bug
+# somewhere.
+$d perl -I lib tools/nonametv-export Xmltv --force-export --verbose 2>&1 | grep -v INFO
 
 # Update the Combiner-channels as well.
 $d perl -I lib tools/nonametv-import Combiner
 $h perl -I lib tools/nonametv-import Combiner --short-grab
 
+$d tools/nonametv-xmltv-genhtml $NROOT/xmltv_staging
+
 tools/nonametv-updatesite
 
 $d tools/nonametv-xmltv-compare-run
-
-$d perl -I lib tools/nonametv-import Combiner
-# This shouldn't produce any output, but there seems to be a bug
-# somewhere.
-$d perl -I lib tools/nonametv-export Xmltv --force-export --verbose 2>&1 | grep -v INFO
