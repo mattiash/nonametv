@@ -2,7 +2,7 @@
 --
 -- Host: localhost    Database: listings
 -- ------------------------------------------------------
--- Server version	4.0.23_Debian-4-log
+-- Server version	4.0.23_Debian-7
 
 --
 -- Table structure for table `batches`
@@ -51,6 +51,7 @@ CREATE TABLE `programs` (
   `batch_id` int(11) NOT NULL default '0',
   `program_type` varchar(20) default '',
   `episode` varchar(20) default NULL,
+  `production_date` date default NULL,
   PRIMARY KEY  (`channel_id`,`start_time`),
   KEY `channel_id` (`channel_id`,`start_time`),
   KEY `batch` (`batch_id`,`start_time`)
@@ -84,7 +85,7 @@ CREATE TABLE `trans_cat` (
 --
 -- Host: localhost    Database: listings
 -- ------------------------------------------------------
--- Server version	4.0.23_Debian-4-log
+-- Server version	4.0.23_Debian-7
 
 --
 -- Dumping data for table `channels`
@@ -137,6 +138,72 @@ INSERT INTO `channels` VALUES (44,'Kunskap/Barnkanalen','kunskapbarn.svt.se','Co
 -- Dumping data for table `trans_cat`
 --
 
+INSERT INTO `trans_cat` VALUES ('CanalPlus','Action','Action','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','ActionÃ¤ventyr','','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','Actionkomedi','Action','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','Actionthriller','Action','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','Actionäventyr','','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','Animerad serie','','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','Avslutning','','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','Avslutning med tipsredovisning','','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','Ã„ventyr','','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','Basket','Sports','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','Deckarserie','Crime','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','DokumentÃ¤r','','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','Dokumentär','','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','Drama','Drama','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','Dramakomedi','Drama','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','Dramaserie','Drama','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','Dramathriller','Drama','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','Engelsk ligafotboll','Sports','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','Erotik','Adult','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','Erotiskt drama','Adult','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','Familjeaction','Action','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','FamiljeÃ¤ventyr','','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','Familjefilm','','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','Familjeäventyr','','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','FilmdokumentÃ¤r','','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','Filmdokumentär','','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','Filmintervju','Talk','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','Filmmagasin med Hans Wiklund','Magazine','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','Intervju','Talk','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','Intervjuprogram','','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','Italiensk ligafotboll','Sports','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','KÃ¤rleksdrama','','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','Komedi','Comedy','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','Komediserie','','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','Kortfilm','','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','Kortfilmsmagasin','','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','Kostymkomedi','','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','Kriminaldrama','','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','Kriminalkomedi','','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','Kung fu','','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','Kärleksdrama','','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','Musikal','','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','MusikdokumentÃ¤r','','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','Musikdokumentär','','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','Romantisk komedi','','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','Romantiskt drama','','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','Rysare','','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','Sci fi-action','','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','Sci fi-thriller','','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','Science fiction','','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','SkrÃ¤ckfilm','','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','Skräck','','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','Skräckfilm','','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','Sport','','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','Studio infÃ¶r matchen. Programledare Arne Hegerfor','','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','Studio inför matchen. Programledare Arne Hegerfors','','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','Studio med Europatipset','','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','Studioprogram med italiensk och engelsk fotboll.','','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','SurfdokumentÃ¤r','','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','Surfdokumentär','','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','Talkshow','','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','Tecknad familjefilm','','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','Tecknad satirserie','','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','Thriller','','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','Thrillerkomedi','','');
+INSERT INTO `trans_cat` VALUES ('CanalPlus','Äventyr','','');
 INSERT INTO `trans_cat` VALUES ('Kanal5','Adventure/Nature','','');
 INSERT INTO `trans_cat` VALUES ('Kanal5','Children','','');
 INSERT INTO `trans_cat` VALUES ('Kanal5','Documentary','Documentary','');
@@ -196,11 +263,15 @@ INSERT INTO `trans_cat` VALUES ('Viasat_genre','Action/Thriller/Komedi.','Action
 INSERT INTO `trans_cat` VALUES ('Viasat_genre','Action/Thriller/Science-fiction.','Action','');
 INSERT INTO `trans_cat` VALUES ('Viasat_genre','Action/Western.','Action','');
 INSERT INTO `trans_cat` VALUES ('Viasat_genre','Action/Äventyr.','','');
+INSERT INTO `trans_cat` VALUES ('Viasat_genre','Action/Äventyr/Fantasy.','','');
+INSERT INTO `trans_cat` VALUES ('Viasat_genre','Action/Äventyr/Fantasy/Deckare/Science-fiction.','','');
 INSERT INTO `trans_cat` VALUES ('Viasat_genre','Action/Äventyr/Komedi.','','');
 INSERT INTO `trans_cat` VALUES ('Viasat_genre','Action/Äventyr/Krig.','','');
 INSERT INTO `trans_cat` VALUES ('Viasat_genre','Action/Äventyr/Reality.','','');
+INSERT INTO `trans_cat` VALUES ('Viasat_genre','Action/Äventyr/Science-fiction.','','');
 INSERT INTO `trans_cat` VALUES ('Viasat_genre','Barn.','Children\'s','');
 INSERT INTO `trans_cat` VALUES ('Viasat_genre','Deckare.','Crime','');
+INSERT INTO `trans_cat` VALUES ('Viasat_genre','Deckare/Deckare.','','');
 INSERT INTO `trans_cat` VALUES ('Viasat_genre','Dokumentär.','','');
 INSERT INTO `trans_cat` VALUES ('Viasat_genre','Dokumentär/Natur.','','');
 INSERT INTO `trans_cat` VALUES ('Viasat_genre','Dokumentär/Reality.','','');
@@ -221,6 +292,7 @@ INSERT INTO `trans_cat` VALUES ('Viasat_genre','Drama/Film Noir/Krig.','Drama','
 INSERT INTO `trans_cat` VALUES ('Viasat_genre','Drama/Komedi.','Drama','');
 INSERT INTO `trans_cat` VALUES ('Viasat_genre','Drama/Komedi/Familj.','Drama','');
 INSERT INTO `trans_cat` VALUES ('Viasat_genre','Drama/Komedi/Familj/Kärlek.','','');
+INSERT INTO `trans_cat` VALUES ('Viasat_genre','Drama/Komedi/Krig.','','');
 INSERT INTO `trans_cat` VALUES ('Viasat_genre','Drama/Komedi/Kärlek.','','');
 INSERT INTO `trans_cat` VALUES ('Viasat_genre','Drama/Komedi/Underhållning.','','');
 INSERT INTO `trans_cat` VALUES ('Viasat_genre','Drama/Krig.','Drama','');
@@ -236,6 +308,7 @@ INSERT INTO `trans_cat` VALUES ('Viasat_genre','Drama/Äventyr.','','');
 INSERT INTO `trans_cat` VALUES ('Viasat_genre','Drama/Äventyr/Familj.','','');
 INSERT INTO `trans_cat` VALUES ('Viasat_genre','Erotik (klippt version).','Adult','');
 INSERT INTO `trans_cat` VALUES ('Viasat_genre','Erotik.','Adult','');
+INSERT INTO `trans_cat` VALUES ('Viasat_genre','Familj.','','');
 INSERT INTO `trans_cat` VALUES ('Viasat_genre','Familj/Barn.','Kids','');
 INSERT INTO `trans_cat` VALUES ('Viasat_genre','Familj/Musikal.','Musical','');
 INSERT INTO `trans_cat` VALUES ('Viasat_genre','Familj/Reality/Underhållning.','','');
@@ -247,6 +320,7 @@ INSERT INTO `trans_cat` VALUES ('Viasat_genre','Komedi/Deckare/Musikal.','Comedy
 INSERT INTO `trans_cat` VALUES ('Viasat_genre','Komedi/Familj.','Comedy','');
 INSERT INTO `trans_cat` VALUES ('Viasat_genre','Komedi/Familj/Kärlek.','','');
 INSERT INTO `trans_cat` VALUES ('Viasat_genre','Komedi/Familj/Musikal.','Comedy','');
+INSERT INTO `trans_cat` VALUES ('Viasat_genre','Komedi/Fantasy.','','');
 INSERT INTO `trans_cat` VALUES ('Viasat_genre','Komedi/Fantasy/Skräck.','','');
 INSERT INTO `trans_cat` VALUES ('Viasat_genre','Komedi/Kärlek.','','');
 INSERT INTO `trans_cat` VALUES ('Viasat_genre','Komedi/Musikal.','Comedy','');
@@ -256,7 +330,9 @@ INSERT INTO `trans_cat` VALUES ('Viasat_genre','Komedi/Skräck.','','');
 INSERT INTO `trans_cat` VALUES ('Viasat_genre','Komedi/Talkshow/Underhållning.','','');
 INSERT INTO `trans_cat` VALUES ('Viasat_genre','Musikal.','Musical','');
 INSERT INTO `trans_cat` VALUES ('Viasat_genre','Reality.','Reality','');
+INSERT INTO `trans_cat` VALUES ('Viasat_genre','Reality/Gameshow.','','');
 INSERT INTO `trans_cat` VALUES ('Viasat_genre','Reality/Underhållning.','','');
+INSERT INTO `trans_cat` VALUES ('Viasat_genre','Science-fiction.','','');
 INSERT INTO `trans_cat` VALUES ('Viasat_genre','Skräck.','','');
 INSERT INTO `trans_cat` VALUES ('Viasat_genre','Specialmagasin.','','');
 INSERT INTO `trans_cat` VALUES ('Viasat_genre','Talkshow.','Talk','');
@@ -271,9 +347,11 @@ INSERT INTO `trans_cat` VALUES ('Viasat_genre','Thriller.','Mystery','');
 INSERT INTO `trans_cat` VALUES ('Viasat_genre','Thriller/Deckare.','Mystery','');
 INSERT INTO `trans_cat` VALUES ('Viasat_genre','Thriller/Film Noir/Kärlek.','','');
 INSERT INTO `trans_cat` VALUES ('Viasat_genre','Thriller/Komedi.','Comedy','');
+INSERT INTO `trans_cat` VALUES ('Viasat_genre','Thriller/Komedi/Skräck.','','');
 INSERT INTO `trans_cat` VALUES ('Viasat_genre','Thriller/Kärlek.','','');
 INSERT INTO `trans_cat` VALUES ('Viasat_genre','Thriller/Science-fiction.','SciFi','');
 INSERT INTO `trans_cat` VALUES ('Viasat_genre','Thriller/Skräck.','','');
+INSERT INTO `trans_cat` VALUES ('Viasat_genre','Thriller/Skräck/Science-fiction.','','');
 INSERT INTO `trans_cat` VALUES ('Viasat_genre','Underhållning.','','');
 INSERT INTO `trans_cat` VALUES ('Viasat_genre','Western.','','');
 INSERT INTO `trans_cat` VALUES ('Viasat_genre','Äventyr.','','');
