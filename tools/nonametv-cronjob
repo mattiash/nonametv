@@ -44,7 +44,7 @@ $d perl -I lib tools/nonametv-export Xmltv --force-export --verbose 2>&1 | grep 
 $d perl -I lib tools/nonametv-import Combiner
 $h perl -I lib tools/nonametv-import Combiner --short-grab
 
-$d tools/nonametv-xmltv-genhtml $NROOT/xmltv_staging
+tools/nonametv-xmltv-genhtml $NROOT/xmltv_staging
 
 tools/nonametv-updatesite
 
