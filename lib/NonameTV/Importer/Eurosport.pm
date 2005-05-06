@@ -96,7 +96,20 @@ sub ImportContent
     my $end_date = $p->findvalue( 'end_date/text()' );
     
     my $description = $p->findvalue( 'description/text()' );
-    
+    my $sport_id = $p->findvalue( 'sport_id' );
+    my $sport_name = $self->{sportidname}->{$sport_id};
+
+    if( not defined( $sport_name ) )
+    {
+#      print "Unknown sport_id $sport_id\n";
+    }
+
+    if( defined( $sport_name ) and 
+        ($sport_name eq "Nyheter" or $sport_name eq "Sport") )
+    {
+      $sport_name = undef;
+    }
+
     my $start = create_dt( $start_date );
     my $end = create_dt( $end_date );
     
@@ -109,7 +122,8 @@ sub ImportContent
     
     my $data = {
       channel_id  => $chd->{id},
-      title       => norm($title),
+      title       => defined( $sport_name ) ? norm("$sport_name: $title") : 
+                     norm( $title ),
       description => norm($description),
       start_time  => $start->ymd("-") . " " . $start->hms(":"),
       end_time    => $end->ymd("-") . " " . $end->hms(":"),
@@ -132,7 +146,7 @@ sub FetchDataFromSite
   my( $xmltvid, $date ) = ($batch_id =~ /(.+)_(.+)/);
 
   # NumOfWeeks doesn't work...
-  my $url = $self->{UrlRoot} . '?LanguageCode=sv&NumOfWeeks=20';
+  my $url = $self->{UrlRoot} . '?LanguageCode=sv&NumOfWeeks=3';
 
   my( $content, $code ) = MyGet( $url );
   return( $content, $code );
@@ -155,6 +169,10 @@ sub LoadSportId
     exit 1;
   }
 
+  # Some characters are encoded in CP1252 even though the 
+  # header says iso-8859-1
+  $content =~ tr/\x86\x84\x94/едц/;
+
   my $doc;
   eval { $doc = $xml->parse_string($content); };
   if( $@ ne "" )
@@ -176,8 +194,10 @@ sub LoadSportId
   {
     my $short_name = norm( $p->findvalue('@SPTR_SHORTNAME') );
     my $sport_id = norm( $p->findvalue( '@SPO_ID' ) );
-    $id{$sport_id} = $short_name;
-    print "$sport_id $short_name\n";
+
+    # TODO: This does not work correctly for changing the case of едц.
+    # Luckily, all едц's are already the correct case.
+    $id{$sport_id} = ucfirst(lc($short_name));
   }
 
   $self->{sportidname} = \%id;
