@@ -1,0 +1,149 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+use Mail::Box;
+use Mail::Box::Manager;
+
+use File::Temp qw/tempdir/;
+use File::Basename;
+
+use MIME::WordDecoder;
+
+# Flag messages AFTER they have been processed. Then I normally
+# only have to move the message to the correct folder.
+
+my $tmpdir = tempdir( CLEANUP => 1 );
+
+### Get a word-decoder which maps to ISO-8859-1 (Latin1):
+my $wd = supported MIME::WordDecoder "ISO-8859-1";
+
+my $mgr = Mail::Box::Manager->new;
+my $folder = $mgr->open( "/home/mattias/Maildir/.Projects.xmltv-data/", 
+                         access => 'rw',
+                         extract => 'ALWAYS' );
+
+foreach my $message ($folder->messages)
+{
+  next if $message->isDeleted();
+  next if $message->label( 'flagged' );
+  next unless $message->isMultipart;
+
+  my $subject = $wd->decode( $message->get( 'Subject' ) ) || '';
+  my $from = $message->get( 'From' );
+
+  my $importer = guess_importer( $from, $subject );
+
+  next unless defined $importer;
+
+#  my $labels = $message->labels;
+#  foreach my $l (keys %{$labels})
+#  {
+#    print "  $l $labels->{$l}\n";
+#  }
+
+  print "Processing $subject\n";
+  process_parts( $message, $importer );
+
+  $message->label( 'flagged' => 1 );
+
+}
+
+$mgr->closeAllFolders;
+ 
+sub process_parts
+{
+  my( $part, $importer ) = @_;
+
+  my $type = $part->get('Content-Type');
+  return if $type eq "text/plain";
+
+  if($part->isMultipart)
+  {   
+    foreach my $child ($part->parts)
+    {   
+      process_parts( $child, $importer );
+    }
+  }
+  else
+  {
+    my $disp = $part->body->disposition;
+    my $name = $disp->attribute('filename') 
+      || $disp->attribute('name') 
+      || 'noname';
+    
+    print "  $importer $name $type " . $part->size . "\n";
+
+    # a major security hole if you accept any path!
+    my $filename = "$tmpdir/" . basename( $name );
+  
+    open(FH, "> $filename");
+    $part->decoded->print(\*FH);
+    close(FH);
+
+    print qx%perl -I lib tools/nonametv-import $importer "$filename" 2>&1%;
+    unlink( $filename );
+  }
+}
+
+sub guess_importer
+{
+  my( $from, $subject ) = @_;
+
+  return "Expressen" if $from =~ /sportexpressen.se/;
+  return "Discovery" if $from =~ /text100.se/;
+
+  return undef;
+}
+
+__END__
+
+From Mail-Box-2.060/examples/multipart.pl:
+
+sub show_type($;$)
+{   
+  my $msg    = shift;
+  my $indent = (shift || '') . '    ';   # increase indentation
+  
+  print $indent, " type=", $msg->get('Content-Type'), ', '
+    , $msg->size, " bytes\n";
+  
+  if($msg->isMultipart)
+  {   
+    foreach my $part ($msg->parts)
+    {   
+      show_type $part, $indent;
+    }
+  }
+}
+
+
+From Mail-Box-2.060/examples/strip-attachments.pl:
+
+foreach my $part ($m->parts)
+{
+  # Strip attachments larger than 16K. Another example would be:
+  #   if ($part->body->mimeType ne 'text/plain')
+  next unless $part->body->size > 16384;
+  
+  print "\n**** Stripping Attachment "; # ,$part->head,"\n";
+  my $disp     = $part->body->disposition;
+  my $name     = $disp->attribute('filename')
+    || $disp->attribute('name');
+  
+  # a major security hole if you accept any path!
+  $filename    = basename $name;
+  
+  my $attachment = File::Spec->catfile($attachments, $filename);
+  print $attachment,"\n";
+  
+  unless(-f $attachment)     #  Write attachment to file
+  {   open(FH, ">$attachment");
+      $part->decoded->print(\*FH);
+      close(FH);
+    }
+  
+  $part->delete;
+}
+
+
