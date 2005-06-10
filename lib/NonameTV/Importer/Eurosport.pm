@@ -73,6 +73,7 @@ sub ImportContent
   if( $@ ne "" )
   {
     $l->error( "$batch_id: Failed to parse" );
+    return;
   }
 
   $self->LoadSportId( $xml );
@@ -84,7 +85,7 @@ sub ImportContent
   if( $ns->size() == 0 )
   {
     $l->error( "$batch_id: No programme entries found" );
-    next;
+    return;
   }
   
   foreach my $p ($ns->get_nodelist)
@@ -101,7 +102,7 @@ sub ImportContent
 
     if( not defined( $sport_name ) )
     {
-#      print "Unknown sport_id $sport_id\n";
+      print "Unknown sport_id $sport_id\n";
     }
 
     if( defined( $sport_name ) and 
