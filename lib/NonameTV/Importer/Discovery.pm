@@ -80,12 +80,12 @@ sub ImportFile
   print "Processing $file.\n"
     if( $p->{verbose} );
   
-  my( $fnid, $fnmon, $ext ) = 
+  my( $fnid, $fnmon, $fnyear, $type, $ext ) = 
     ( $file =~ /([A-Z\.]+)
-               \.Swe\s+(.*)\.
+               \.Swe\s+(...)\s+(\d\d)\s+(.*)\.
                ([^\.]+)$/x );
 
-  if( not defined( $fnmon ) )
+  if( not defined( $ext ) )
   {
     print "Unknown filename $file\n";
     return;
@@ -107,8 +107,6 @@ sub ImportFile
   my $channel_id = $self->{channel_data}->{$fnid}->{id};
   my $channel_xmltvid = $self->{channel_data}->{$fnid}->{xmltvid};
 
-  my $dsh = $self->{datastorehelper};
-
   my $doc;
   if( $ext eq 'doc' )
   {
@@ -129,12 +127,37 @@ sub ImportFile
     return;
   }
 
+  if( $fntype =~ /^Amend/ )
+  {
+    $self->ImportAmendments( $fnid, $file, $doc );
+  }
+  elsif( $fntype =~ /^FINAL/ )
+  {
+    $self->ImportData( $fnid, $file, $doc );
+  }
+  else
+  {
+    print STDERR "$file: Unknown filetype $fntype\n";
+    return;
+  }
+}
+
+# Import files that contain full programming details,
+# usually for an entire month.
+# $doc is an XML::LibXML::Document object.
+sub ImportData
+{
+  my $self = shift;
+  my( $fnid, $filename, $doc ) = @_;
+
+  my $dsh = $self->{datastorehelper};
+
   # Find all div-entries.
   my $ns = $doc->find( "//div" );
   
   if( $ns->size() == 0 )
   {
-    print STDERR "$file: No programme entries found.\n";
+    print STDERR "$filename: No programme entries found.\n";
     return;
   }
   
@@ -277,6 +300,16 @@ sub ImportFile
     }
   }
   $dsh->EndBatch( 1 );
+}
+
+# Import data from a file that contains programme updates only.
+# $doc is an XML::LibXML::Document object.
+sub ImportAmendments
+{
+  my $self = shift;
+  my( $fnid, $filename, $doc ) = @_;
+
+  die "Not implemented";
 
 }
 
