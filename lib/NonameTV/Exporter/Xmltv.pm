@@ -590,6 +590,11 @@ sub write_entry
     $d->{date} = substr( $data->{production_date}, 0, 4 );
   }
 
+  if( $data->{aspect} ne "unknown" )
+  {
+    $d->{video} = { aspect => $data->{aspect} };
+  }
+
   $w->write_programme( $d );
 }
 

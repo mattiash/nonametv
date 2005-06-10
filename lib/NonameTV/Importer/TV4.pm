@@ -151,7 +151,7 @@ sub ImportContent
 #     $ce->{prev_shown_date} = norm($prev_shown_date)
 #     if( $prev_shown_date =~ /\S/ );
 
-    extract_extra_info( $ce );
+    $self->extract_extra_info( $ce );
     
     $dsh->AddProgramme( $ce );
   }
@@ -177,7 +177,8 @@ sub FetchDataFromSite
 
 sub extract_extra_info
 {
-  my( $ce ) = shift;
+  my $self = shift;
+  my( $ce ) = @_;
 
   extract_episode( $ce );
 
@@ -206,6 +207,21 @@ sub extract_extra_info
   # Remove control characters {\b Text in bold}
   $ce->{description} =~ s/\{\\b\s+//g;
   $ce->{description} =~ s/\}//g;
+
+  # Find aspect-info and remove it from description.
+  if( $ce->{description} =~ s/\bS.nds i 16:9\s*-*\s*(format)*\.*\s*//i )
+  {
+    $ce->{aspect} = "16:9";
+  }
+  else
+  {
+    $ce->{aspect} = "4:3";
+  }
+
+  if( $ce->{description} =~ /16:9/ )
+  {
+    $self->{logger}->error( "TV4: Undetected 16:9: $ce->{description}" );
+  }
 
   # Remove temporary fields
   delete $ce->{pr_desc};

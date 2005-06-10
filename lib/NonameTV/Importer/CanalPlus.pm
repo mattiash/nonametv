@@ -100,7 +100,9 @@ sub ImportContent
 
     my $production_year = $sc->findvalue( './Program/@ProductionYear' );
 
-
+    my $sixteen_nine = $sc->findvalue( './Program/@SixteenNine' );
+#    my $letterbox = $sc->findvalue( './Program/@Letterbox' );
+    
     # Finns även info om skådespelare och regissör på ett lättparsat format.
 
     my $ce = {
@@ -109,6 +111,7 @@ sub ImportContent
       description => norm($desc),
       start_time  => $start->ymd("-") . " " . $start->hms(":"),
       end_time    => $end->ymd("-") . " " . $end->hms(":"),
+      aspect      => $sixteen_nine ? "16:9" : "4:3", 
     };
 
     if( $series )

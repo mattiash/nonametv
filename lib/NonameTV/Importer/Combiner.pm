@@ -381,6 +381,8 @@ sub ParseXmltv
     my $episode = $pgm->findvalue( 'episode-num[@system="xmltv_ns"]' );
     my $production_date = $pgm->findvalue( 'date' );
 
+    my $aspect = $pgm->findvalue( 'video/aspect' );
+
     my %e = (
       start_dt => $start_dt,
       stop_dt => $stop_dt,
@@ -400,25 +402,30 @@ sub ParseXmltv
 
     if( $cat1 =~ /^[a-z]/ )
     {
-      $e{program_type} = $cat1;
+      $e{program_type} = norm($cat1);
     }
     elsif( $cat1 =~ /^[A-Z]/ )
     {
-      $e{category} = $cat1;
+      $e{category} = norm($cat1);
     }
 
     if( $cat2 =~ /^[a-z]/ )
     {
-      $e{program_type} = $cat2;
+      $e{program_type} = norm($cat2);
     }
     elsif( $cat2 =~ /^[A-Z]/ )
     {
-      $e{category} = $cat2;
+      $e{category} = norm($cat2);
     }
 
     if( $production_date =~ /\S/ )
     {
       $e{production_date} = $production_date;
+    }
+
+    if( $aspect =~ /\S/ )
+    {
+      $e{aspect} = $aspect;
     }
     
     push @d, \%e;

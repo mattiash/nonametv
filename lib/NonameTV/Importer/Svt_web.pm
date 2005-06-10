@@ -291,6 +291,16 @@ sub extract_extra_info
 
   $ce->{title} =~ s/^Seriestart:\s*//;
 
+  # Find aspect-info and remove it from description.
+  if( $ce->{description} =~ s/\bBredbild\b\.*\s*// )
+  {
+    $ce->{aspect} = "16:9";
+  }
+  else
+  {
+    $ce->{aspect} = "4:3";
+  }
+
   # Remove temporary fields
   delete( $ce->{svt_cat} );
 }
@@ -326,12 +336,30 @@ sub split_text
 
   return $t if $t !~ /\./;
 
+  # Remove any trailing whitespace
+  $t =~ s/\s*$//;
+
+  # Replace newlines
   $t =~ s/\n/ . /g;
-  $t =~ s/\.\.\./..../;
+
+  # Replace ellipses (...) with &ellip;.
+  $t =~ s/\.\.\./&ellip;./;
+
   my @sent = grep( /\S/, split( /\.\s+/, $t ) );
   map { s/\s+$// } @sent;
   $sent[-1] =~ s/\.\s*$//;
+
   return @sent;
+}
+
+# Join a number of sentences into a single paragraph.
+# Performs the inverse of split_text
+sub join_text
+{
+  my $t = join( ". ", grep( /\S/, @_ ) );
+  $t .= "." if $t =~ /\S/;
+  $t =~ s/\&ellip;/../g;
+  return $t;
 }
 
 # Delete leading and trailing space from a string.
