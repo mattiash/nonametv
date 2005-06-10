@@ -187,7 +187,8 @@ sub AddProgramme
     $l->error( $self->{currbatchname} . 
       " Starttime must be later than or equal to last endtime: " . 
       $self->{last_end} . " -> " . $data->{start_time} );
-    return;
+    
+    # Add the programme anyway and let the exporter sort it out.
   }
 
   $self->{last_start} = $data->{start_time};
@@ -242,6 +243,14 @@ sub AddProgrammeRaw
   if( not defined( $data->{program_type} ) )
   {
     delete( $data->{program_type} );
+  }
+
+  
+  if( exists( $data->{description} ) and defined( $data->{description} ) )
+  {
+    # Strip leading and trailing whitespace from description.
+    $data->{description} =~ s/^\s+//;
+    $data->{description} =~ s/\s+$//;
   }
 
   eval {
