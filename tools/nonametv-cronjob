@@ -29,8 +29,7 @@ fi
 
 $d tools/nonametv-import-allhttp
 $h tools/nonametv-import-allhttp --short-grab
-#$h perl -I lib tools/nonametv-import TV4
-#$h perl -I lib tools/nonametv-import Kanal5
+$h tools/nonametv-import-maildir
 
 $d perl -I lib/ tools/nonametv-export Xmltv --remove-old
 
