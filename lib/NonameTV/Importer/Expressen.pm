@@ -131,6 +131,8 @@ sub ImportFile
       next if( $starttime !~ /\S.*\S/ );
 
       $starttime =~ tr/\./:/;
+      $starttime =~ tr/ \t//d;
+
       if( $starttime !~ /^\d{1,2}:\d{1,2}$/ )
       {
         print STDERR "Expressen $date: Unknown starttime $starttime\n";
