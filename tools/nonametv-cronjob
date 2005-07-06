@@ -29,7 +29,7 @@ fi
 
 $d tools/nonametv-import-allhttp
 $h tools/nonametv-import-allhttp --short-grab
-$h tools/nonametv-import-maildir
+tools/nonametv-import-maildir
 
 $d perl -I lib/ tools/nonametv-export Xmltv --remove-old
 
