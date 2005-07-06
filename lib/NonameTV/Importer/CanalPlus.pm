@@ -49,7 +49,7 @@ sub ImportContent
   eval { $doc = $xml->parse_string($$cref); };
   if( $@ ne "" )
   {
-    $l->error( "$batch_id: Failed to parse" );
+    $l->error( "$batch_id: Failed to parse $@" );
     return;
   }
   
