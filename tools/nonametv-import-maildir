@@ -42,7 +42,7 @@ foreach my $message ($folder->messages)
 #    print "  $l $labels->{$l}\n";
 #  }
 
-  print "Processing $subject\n";
+#  print "Processing $subject\n";
   process_parts( $message, $importer );
 
   $message->label( 'flagged' => 1 );
@@ -72,7 +72,7 @@ sub process_parts
       || $disp->attribute('name') 
       || 'noname';
     
-    print "  $importer $name $type " . $part->size . "\n";
+#    print "  $importer $name $type " . $part->size . "\n";
 
     # a major security hole if you accept any path!
     my $filename = "$tmpdir/" . basename( $name );
@@ -95,55 +95,3 @@ sub guess_importer
 
   return undef;
 }
-
-__END__
-
-From Mail-Box-2.060/examples/multipart.pl:
-
-sub show_type($;$)
-{   
-  my $msg    = shift;
-  my $indent = (shift || '') . '    ';   # increase indentation
-  
-  print $indent, " type=", $msg->get('Content-Type'), ', '
-    , $msg->size, " bytes\n";
-  
-  if($msg->isMultipart)
-  {   
-    foreach my $part ($msg->parts)
-    {   
-      show_type $part, $indent;
-    }
-  }
-}
-
-
-From Mail-Box-2.060/examples/strip-attachments.pl:
-
-foreach my $part ($m->parts)
-{
-  # Strip attachments larger than 16K. Another example would be:
-  #   if ($part->body->mimeType ne 'text/plain')
-  next unless $part->body->size > 16384;
-  
-  print "\n**** Stripping Attachment "; # ,$part->head,"\n";
-  my $disp     = $part->body->disposition;
-  my $name     = $disp->attribute('filename')
-    || $disp->attribute('name');
-  
-  # a major security hole if you accept any path!
-  $filename    = basename $name;
-  
-  my $attachment = File::Spec->catfile($attachments, $filename);
-  print $attachment,"\n";
-  
-  unless(-f $attachment)     #  Write attachment to file
-  {   open(FH, ">$attachment");
-      $part->decoded->print(\*FH);
-      close(FH);
-    }
-  
-  $part->delete;
-}
-
-
