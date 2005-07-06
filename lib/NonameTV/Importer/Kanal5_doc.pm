@@ -84,7 +84,7 @@ sub ImportContent
   }
   
   # Find all div-entries.
-  my $ns = $doc->find( "//table//div" );
+  my $ns = $doc->find( "//div" );
   
   if( $ns->size() == 0 )
   {
@@ -105,8 +105,9 @@ sub ImportContent
   
   use constant {
     T_TIME => 10,
-    T_DATE => 11,
-    T_TEXT => 12,
+    T_TIME_TITLE => 11, # Both time and title on the same line.
+    T_DATE => 12,
+    T_TEXT => 13,
         };
   
   my $state=ST_START;
@@ -117,6 +118,7 @@ sub ImportContent
   foreach my $div ($ns->get_nodelist)
   {
     my( $text ) = norm( $div->findvalue( '.' ) );
+
     next if $text eq "";
     
     my $type = T_TEXT;
@@ -128,7 +130,7 @@ sub ImportContent
 		   Kanal\s+5\s*$/x )
 	and $type = T_DATE;
     
-    my( $start, $stop );
+    my( $start, $stop, $text2 );
     
     if( ($start, $stop) = ( $text =~ /^(\d+:\d+)\s*\-\s*(\d+:\d+)$/ ) )
     {
@@ -137,6 +139,15 @@ sub ImportContent
     elsif( ( $start ) = ( $text =~ /^(\d+:\d+)$/ ) )
     {
       $type = T_TIME;
+    }
+    elsif( ($start, $stop, $text2) = 
+           ( $text =~ /^(\d+:\d+)\s*\-\s*(\d+:\d+)\s+(.*)$/ ) )
+    {
+      $type = T_TIME_TITLE;
+    }
+    elsif( ( $start, $text2 ) = ( $text =~ /^(\d+:\d+)\s+(.*)$/ ) )
+    {
+      $type = T_TIME_TITLE;
     }
     
     if( $state == ST_FTITLE )
@@ -180,6 +191,13 @@ sub ImportContent
 	$ce->{start_time} = $start;
 	$ce->{end_time} = $stop if defined( $stop );
 	$state = ST_FTIME;
+      }
+      elsif( $type == T_TIME_TITLE )
+      {
+	$ce->{start_time} = $start;
+	$ce->{end_time} = $stop if defined( $stop );
+	$ce->{title} = $text2;
+	$state = ST_FTITLE;
       }
       elsif( $type == T_DATE )
       {
@@ -315,10 +333,10 @@ sub extract_extra_info
   # Try to remove any prefix such as "SERIESTART:" from the title.
   # These prefixes are only available in the doc-data, not in the
   # xml-files.
-  my( $prefix, $short_title ) = ($ce->{title} =~ /(.*):\s*(.*)/);
+  my( $prefix, $short_title ) = ($ce->{title} =~ /(.*?):\s*(.*)/);
   if( (defined($short_title) and defined( $cat->{$short_title} )) or
       ( lc($prefix) eq "seriestart" ) or
-      ( lc($prefix) =~ /^premi.r$/ ) )
+      ( lc($prefix) =~ /^(s.songs)*premi.r$/ ) )
   {
     $ce->{title} = $short_title;
   }
