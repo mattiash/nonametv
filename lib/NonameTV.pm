@@ -228,6 +228,7 @@ sub Utf8Conv
 
   $str =~ tr/\x{201d}\x{201c}/""/;
   $str =~ tr/\x{2013}\x{2019}/-'/;
+  $str =~ tr/\x{17d}\x{17e}/''/;
   
   return utf8( $str )->latin1;
 }
