@@ -83,6 +83,17 @@ sub DESTROY
     if defined( $self->{dbh} );
 }
 
+=item Creating a new batch
+
+To create a new batch or replace an old batch completely, 
+do the following steps:
+
+  StartBatch( $batch_id );
+  AddProgramme( ... );
+  AddProgramme( ... );
+  ...
+  EndBatch( $success, $message );
+
 =item StartBatch
 
 Called by an importer to signal the start of a batch of updates.
@@ -116,15 +127,21 @@ sub StartBatch
 =item EndBatch
 
 Called by an importer to signal the end of a batch of updates.
-Takes a single parameter containing 1 if the batch was received
+Takes two parameters: 
+
+An integer containing 1 if the batch was processed
 successfully and 0 if the batch failed and the database should
 be rolled back to the contents as they were before StartBatch was called.
+
+A string containing a log-message to add to the batchrecord. If success==1,
+then the log-message is stored in the field 'message'. If success==0, then
+the log-message is stored in abort_message. The log-message can be undef.
 
 =cut
 
 sub EndBatch
 {
-  my( $self, $success ) = @_;
+  my( $self, $success, $log ) = @_;
   
   if( $success and not $self->{batcherror} )
   {
