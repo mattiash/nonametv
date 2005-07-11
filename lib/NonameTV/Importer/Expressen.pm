@@ -106,15 +106,19 @@ sub ImportFile
     print STDERR "$file: No tables found.\n";
     return;
   }
+
+  my $date = undef;
   
   foreach my $table ($ns->get_nodelist)
   {
     my $ns2 = $table->find( ".//tr" );
     
-    my $date = undef;
     foreach my $tr ($ns2->get_nodelist)
     {
-      if( not defined( $date ) )
+      my $starttime = norm( $tr->findvalue( './/td[1]//text()' ) );
+      next if( $starttime !~ /\S.*\S/ );
+
+      if( $starttime =~ /^mån|tis|ons|tor|fre|lör|sön/i )
       {
         $date = norm( $tr->findvalue( './/td[2]//text()' ) );
         $date =~ /^\d\d\d\d-\d\d-\d\d$/ 
@@ -124,11 +128,9 @@ sub ImportFile
         next;
       }
 
-      my $starttime = norm( $tr->findvalue( './/td[1]//text()' ) );
       my $title = norm( $tr->findvalue( './/td[2]//text()' ) );
       my $description = norm( $tr->findvalue( './/td[3]//text()' ) );
 
-      next if( $starttime !~ /\S.*\S/ );
 
       $starttime =~ tr/\./:/;
       $starttime =~ tr/ \t//d;
