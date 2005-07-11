@@ -21,6 +21,8 @@ use XML::LibXML;
 
 use NonameTV qw/MyGet Wordfile2Xml Htmlfile2Xml Utf8Conv/;
 use NonameTV::DataStore::Helper;
+use NonameTV::DataStore::Updater;
+use NonameTV::Log qw/get_logger start_output/;
 
 use NonameTV::Importer;
 
@@ -35,6 +37,9 @@ sub new
   
   my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore} );
   $self->{datastorehelper} = $dsh;
+
+  my $dsu = NonameTV::DataStore::Updater->new( $self->{datastore} );
+  $self->{datastoreupdater} = $dsu;
 
   my $sth = $self->{datastore}->Iterate( 'channels', 
                                          { grabber => 'discovery' },
@@ -51,11 +56,13 @@ sub new
 
   $sth->finish;
 
-    $self->{OptionSpec} = [ qw/force-update verbose/ ];
-    $self->{OptionDefaults} = { 
-      'force-update' => 0,
-      'verbose'      => 0,
-    };
+  $self->{OptionSpec} = [ qw/force-update verbose/ ];
+  $self->{OptionDefaults} = { 
+    'force-update' => 0,
+    'verbose'      => 0,
+  };
+  
+  $self->{logger} = get_logger(ref($self));
 
   return $self;
 }
@@ -65,9 +72,11 @@ sub Import
   my $self = shift;
   my( $p ) = @_;
 
+  start_output( ref($self), $p->{verbose} );
+
   foreach my $file (@ARGV)
   {
-    print  "Discovery: Processing $file\n";
+    $self->{logger}->info(  "Discovery: Processing $file" );
     $self->ImportFile( "", $file, $p );
   } 
 }
@@ -77,30 +86,34 @@ sub ImportFile
   my $self = shift;
   my( $contentname, $file, $p ) = @_;
 
-  print "Processing $file.\n"
-    if( $p->{verbose} );
-  
-  my( $fnid, $fnmon, $fnyear, $type, $ext ) = 
+  my $l = $self->{logger};
+
+  my( $fnid, $fnlang, $fnmon, $fnyear, $fntype, $ext ) = 
     ( $file =~ /([A-Z\.]+)
-               \.Swe\s+(...)\s+(\d\d)\s+(.*)\.
+               \.(\S+)\s+(...)\s+(\d\d)\s+(.*)\.
                ([^\.]+)$/x );
 
   if( not defined( $ext ) )
   {
-    print "Unknown filename $file\n";
+    $l->error( "Discovery: Unknown filename $file" );
     return;
   }
 
+#  if( $fnlang ne "Swe" )
+#  {
+#    $l->error( "Wrong language $fnlang" );
+#    return;
+#  }
+
   if( $fnmon eq "High" )
   {
-    print "Skipping highlights file.\n"
-      if( $p->{verbose} );
+    $l->warn( "Discovery: Skipping highlights file $file" );
     return;
   }
 
   if( not exists( $self->{channel_data}->{$fnid} ) )
   {
-    print "Discovery: Unknown channel $fnid in $file\n";
+    $l->error( "Discovery: Unknown channel $fnid in $file" );
     return;
   }
 
@@ -118,26 +131,29 @@ sub ImportFile
   }
   else
   {
-    print "Discovery: Unknown extension $ext\n";
+    $l->error( "Discovery: Unknown extension $ext in $file" );
+    return;
   }
 
   if( not defined( $doc ) )
   {
-    print STDERR "$file failed to parse\n";
+    $l->error( "Discovery: Failed to parse $file" );
     return;
   }
 
   if( $fntype =~ /^Amend/ )
   {
-    $self->ImportAmendments( $fnid, $file, $doc );
+    $self->ImportAmendments( $fnid, $file, $doc, 
+                             $channel_xmltvid, $channel_id );
   }
   elsif( $fntype =~ /^FINAL/ )
   {
-    $self->ImportData( $fnid, $file, $doc );
+    $self->ImportData( $fnid, $file, $doc, 
+                       $channel_xmltvid, $channel_id );
   }
   else
   {
-    print STDERR "$file: Unknown filetype $fntype\n";
+    $l->error( "Discovery: Unknown filetype $fntype for $file" );
     return;
   }
 }
@@ -148,7 +164,10 @@ sub ImportFile
 sub ImportData
 {
   my $self = shift;
-  my( $fnid, $filename, $doc ) = @_;
+  
+  my $l = $self->{logger};
+
+  my( $fnid, $filename, $doc, $channel_xmltvid, $channel_id ) = @_;
 
   my $dsh = $self->{datastorehelper};
 
@@ -157,7 +176,7 @@ sub ImportData
   
   if( $ns->size() == 0 )
   {
-    print STDERR "$filename: No programme entries found.\n";
+    $l->error( "Discovery: No programme entries found in $filename" );
     return;
   }
   
@@ -190,7 +209,6 @@ sub ImportData
   foreach my $div ($ns->get_nodelist)
   {
     my( $text ) = norm( $div->findvalue( './/text()' ) );
-    my( $divname ) = norm( $div->findvalue( '@name' ) );
     next if $text eq "";
 
  #   print "Text: $text\n";
@@ -288,29 +306,234 @@ sub ImportData
       }
       else
       {
-	warn "State ST_FDATE, found: $text\n";
+	$l->error( "Discovery: $filename State ST_FDATE, found: $text" );
       }
     }
     elsif( $state == ST_EPILOG )
     {
       if( ($type != T_TEXT) and ($type != T_DATE) )
       {
-	warn "State ST_EPILOG, found: $text\n";
+	$l->error( "Discovery: $filename State ST_EPILOG, found: $text" );
       }
     }
   }
   $dsh->EndBatch( 1 );
 }
 
+#
 # Import data from a file that contains programme updates only.
 # $doc is an XML::LibXML::Document object.
+#
 sub ImportAmendments
 {
   my $self = shift;
-  my( $fnid, $filename, $doc ) = @_;
+  my( $fnid, $filename, $doc, $channel_xmltvid, $channel_id ) = @_;
 
-  die "Not implemented";
+  my $l = $self->{logger};
 
+  my $dsu = $self->{datastoreupdater};
+
+  # Find all div-entries.
+  my $ns = $doc->find( "//div" );
+  
+  if( $ns->size() == 0 )
+  {
+    $l->error( "Discovery: $filename: No programme entries found." );
+    return;
+  }
+
+  use constant {
+    ST_HEAD => 0,
+    ST_FOUND_DATE => 1,
+  };
+
+  my $state=ST_HEAD;
+
+  my( $date, $prevtime, $e );
+  
+  foreach my $div ($ns->get_nodelist)
+  {
+    my( $text ) = norm( $div->findvalue( './/text()' ) );
+    next if $text eq "";
+
+    my( $time, $command, $title );
+
+    if( ($text =~ /^sida \d+ av \d+$/i) or
+        ($text =~ /tablån fortsätter som tidigare/i) )
+    {
+      next;
+    }
+    elsif( $text =~ /^SLUT$/ )
+    {
+      last;
+    }
+    elsif( $text =~ /^(måndag|tisdag|onsdag|torsdag|fredag|lördag|söndag|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\s*\d+\s*\D+\s*\d+$/i  )
+    {
+      if( $state != ST_HEAD )
+      {
+        $self->process_command( $channel_id, $e )
+          if( defined( $e ) );
+        $e = undef;
+        $dsu->EndBatchUpdate( 1 )
+          if( $self->{process_batch} ); 
+      }
+
+      $date = parse_date( $text );
+      $state = ST_FOUND_DATE;
+
+      $self->{process_batch} = 
+        $dsu->StartBatchUpdate( "${channel_xmltvid}_$date", $channel_id ) ;
+
+      $self->start_date( $date );
+    }
+    elsif( ($command, $title) = 
+           ($text =~ /^([A-ZÅÄÖ][ A-ZÅÄÖ]+) (.*?)(\(.*\))*$/) )
+    {
+      if( $state != ST_FOUND_DATE )
+      {
+        $l->logdie( "Discovery: $filename Wrong state for $text" );
+      }
+
+      $self->process_command( $channel_id, $e )
+        if defined $e;
+
+      $e = $self->parse_command( $prevtime, $command, $title );
+    }
+    elsif( ($time, $command, $title) = 
+           ($text =~ /^(\d\d[\.:]\d\d) ([A-ZÅÄÖ][ A-ZÅÄÖ]+) (.*?)(\(.*\))*$/) )
+    {
+      if( $state != ST_FOUND_DATE )
+      {
+        $l->logdie( "Discovery: $filename Wrong state for $text" );
+      }
+
+      $self->process_command( $channel_id, $e )
+        if defined $e;
+
+      $e = $self->parse_command( $time, $command, $title );
+
+      $prevtime = $time;
+    }
+    elsif( $state == ST_FOUND_DATE )
+    {
+      # Plain text. This must be a description.
+      if( defined( $e ) )
+      {
+        $e->{desc} .= $text;
+        $self->process_command( $channel_id, $e );
+        $e = undef;
+      }
+      else
+      {
+        $l->warn( "Discovery: $filename Ignored text: $text" );
+      }
+    }
+    else
+    {
+      # Plain text in header. Ignore.
+    }
+  }
+  $self->process_command( $channel_id, $e )
+    if( defined( $e ) );
+
+  $dsu->EndBatchUpdate( 1 )
+    if( $self->{process_batch} ); 
+}
+
+sub parse_command
+{
+  my $self = shift;
+  my( $time, $command, $title ) = @_;
+
+#  print "PC: $time - $command - $title\n";
+  my $e;
+
+  $e->{time} = $time;
+  $e->{title} = $title;
+  $e->{desc} = "";
+
+  if( $command eq "ÄNDRA" or $command eq "RADERA")
+  {
+    $e->{command} = "DELETEBLIND";
+  }
+  elsif( $command eq "CHANGE" or $command eq "DELETE" )
+  {
+    # This is a document with changes in English.
+    # The titles won't match.
+    $e->{command} = "DELETEBLIND";
+  }    
+  elsif( $command eq "TILL" or $command eq "INFOGA" 
+         or $command eq "TO" or $command eq "INSERT" )
+  {
+    $e->{command} = "INSERT";
+  }
+  elsif( $command eq "EJ ÄNDRAD" or $command eq "UNCHANGED")
+  {
+    $e->{command} = "IGNORE";
+  }
+  else
+  {
+    die "Unknown command $command with time $time";
+  }
+
+  return $e;
+}
+
+sub process_command
+{
+  my $self = shift;
+  my( $channel_id, $e ) = @_;
+
+  my $l = $self->{logger};
+
+#  print "DO: $e->{command} $e->{time} $e->{title}\n";
+
+  return unless $self->{process_batch};
+
+  my $dsu = $self->{datastoreupdater};
+
+  my $dt = $self->create_dt( $e->{time} );
+
+  return if $dt < DateTime->today;
+
+  if( $e->{command} eq 'DELETEBLIND' )
+  {
+    my $ce = {
+      channel_id => $channel_id,
+      start_time => $dt->ymd('-') . " " . $dt->hms(':'),
+    };      
+
+    $self->{del_e} = $dsu->DeleteProgramme( $ce, 1 );
+  }
+  elsif( $e->{command} eq "INSERT" )
+  {
+    my $ce = {
+      channel_id => $channel_id,
+      start_time => $dt->ymd('-') . " " . $dt->hms(':'),
+      title => $e->{title},
+    };
+    extract_extra_info( $ce );
+
+    if( $e->{desc} =~ /Programförklaring ej ändrad/ )
+    {
+      # This is a program that has gotten a new title. It means
+      # that it is a record CHANGE ... TO ... Thus, the description
+      # is the same as the description from the record we just deleted.
+      $ce->{description} = $self->{del_e}->{description};
+    }
+    else
+    {
+      $e->{description} = $e->{desc};
+    }
+
+    $dsu->AddProgramme( $ce );
+  }    
+  elsif( $e->{command} eq "IGNORE" )
+  {}
+  else
+  {
+    $l->logdie( "Discovery: Unknown command $e->{command}" );
+  }
 }
 
 sub extract_extra_info
@@ -339,15 +562,21 @@ sub parse_date
 
   my @months = qw/januari februari mars april maj juni juli augusti
       september oktober november december/;
+
+  my @months_eng = qw/january february march april may june july
+    august september october november december/;
   
   my %monthnames = ();
   for( my $i = 0; $i < scalar(@months); $i++ ) 
   { $monthnames{$months[$i]} = $i+1;}
+
+  for( my $i = 0; $i < scalar(@months_eng); $i++ ) 
+  { $monthnames{$months_eng[$i]} = $i+1;}
   
   my( $weekday, $day, $monthname, $year ) = 
       ( $text =~ /^(\S+?)\s*(\d+)\s*(\S+?)\s*(\d+)$/ );
   
-  my $month = $monthnames{$monthname};
+  my $month = $monthnames{lc $monthname};
   return undef unless defined( $month );
 
   return sprintf( '%d-%02d-%02d', $year, $month, $day );
@@ -370,6 +599,68 @@ sub norm
     $str =~ tr/\n\r\t /    /s;
 
     return $str;
+}
+
+sub start_date
+{
+  my $self = shift;
+  my( $date ) = @_;
+
+#  print "StartDate: $date\n";
+
+  my( $year, $month, $day ) = split( '-', $date );
+  $self->{curr_date} = DateTime->new( 
+                                      year   => $year,
+                                      month  => $month,
+                                      day    => $day,
+                                      hour   => 0,
+                                      minute => 0,
+                                      second => 0,
+                                      time_zone => 'Europe/Stockholm' );
+}
+
+
+sub create_dt
+{
+  my $self = shift;
+  my( $time ) = @_;
+
+  my $l = $self->{logger};
+  
+  my $dt = $self->{curr_date}->clone();
+  
+  my( $hour, $minute ) = split( /[:\.]/, $time );
+
+  $l->logdie( $self->{batch_id} . ": Unknown starttime $time" )
+    if( not defined( $minute ) );
+
+  # The schedule date doesn't wrap at midnight. This is what
+  # they seem to use.
+  if( $hour < 9 )
+  {
+    $dt->add( days => 1 );
+  }
+
+  # Don't die for invalid times during shift to DST.
+  my $res = eval {
+    $dt->set( hour   => $hour,
+              minute => $minute,
+              );
+  };
+
+  if( not defined $res )
+  {
+    print $self->{batch_id} . ": " . $dt->ymd('-') . " $hour:$minute: $@" ;
+    $hour++;
+    $l->error( "Adjusting to $hour:$minute" );
+    $dt->set( hour   => $hour,
+              minute => $minute,
+              );
+  }
+
+  $dt->set_time_zone( "UTC" );
+
+  return $dt;
 }
 
 1;
