@@ -3,6 +3,8 @@ package NonameTV::Importer;
 use strict;
 
 use File::Copy;
+use IO::Scalar;
+use Log::Log4perl;
 
 =head1 NAME
 
@@ -94,19 +96,63 @@ sub ImportFile
   return $self->ImportContent( $contentname, \$content, $p );
 }
 
-=item ImportContent
+=pod
 
-Import the content from a string reference.
+This is not actually used yet!
+
+ImportContent
+
+Called from Base*.pm to import data for a single batch. Hooks into log4perl
+to log errors to the batch-entry in the database.
 
 =cut
 
 sub ImportContent
 {
-  my $self = shift @ARGV;
-  my( $contentname, $filename, $p ) = @_;
+  my $self = shift;
 
-  die "You must override ImportContent in your own class";
+  my( $batch_id, $cref, $chd ) = @_;
+
+  my $l = $self->{logger};
+  my $ds;
+
+  my $message = "";
+  my $handle = 
+  
+  my $appender = Log::Log4perl::Appender->new(
+    "Log::Dispatch::Handle",
+    name => "batchlog",                                      
+    handle => new IO::Scalar \$message );
+
+  $l->add_appender( $appender );
+
+  if( exists( $self->{datastorehelper} ) )
+  {
+    $ds = $self->{datastorehelper};
+  }
+  else
+  {
+    $ds = $self->{datastore};
+  }
+
+  $ds->StartBatch( $batch_id, $chd->{id} );
+
+  my $res = $self->ImportContent2( $batch_id, $cref, $chd ); 
+
+  $l->remove_appender( 'batchlog' );
+
+  if( $res )
+  {
+    # success
+    $ds->EndBatch( 1, $message );
+  }
+  else
+  {
+    # failure
+    $ds->EndBatch( 0, $message );
+  }
 }
+
 
 sub FetchData
 {
