@@ -108,7 +108,7 @@ sub ImportContent
   eval { $doc = $xml->parse_string($$cref); };
   if( $@ ne "" )
   {
-    $l->error( "$batch_id: Failed to parse" );
+    $l->error( "$batch_id: Failed to parse: $@" );
     return;
   }
   
@@ -209,7 +209,7 @@ sub extract_extra_info
   $ce->{description} =~ s/\}//g;
 
   # Find aspect-info and remove it from description.
-  if( $ce->{description} =~ s/\bS.nds i 16:9\s*-*\s*(format)*\.*\s*//i )
+  if( $ce->{description} =~ s/(\bS.nds i )*\b16:9\s*-*\s*(format)*\.*\s*//i )
   {
     $ce->{aspect} = "16:9";
   }

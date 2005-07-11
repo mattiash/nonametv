@@ -345,12 +345,12 @@ sub ParseXmltv
   }
   
   my $doc;
-#  eval { 
+  eval { 
     $doc = $self->{xml}->parse_string($$cref); 
-# };
+  };
   if( $@ ne "" )
   {
-    $l->error( "???: Failed to parse" );
+    $l->error( "???: Failed to parse: $@" );
     return;
   }
 
