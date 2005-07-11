@@ -210,7 +210,7 @@ sub create_dt
 
   my $dt = $date->clone();
   
-  my( $hour, $minute ) = split( ":", $time );
+  my( $hour, $minute, $second ) = split( ":", $time );
 
   # Don't die for invalid times during shift to DST.
   my $res = eval {
