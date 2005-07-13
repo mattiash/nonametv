@@ -100,7 +100,7 @@ sub ImportContent
     {
       $episode = sprintf( ". %d .", $ep_nr-1 );
     }
-        
+
     my $ce = {
       title => norm( $inrow->{'name'} ),
       description => $description,
@@ -115,7 +115,39 @@ sub ImportContent
     {
       $ce->{production_date} = "$1-01-01";
     }
-    
+
+    my $cast = norm( $inrow->{'Cast'} );
+    if( $cast =~ /\S/ )
+    {
+      # Remove all variants of m.fl.
+      $cast =~ s/\s*m[\. ]*fl\.*\b//;
+
+      # Remove trailing '.'
+      $cast =~ s/\.$//;
+
+      my @actors = split( /\s*,\s*/, $cast );
+      foreach (@actors)
+      {
+        # The character name is sometimes given in parentheses. Remove it.
+        # The Cast-entry is sometimes cutoff, which means that the
+        # character name might be missing a trailing ).
+        s/\s*\(.*$//;
+      }
+      $ce->{actors} = join( ", ", grep( /\S/, @actors ) );
+    }
+
+    my $director = norm( $inrow->{'Director'} );
+    if( $director =~ /\S/ )
+    {
+      # Remove all variants of m.fl.
+      $director =~ s/\s*m[\. ]*fl\.*\b//;
+      
+      # Remove trailing '.'
+      $director =~ s/\.$//;
+      my @directors = split( /\s*,\s*/, $director );
+      $ce->{directors} = join( ", ", grep( /\S/, @directors ) );
+    }
+
     $self->extract_extra_info( $ce );
     $dsh->AddProgramme( $ce );
   }

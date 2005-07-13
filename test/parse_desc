@@ -12,10 +12,18 @@ sub split_desc
 {
   my( $t ) = @_;
 
-  $t =~ s/\n/ . /g;
-  $t =~ s/\.\.\./..../;
-  my @sent = grep( /\S/, split( /\.\s+/, $t ) );
-  map { s/\s+$// } @sent;
+  # Replace ... with ::.
+  $t =~ s/\.\.\./::./;
+
+  # Replace newlines with space and make sure that there is a dot
+  # to mark the end of the sentence. 
+  $t =~ s/\.*\s*\n\s*/. /g;
+
+  # Split on a dot and whitespace followed by a capital letter,
+  # but the capital letter is included in the output string and
+  # is not removed by split. (?=X) is called a look-ahead.
+  my @sent = grep( /\S/, split( /\.\s+(?=[A-ZÅÄÖ])/, $t ) );
+
   $sent[-1] =~ s/\.\s*$//;
   return @sent;
 }

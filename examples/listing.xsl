@@ -31,5 +31,6 @@
       <td><b><xsl:value-of select="name()"/></b></td>
       <td><xsl:value-of select="text()"/></td>
     </tr>
+    <xsl:apply-templates select="*"/>
   </xsl:template>
 </xsl:stylesheet>

@@ -103,7 +103,37 @@ sub ImportContent
     my $sixteen_nine = $sc->findvalue( './Program/@SixteenNine' );
 #    my $letterbox = $sc->findvalue( './Program/@Letterbox' );
     
-    # Finns även info om skådespelare och regissör på ett lättparsat format.
+    # The director and actor info is in a somewhat strange format. 
+    # Actor is a child of Director and the data seems to contain
+    # all combinations of Actor and Director.
+
+    my %directors;
+    my @directors;
+    my $ns2 = $sc->find( './/Director' );
+  
+    foreach my $dir ($ns2->get_nodelist)
+    {
+      my $name = norm( $dir->findvalue('./@Name') );
+      if( not defined( $directors{ $name } ) )
+      {
+        $directors{$name} = 1;
+        push @directors, $name;
+      }
+    }
+    
+    my %actors;
+    my @actors;
+    my $ns3 = $sc->find( './/Actor' );
+  
+    foreach my $act ($ns3->get_nodelist)
+    {
+      my $name = norm( $act->findvalue('./@Name') );
+      if( not defined( $actors{ $name } ) )
+      {
+        $actors{$name} = 1;
+        push @actors, $name;
+      }
+    }
 
     my $ce = {
       channel_id  => $chd->{id},
@@ -131,6 +161,16 @@ sub ImportContent
     if( defined( $production_year ) and ($production_year =~ /(\d\d\d\d)/) )
     {
       $ce->{production_date} = "$1-01-01";
+    }
+
+    if( scalar( @directors ) > 0 )
+    {
+      $ce->{directors} = join ", ", @directors;
+    }
+
+    if( scalar( @actors ) > 0 )
+    {
+      $ce->{actors} = join ", ", @actors;
     }
 
     $ds->AddProgramme( $ce );

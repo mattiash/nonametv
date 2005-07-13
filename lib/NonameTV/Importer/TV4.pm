@@ -151,6 +151,34 @@ sub ImportContent
 #     $ce->{prev_shown_date} = norm($prev_shown_date)
 #     if( $prev_shown_date =~ /\S/ );
 
+    my @actors;
+    my @directors;
+
+    my $ns2 = $pgm->find( './/person/real_name' );
+  
+    foreach my $act ($ns2->get_nodelist)
+    {
+      my $name = norm( $act->findvalue('./text()') );
+      if( $name eq "Regissör" )
+      {
+        push @directors, $name;
+      }
+      else
+      {
+        push @actors, $name;
+      }
+    }
+
+    if( scalar( @actors ) > 0 )
+    {
+      $ce->{actors} = join ", ", @actors;
+    }
+
+    if( scalar( @directors ) > 0 )
+    {
+      $ce->{directors} = join ", ", @directors;
+    }
+
     $self->extract_extra_info( $ce );
     
     $dsh->AddProgramme( $ce );

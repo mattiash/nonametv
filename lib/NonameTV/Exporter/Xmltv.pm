@@ -595,6 +595,16 @@ sub write_entry
     $d->{video} = { aspect => $data->{aspect} };
   }
 
+  if( $data->{directors} =~ /\S/ )
+  {
+    $d->{credits}->{director} = [split( ", ", $data->{directors})];
+  }
+
+  if( $data->{actors} =~ /\S/ )
+  {
+    $d->{credits}->{actor} = [split( ", ", $data->{actors})];
+  }
+
   $w->write_programme( $d );
 }
 

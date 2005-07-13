@@ -384,6 +384,110 @@ sub extract_extra_info
   {
     $ce->{production_date} = "$1-01-01";
   }
+
+  my @sentences = (split_text( $ce->{description} ), "");
+  for( my $i=0; $i<scalar(@sentences); $i++ )
+  {
+    $sentences[$i] =~ tr/\n\r\t /    /s;
+
+    if( my( $directors ) = ($sentences[$i] =~ /^Regi:\s*(.*)/) )
+    {
+      $ce->{directors} = parse_person_list( $directors );
+      $sentences[$i] = "";
+    }
+    elsif( my( $actors ) = ($sentences[$i] =~ /^I rollerna:\s*(.*)/ ) )
+    {
+      $ce->{actors} = parse_person_list( $actors );
+      $sentences[$i] = "";
+    }
+    elsif( my( $year ) = ($sentences[$i] =~ /^Från (\d+)$/))
+    {
+      # This should go into previously shown.
+#      $sentences[$i] = "";
+    }
+  }
+
+  $ce->{description} = join_text( @sentences );
+}
+
+sub parse_person_list
+{
+  my( $str ) = @_;
+
+  # Remove all variants of m.fl.
+  $str =~ s/\s*m[\. ]*fl\.*\b//;
+  
+  # Remove trailing '.'
+  $str =~ s/\.$//;
+
+  $str =~ s/\boch\b/,/;
+  $str =~ s/\bsamt\b/,/;
+
+  my @persons = split( /\s*,\s*/, $str );
+  foreach (@persons)
+  {
+    # The character name is sometimes given . Remove it.
+    s/^.*\s+-\s+//;
+  }
+
+  return join( ", ", grep( /\S/, @persons ) );
+}
+
+sub split_text
+{
+  my( $t ) = @_;
+
+  return () if not defined( $t );
+
+  # Remove any trailing whitespace
+  $t =~ s/\s*$//;
+
+  # Replace ... with ::.
+  $t =~ s/\.{3,}/::./;
+
+  # Replace newlines followed by a capital with space and make sure that there is a dot
+  # to mark the end of the sentence. 
+  $t =~ s/\.*\s*\n\s*([A-ZÅÄÖ])/. $1/g;
+
+  # Turn all whitespace into pure spaces and compress multiple whitespace to a single.
+  $t =~ tr/\n\r\t \xa0/     /s;
+
+  # Replace strange dots.
+  $t =~ tr/\x2e/./;
+
+  # Split on a dot and whitespace followed by a capital letter,
+  # but the capital letter is included in the output string and
+  # is not removed by split. (?=X) is called a look-ahead.
+#  my @sent = grep( /\S/, split( /\.\s+(?=[A-ZÅÄÖ])/, $t ) );
+
+  # Mark sentences ending with a dot for splitting.
+  $t =~ s/\.\s+([A-ZÅÄÖ])/;;$1/g;
+
+  # Mark sentences ending with ! or ? for split, but preserve the "!?".
+  $t =~ s/([\!\?])\s+([A-ZÅÄÖ])/$1;;$2/g;
+  
+  my @sent = grep( /\S/, split( ";;", $t ) );
+
+  if( scalar( @sent ) > 0 )
+  {
+    $sent[-1] =~ s/\.*\s*$//;
+  }
+
+  return @sent;
+}
+
+# Join a number of sentences into a single paragraph.
+# Performs the inverse of split_text
+sub join_text
+{
+  my $t = join( ". ", grep( /\S/, @_ ) );
+  $t .= "." if $t =~ /\S/;
+  $t =~ s/::/../g;
+
+  # The join above adds dots after sentences ending in ! or ?. Remove them.
+  $t =~ s/([\!\?])\./$1/g;
+
+  return $t;
 }
 
 sub extract_episode
