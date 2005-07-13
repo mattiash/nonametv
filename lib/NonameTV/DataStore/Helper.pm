@@ -160,9 +160,9 @@ sub AddProgramme
     }
     $self->{curr_date}->add( days => 1 );
   }
-  $ce->{start_time} = $start_time;
+  $ce->{start_time} = $start_time->clone();
 
-  $self->{lasttime} = $start_time;
+  $self->{lasttime} = $start_time->clone();
 
   if( defined( $ce->{end_time} ) )
   {
@@ -173,8 +173,8 @@ sub AddProgramme
       $stop_time->add( days => 1 );
       $self->{curr_date}->add( days => 1 );
     }
-    $ce->{end_time} = $stop_time;
-    $self->{lasttime} = $stop_time; 
+    $ce->{end_time} = $stop_time->clone();
+    $self->{lasttime} = $stop_time->clone(); 
   }
 
   $self->AddCE( $ce );
