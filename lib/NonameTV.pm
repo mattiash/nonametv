@@ -301,7 +301,7 @@ $sm->AddRegexp( qr/barnprogram/i,          [ undef, "Children's" ] );
 # Movies
 $sm->AddRegexp( qr/\b(familje|drama)*komedi\b/i,  [ 'movie', "Comedy" ] );
 
-$sm->AddRegexp( qr/\b(krigs)*drama\b/i,           [ 'movie', "Drama" ] );
+$sm->AddRegexp( qr/\b(krigs|kriminal)*drama\b/i,  [ 'movie', "Drama" ] );
 
 $sm->AddRegexp( qr/\baction(drama|film)*\b/i,     [ 'movie', "Action/Adv" ] );
 
