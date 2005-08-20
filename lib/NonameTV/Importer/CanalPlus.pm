@@ -66,17 +66,23 @@ sub ImportContent
       $sc->findvalue( '@Id' )
       if( $sc->findvalue( 'count(.//Program)' ) ) != 1;
     
-    my $start = create_dt( $sc->findvalue( './@CalendarDate' ) );
+    my $start = $self->create_dt( $sc->findvalue( './@CalendarDate' ) );
+    if( not defined $start )
+    {
+      $l->error( "$batch_id: Invalid starttime '" 
+                 . $sc->findvalue( './@CalendarDate' ) . "'. Skipping." );
+      next;
+    }
 
-    my $next_start = create_dt( $sc->findvalue( './@NextStart' ) );
-    
+    my $next_start = $self->create_dt( $sc->findvalue( './@NextStart' ) );
+
     my $length  = $sc->findvalue( './Program/@Length ' );
     my $end = $start->clone()->add( minutes => $length );
 
     # Sometimes the claimed length of the movie makes the movie end
     # a few minutes after the next movie is supposed to start.
     # Assume that next_start is correct.
-    if( $end > $next_start )
+    if( (defined $next_start ) and ($end > $next_start) )
     {
       $end = $next_start;
     }
@@ -181,10 +187,15 @@ sub ImportContent
 
 sub create_dt
 {
+  my $self = shift;
   my( $str ) = @_;
   
   my( $date, $time ) = split( 'T', $str );
 
+  if( not defined $time )
+  {
+    return undef;
+  }
   my( $year, $month, $day ) = split( '-', $date );
   
   # Remove the dot and everything after it.
