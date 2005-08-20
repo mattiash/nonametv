@@ -117,10 +117,20 @@ sub StartBatch
     $id = $self->Add( 'batches', { name => $batchname } );
   }
     
-  $self->{currbatch} = $id;
-  $self->{currbatchname} = $batchname;
   $self->{last_end} = "1970-01-01 00:00:00";
   $self->{last_start} = "1970-01-01 00:00:00";
+
+  $self->SetBatch( $id, $batchname );
+}
+
+# Hidden method used internally and by DataStore::Updater.
+sub SetBatch
+{
+  my $self = shift;
+  my( $id, $batchname ) = @_;
+
+  $self->{currbatch} = $id;
+  $self->{currbatchname} = $batchname;
   $self->{batcherror} = 0;
 }
 
