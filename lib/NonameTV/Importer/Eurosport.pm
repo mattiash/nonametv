@@ -114,6 +114,9 @@ sub ImportContent
     # Fix encoding error in source-file.
     $title =~ s/^'ventyr$/Äventyr/;
 
+    # Fix strange title
+    $title =~ s/_\._//;
+
     my $data = {
       title       => $title,
       description => norm( $description ),
