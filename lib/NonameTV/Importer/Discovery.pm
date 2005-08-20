@@ -164,10 +164,9 @@ sub ImportFile
 sub ImportData
 {
   my $self = shift;
+  my( $fnid, $filename, $doc, $channel_xmltvid, $channel_id ) = @_;
   
   my $l = $self->{logger};
-
-  my( $fnid, $filename, $doc, $channel_xmltvid, $channel_id ) = @_;
 
   my $dsh = $self->{datastorehelper};
 
