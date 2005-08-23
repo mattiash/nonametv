@@ -24,6 +24,7 @@ use Encode;
 
 use NonameTV qw/MyGet expand_entities AddCategory/;
 use NonameTV::DataStore::Helper;
+use NonameTV::Log qw/info progress error logdie/;
 
 use NonameTV::Importer::BaseWeekly;
 
@@ -51,7 +52,6 @@ sub ImportContent
 
   my( $batch_id, $cref, $chd ) = @_;
 
-  my $l = $self->{logger};
   my $ds = $self->{datastore};
   my $dsh = $self->{datastorehelper};
 
@@ -180,9 +180,9 @@ sub row_to_hash
   
   if( scalar( @coldata ) != scalar( @{$columns} ) )
   {
-    $self->{logger}->error( "$batch_id: Wrong number of columns " .
-                            scalar( @coldata ) . " != " . 
-                            scalar( @{$columns} ) );
+    error( "$batch_id: Wrong number of columns " .
+           scalar( @coldata ) . " != " . 
+           scalar( @{$columns} ) );
   }
 
   for( my $i=0; $i<scalar(@coldata) and $i<scalar(@{$columns}); $i++ )

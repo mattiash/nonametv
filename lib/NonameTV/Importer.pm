@@ -4,7 +4,7 @@ use strict;
 
 use File::Copy;
 use IO::Scalar;
-use Log::Log4perl;
+use NonameTV::Log qw/info progress error log_to_string log_to_string_result/;
 
 =head1 NAME
 
@@ -98,34 +98,26 @@ sub ImportFile
 
 =pod
 
-This is not actually used yet!
-
-ImportContent
+ImportBatch
 
 Called from Base*.pm to import data for a single batch. Hooks into log4perl
 to log errors to the batch-entry in the database.
 
 =cut
 
-sub ImportContent
+sub ImportBatch
 {
   my $self = shift;
 
-  my( $batch_id, $cref, $chd ) = @_;
+  my( $batch_id, $chd, $force_update ) = @_;
 
-  my $l = $self->{logger};
   my $ds;
 
-  my $message = "";
-  my $handle = 
+  # Log ERROR and FATAL
+  my $h = log_to_string( 4 );
+
+  info( "$batch_id: Fetching data" );
   
-  my $appender = Log::Log4perl::Appender->new(
-    "Log::Dispatch::Handle",
-    name => "batchlog",                                      
-    handle => new IO::Scalar \$message );
-
-  $l->add_appender( $appender );
-
   if( exists( $self->{datastorehelper} ) )
   {
     $ds = $self->{datastorehelper};
@@ -137,9 +129,26 @@ sub ImportContent
 
   $ds->StartBatch( $batch_id, $chd->{id} );
 
-  my $res = $self->ImportContent2( $batch_id, $cref, $chd ); 
+  my( $content, $code ) = $self->FetchData( $batch_id, $chd );
+  
+  if( not defined( $content ) )
+  {
+    error( "$batch_id: Failed to fetch data ($code)" );
+    my $message = log_to_string_result( $h );
+    $ds->EndBatch( 0, $message );
+    return;
+  }
+  elsif( (not ($force_update) and ( not $code ) ) )
+  {
+    # No changes.
+    return;
+  }
 
-  $l->remove_appender( 'batchlog' );
+  progress( "$batch_id: Processing data" );
+
+  my $res = $self->ImportContent( $batch_id, \$content, $chd ); 
+
+  my $message = log_to_string_result( $h );
 
   if( $res )
   {

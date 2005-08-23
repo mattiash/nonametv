@@ -32,7 +32,7 @@ use POSIX qw/floor/;
 
 use NonameTV qw/MyGet Word2Xml Html2Xml Utf8Conv AddCategory ParseDescCatSwe/;
 use NonameTV::DataStore::Helper;
-use NonameTV::Log qw/get_logger start_output/;
+use NonameTV::Log qw/info progress error logdie/;
 
 use NonameTV::Importer::BaseWeekly;
 
@@ -63,7 +63,6 @@ sub ImportContent
   my $cat = $self->FetchCategories( $batch_id, $chd );
 
   my $dsh = $self->{datastorehelper};
-  my $l = $self->{logger};
 
   my $doc;
     
@@ -79,7 +78,7 @@ sub ImportContent
 
   if( not defined( $doc ) )
   {
-    $l->error( "$batch_id: Failed to parse" );
+    error( "$batch_id: Failed to parse" );
     return;
   }
   
@@ -88,7 +87,7 @@ sub ImportContent
   
   if( $ns->size() == 0 )
   {
-    $l->error( "$batch_id: No programme entries found" );
+    error( "$batch_id: No programme entries found" );
     return;
   }
   
@@ -181,7 +180,7 @@ sub ImportContent
       }
       else
       {
-	$l->error( "$batch_id: Expected date, found: $text" );
+	error( "$batch_id: Expected date, found: $text" );
       }
     }
     elsif( $state == ST_FDATE )
@@ -206,7 +205,7 @@ sub ImportContent
       }
       else
       {
-	$l->error( "$batch_id: Expected time, found: $text" );
+	error( "$batch_id: Expected time, found: $text" );
       }
     }
     elsif( $state == ST_FTIME )
@@ -218,7 +217,7 @@ sub ImportContent
       }
       else
       {
-	$l->error( "$batch_id: Expected title, found: $text" );
+	error( "$batch_id: Expected title, found: $text" );
       }
     }
   }
@@ -243,17 +242,16 @@ sub FetchCategories
   $batch_id .= ".xml";
 
   my $ds = $self->{datastore};
-  my $l = $self->{logger};
 
   my $cat = {};
 
-  $l->info( "$batch_id: Fetching categories" );
+  info( "$batch_id: Fetching categories" );
 
   my( $content, $code ) = $self->FetchData( $batch_id , $data );
             
   if( not defined( $content ) )
   {
-    $l->error( "$batch_id: Failed to fetch listings" );
+    error( "$batch_id: Failed to fetch listings" );
     return $cat;
   }
    
@@ -262,7 +260,7 @@ sub FetchCategories
   eval { $doc = $xml->parse_string($content); };
   if( $@ ne "" )
   {
-    $l->error( "$batch_id: Failed to parse: $@" );
+    error( "$batch_id: Failed to parse: $@" );
     return $cat;
   }
   
@@ -271,7 +269,7 @@ sub FetchCategories
   
   if( $ns->size() == 0 )
   {
-    $l->error( "$batch_id: No programme entries found" );
+    error( "$batch_id: No programme entries found" );
     return $cat;
   }
   
@@ -328,7 +326,6 @@ sub extract_extra_info
   my( $ce, $cat, $batch_id ) = @_;
 
   my $ds = $self->{datastore};
-  my $l = $self->{logger};
 
   # Try to remove any prefix such as "SERIESTART:" from the title.
   # These prefixes are only available in the doc-data, not in the
@@ -355,7 +352,7 @@ sub extract_extra_info
   }
   else
   {
-    $l->info( "$batch_id: No category found for $ce->{title}" );
+    info( "$batch_id: No category found for $ce->{title}" );
   }
 
   extract_episode( $ce );

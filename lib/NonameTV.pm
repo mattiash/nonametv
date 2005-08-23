@@ -8,6 +8,7 @@ use File::Temp qw/tempfile/;
 use Unicode::String qw/utf8/;
 
 use NonameTV::StringMatcher;
+use NonameTV::Log;
 
 BEGIN {
     use Exporter   ();
@@ -45,6 +46,9 @@ sub ReadConfig
 
   my $conf = eval( $config );
   die "Error in configuration file $file: $@" if $@;
+
+  NonameTV::Log::init( $conf );
+
   return $conf;
 }
 

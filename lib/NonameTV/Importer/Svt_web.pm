@@ -19,6 +19,7 @@ use XML::LibXML;
 
 use NonameTV qw/MyGet Utf8Conv Html2Xml ParseDescCatSwe AddCategory/;
 use NonameTV::DataStore::Helper;
+use NonameTV::Log qw/info progress error logdie/;
 
 use NonameTV::Importer::BaseDaily;
 
@@ -57,7 +58,6 @@ sub ImportContent
   my $self = shift;
   my( $batch_id, $cref, $chd ) = @_;
 
-  my $l = $self->{logger};
   my $ds = $self->{datastore};
   my $dsh = $self->{datastorehelper};
 
@@ -69,7 +69,7 @@ sub ImportContent
   
   if( not defined( $doc ) )
   {
-    $l->error( "$batch_id: Failed to parse." );
+    error( "$batch_id: Failed to parse." );
     return;
   }
 
@@ -80,7 +80,7 @@ sub ImportContent
 
   if( $day != $dateday )
   {
-    $l->error( "$batch_id: Wrong day: $daytext" );
+    error( "$batch_id: Wrong day: $daytext" );
     return;
   }
         
@@ -88,7 +88,7 @@ sub ImportContent
   my $ns = $doc->find( "//table/td/table/tr/td/table/tr" );
   if( $ns->size() == 0 )
   {
-    $l->error( "$batch_id: No data found" );
+    error( "$batch_id: No data found" );
     return;
   }
 
@@ -142,7 +142,6 @@ sub FetchCategories
   my( $chd, $date ) = @_;
 
   my $ds = $self->{datastore};
-  my $l = $self->{logger};
 
   my $cat = {};
 
@@ -150,7 +149,7 @@ sub FetchCategories
   {
 #    my( $program_type, $category ) = $ds->LookupCat( "Svt", $svt_cat );
     my $batch_id = $chd->{xmltvid} . "_" . $svt_cat . "_" . $date;
-    $l->info( "$batch_id: Fetching categories" );
+    info( "$batch_id: Fetching categories" );
     
     my( $content, $code ) = $self->FetchData( $batch_id, $chd );
 
@@ -158,7 +157,7 @@ sub FetchCategories
   
     if( not defined( $doc ) )
     {
-      $l->error( "$batch_id: Failed to parse." );
+      error( "$batch_id: Failed to parse." );
       next;
     }
   
@@ -166,7 +165,7 @@ sub FetchCategories
     my $ns = $doc->find( "//table/td/table/tr/td/table/tr" );
     if( $ns->size() == 0 )
     {
-#      $l->error( "$batch_id: No data found" );
+#      error( "$batch_id: No data found" );
       next;
     }
   

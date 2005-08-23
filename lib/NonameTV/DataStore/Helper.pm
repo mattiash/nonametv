@@ -3,7 +3,7 @@ package NonameTV::DataStore::Helper;
 use strict;
 
 use Carp;
-use NonameTV::Log qw/get_logger/;
+use NonameTV::Log qw/info progress error logdie/;
 
 =head1 NAME
 
@@ -20,8 +20,6 @@ and a date.
 =over 4
 
 =cut
-
-my $l=get_logger(__PACKAGE__ );
 
 =item new
 
@@ -86,9 +84,9 @@ be rolled back to the contents as they were before StartBatch was called.
 
 sub EndBatch
 {
-  my( $self, $success ) = @_;
+  my( $self, $success, $log ) = @_;
 
-  $self->{ds}->EndBatch( $success );
+  $self->{ds}->EndBatch( $success, $log );
 }
 
 sub StartDate
@@ -141,7 +139,7 @@ sub AddProgramme
 
   if( not defined( $self->{curr_date} ) )
   {
-    $l->logdie( "Helper $self->{batch_id}: You must call StartDate before AddProgramme" );
+    logdie( "Helper $self->{batch_id}: You must call StartDate before AddProgramme" );
   }
 
   my $start_time = $self->create_dt( $self->{curr_date}, 
@@ -154,8 +152,8 @@ sub AddProgramme
     $hours += $days*24;
     if( $hours > 20 )
     {
-      $l->error( "$self->{batch_id}: Improbable program start " . 
-                 $start_time->ymd . " " . $start_time->hms . " skipped" );
+      error( "$self->{batch_id}: Improbable program start " . 
+             $start_time->ymd . " " . $start_time->hms . " skipped" );
       return;
     }
     $self->{curr_date}->add( days => 1 );
@@ -221,9 +219,9 @@ sub create_dt
 
   if( not defined $res )
   {
-    $l->error( $self->{batch_id} . ": " . $dt->ymd('-') . " $hour:$minute: $@" );
+    error( $self->{batch_id} . ": " . $dt->ymd('-') . " $hour:$minute: $@" );
     $hour++;
-    $l->error( "Adjusting to $hour:$minute" );
+    error( "Adjusting to $hour:$minute" );
     $dt->set( hour   => $hour,
               minute => $minute,
               );

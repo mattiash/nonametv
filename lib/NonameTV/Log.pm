@@ -6,17 +6,11 @@ Logging-module for NonameTV.
 
 In each module, do
 
-  use NonameTV::Log qw/get_logger start_output/;
+  use NonameTV::Log qw/info progress error logdie/;
 
-  my $l=get_logger(__PACKAGE__);
-  $l->info( "Fetching data" ); or warn, error, fatal, debug
+  info( "Fetching data" ); or progress, error, fatal, debug
 
-  do_stuff() or $l->logdie "Failed to do stuff.";
-
-Call start_output once for each invocation of a nonametv-* command. 
-This is typically done in the Importer or Exporter-module.
-
-  start_output( __PACKAGE__, $p->{verbose} );
+  do_stuff() or logdie "Failed to do stuff.";
 
 Levels:
 
@@ -24,26 +18,25 @@ DEBUG Debugging output
 
 INFO Progress messages
 
-WARN Something has been updated in the database/external files.
+PROGRESS Something has been updated in the database/external files.
 
 ERROR Parse errors etc.
 
-FATAL ??
+FATAL Fatal error. Program terminated.
 
 Normal output consists of ERROR and FATAL only.
 
---verbose prints everything up to and including INFO for this logger.
+--verbose prints everything up to and including INFO.
 
-/var/log/nonametv logs everything up to and including WARN
-
-DEBUG-messages can be shown with per-logger options somehow...
+/var/log/nonametv logs everything up to and including PROGRESS
 
 =cut
 
 use strict;
 use warnings;
 
-use Log::Log4perl qw/:levels/;
+use POSIX qw/strftime/;
+use IO::File;
 
 BEGIN 
 {
@@ -53,73 +46,126 @@ BEGIN
   @ISA         = qw(Exporter);
   @EXPORT      = qw( );
   %EXPORT_TAGS = ( );     # eg: TAG => [ qw!name1 name2! ],
-  @EXPORT_OK   = qw/start_output get_logger/;
+  @EXPORT_OK   = qw/init verbose
+                    debug info progress error logdie
+                    log_to_string log_to_string_result/;
   
-  #
-  # Log WARN, ERROR and FATAL to a file with timestamps.
-  #
-  my $deflog = Log::Log4perl::get_logger("NonameTV");
-    
-  my $appender = Log::Log4perl::Appender->new(
-                                              "Log::Dispatch::File",
-                                              filename => "/tmp/nonametv.log",
-                                              mode => "append",
-                                            );
-  $appender->threshold( $WARN );
-
-  my $layout = Log::Log4perl::Layout::PatternLayout->new( 
-     '%d{yyyy-MM-dd HH:mm:ss} %1p %m%n' );
-
-  $appender->layout( $layout );
-  $deflog->add_appender( $appender );
-
-  #
-  # Log ERROR and FATAL to STDOUT
-  #
-  $appender = Log::Log4perl::Appender->new(
-                                              "Log::Dispatch::Screen",
-                                              );
-  
-  $appender->threshold( $ERROR );
-  $layout = Log::Log4perl::Layout::PatternLayout->new( 
-     '%1p %m%n' );
-  $appender->layout( $layout );
-  $deflog->add_appender( $appender );
-
 }
 our @EXPORT_OK;
 
-sub start_output
+use constant {
+  DEBUG => 1,
+  INFO => 2,
+  PROGRESS => 3,
+  ERROR => 4,
+  FATAL => 5,
+  NONE => 100 
+};
+
+my %levels = (
+  (DEBUG) => "DEBUG",
+  (INFO) => "INFO",
+  (PROGRESS) => "PROG",
+  (ERROR) => "ERROR",
+  (FATAL) => "FATAL",
+);
+
+my $stderr_level;
+my $file_level;
+my $string_level;
+
+my $logfile;
+my $logstring;
+
+sub init
 {
-  my( $package, $verbose ) = @_;
+  my( $conf ) = @_;
 
-  #
-  # Log WARN and INFO for the specified log-package to STDOUT if $verbose
-  # is true. Note that ERROR and FATAL are not logged here, since
-  # they are logged by the NonameTV-logger.
-  #
-  if( $verbose )
+  $stderr_level = ERROR;
+  $file_level = PROGRESS;
+  $string_level = NONE;
+  
+  $logfile = new IO::File "$conf->{LogFile}", O_WRONLY|O_APPEND|O_CREAT;
+
+  die "Failed to open logfile $conf->{LogFile} for writing"
+    unless defined $logfile;
+}
+
+sub verbose
+{
+  my( $verbose ) = @_;
+
+  $stderr_level = $verbose ? INFO : ERROR;
+}
+ 
+sub log_to_string
+{
+  my( $level ) = @_;
+
+  $string_level = $level;
+  $logstring = "";
+  return 123;
+}
+
+sub log_to_string_result
+{
+  my( $h ) = @_;
+
+  $string_level = NONE;
+  return $logstring;
+}
+
+sub info
+{
+  my( $message ) = @_;
+
+  writelog( INFO, $message );
+}
+
+sub progress
+{
+  my( $message ) = @_;
+
+  writelog( PROGRESS, $message );
+}
+
+sub error
+{
+  my( $message ) = @_;
+
+  writelog( ERROR, $message );
+}
+
+sub logdie
+{
+  my( $message ) = @_;
+
+  writelog( FATAL, $message );
+  croak( $message );
+}
+
+sub writelog
+{
+  my( $level, $message ) = @_;
+
+  my $time = strftime( '%F %T', localtime );
+
+  my $levelstr = $levels{$level};
+  
+  if( $level >= $stderr_level )
   {
-    my $deflog = Log::Log4perl::get_logger($package);
-    
-    my $appender = Log::Log4perl::Appender->new(
-                                                "Log::Dispatch::Screen",
-                                                );
-    
-    my $filter = Log::Log4perl::Filter->new( "NonameTV::Filter",
-        sub { my %p = @_; 
-              return ($p{log4p_level} eq "WARN" or $p{log4p_level} eq "INFO");
-            } );
-    $appender->filter( $filter );
+    print STDERR "$levelstr: $message\n";
+  }
 
-    my $layout = Log::Log4perl::Layout::PatternLayout->new( 
-         '%1p %m%n' );
-    $appender->layout( $layout );
-    $deflog->add_appender( $appender );
+  if( $level >= $file_level )
+  {
+    print $logfile "$time $levelstr: $message\n";
+  }
+
+  if( $level >= $string_level )
+  {
+    $logstring .= "$levelstr: $message\n";
   }
 }
 
-sub get_logger
-{
-  Log::Log4perl::get_logger( @_ );
-}
+1;

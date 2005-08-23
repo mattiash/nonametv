@@ -2,17 +2,21 @@
 
 use strict;
 
-use NonameTV::Log qw/get_logger start_output/;
+use IO::Scalar;
+use NonameTV::Log qw/info progress error log_to_string log_to_string_result/;
 
 
-my $l = get_logger("NonameTV::Tester");
-start_output( "NonameTV::Tester", ($ARGV[0] || "") eq '--verbose' );
+NonameTV::Log::init( { LogFile => '/tmp/test.log'}, 
+              ($ARGV[0] || "") eq '--verbose' );
 
-$l->error( "Error" );
-$l->warn( "Warning" );
-$l->info( "Information" );
+error( "Error" );
+progress( "Progress" );
+info( "Information" );
 
-my $l2=get_logger("NonameTV::Test2");
-$l2->error( "Error 2" );
-$l2->warn( "Warning 2" );
-$l2->info( "Information 2" );
+my $h = log_to_string(1);
+
+error( "Error" );
+progress( "Progress" );
+info( "Information" );
+
+print "Message: " . log_to_string_result( $h );

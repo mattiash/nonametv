@@ -14,6 +14,7 @@ use DateTime;
 use XML::LibXML;
 
 use NonameTV qw/MyGet Utf8Conv/;
+use NonameTV::Log qw/info progress error logdie/;
 
 use NonameTV::Importer::BaseDaily;
 
@@ -37,7 +38,6 @@ sub ImportContent
   my $self = shift;
   my( $batch_id, $cref, $chd ) = @_;
 
-  my $l = $self->{logger};
   my $ds = $self->{datastore};
   my $dsh = $self->{datastorehelper};
 
@@ -60,7 +60,7 @@ sub ImportContent
   eval { $doc = $xml->parse_string($$cref); };
   if( $@ ne "" )
   {
-    $l->error( "$batch_id: Failed to parse: $@" );
+    error( "$batch_id: Failed to parse: $@" );
     return;
   }
   
@@ -70,7 +70,7 @@ sub ImportContent
   my $channelname = $doc->findvalue( '//Channel/@name' );
   if( $channelname ne $chd->{grabber_info} )
   {
-    $l->error( "$batch_id: Wrong channel found: $channelname" );
+    error( "$batch_id: Wrong channel found: $channelname" );
 #    return;
   }
   
@@ -78,7 +78,7 @@ sub ImportContent
   my $ns = $doc->find( "//ShowItem" );
   if( $ns->size() == 0 )
   {
-    $l->error( "$batch_id: No data found" );
+    error( "$batch_id: No data found" );
     return;
   }
   

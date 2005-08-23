@@ -157,7 +157,7 @@ use NonameTV qw/MyGet Utf8Conv/;
 
 use NonameTV::Importer::BaseDaily;
 
-use NonameTV::Log qw/get_logger start_output/;
+use NonameTV::Log qw/info progress error logdie/;
 
 use NonameTV::Importer;
 
@@ -179,7 +179,6 @@ sub new {
       'short-grab'   => 0,
     };
 
-    $self->{logger} = get_logger(ref($self));
     $self->{grabber_name} = "Combiner";
 
     $self->ProcessSchedules();
@@ -191,7 +190,6 @@ sub Import
   my $self = shift;
   my( $p ) = @_;
   
-  my $l=$self->{logger};
   start_output( ref($self), $p->{verbose} );
 
   my $maxdays = $p->{'short-grab'} ? $self->{MaxDaysShort} : $self->{MaxDays};
@@ -199,20 +197,20 @@ sub Import
   my $ds = $self->{datastore};
 
   my $sth = $ds->Iterate( 'channels', { grabber => $self->{grabber_name} } )
-      or $l->logdie( "$self->{grabber_name}: Failed to fetch grabber data" );
+      or logdie( "$self->{grabber_name}: Failed to fetch grabber data" );
 
   while( my $data = $sth->fetchrow_hashref )
   {
     if( not exists( $channel_data{$data->{xmltvid} } ) )
     {
-      $l->logdie( "Unknown channel '$data->{xmltvid}'" );
+      logdie( "Unknown channel '$data->{xmltvid}'" );
     }
 
     if( $p->{'force-update'} and not $p->{'short-grab'} )
     {
       # Delete all data for this channel.
       my $deleted = $ds->Delete( 'programs', { channel_id => $data->{id} } );
-      $l->warn( "Deleted $deleted records for $data->{xmltvid}" );
+      progress( "Deleted $deleted records for $data->{xmltvid}" );
     }
 
     my $start_dt = DateTime->today->subtract( days => 1 );
@@ -224,7 +222,7 @@ sub Import
 
       my $batch_id = $data->{xmltvid} . "_" . $dt->ymd('-');
 
-      $l->info( "$batch_id: Fetching data" );
+      info( "$batch_id: Fetching data" );
 
       my %ch_content;
       my $changed = 0;
@@ -242,7 +240,7 @@ sub Import
 
       if( ($error==0) and ($p->{'force-update'} or $changed)  )
       {
-        $l->warn( "$batch_id: Processing data" );
+        progress( "$batch_id: Processing data" );
 
         # Process the gzipped xml-files into an array of program-
         # entries.
@@ -258,7 +256,7 @@ sub Import
       }
       elsif( $error )
       {
-        $l->error( "$batch_id: Failed to fetch data" );
+        error( "$batch_id: Failed to fetch data" );
       }
     }
   }
@@ -272,7 +270,6 @@ sub BuildDay
   my( $batch_id, $prog, $sched, $chd ) = @_;
 
   my $ds =$self->{datastore};
-  my $l=$self->{logger};
 
   my @progs;
 
@@ -303,7 +300,7 @@ sub BuildDay
         my @spans = $isect->as_list();
         if( scalar(@spans) != 1 )
         {
-          $l->error( "$batch_id: Multiple spans" );
+          error( "$batch_id: Multiple spans" );
         }
         $e->{start_dt} = $spans[0]->start;
         $e->{stop_dt} = $spans[0]->end;
@@ -337,8 +334,6 @@ sub ParseXmltv
   my $self = shift;
   my( $cref ) = @_;
 
-  my $l=$self->{logger};
-
   if( not defined $self->{xml} )
   {
     $self->{xml} = XML::LibXML->new;
@@ -350,7 +345,7 @@ sub ParseXmltv
   };
   if( $@ ne "" )
   {
-    $l->error( "???: Failed to parse: $@" );
+    error( "???: Failed to parse: $@" );
     return;
   }
 
@@ -360,7 +355,7 @@ sub ParseXmltv
   my $ns = $doc->find( "//programme" );
   if( $ns->size() == 0 )
   {
-#    $l->error( "???: No data found" );
+#    error( "???: No data found" );
     return;
   }
   

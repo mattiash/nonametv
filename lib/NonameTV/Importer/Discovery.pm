@@ -22,7 +22,7 @@ use XML::LibXML;
 use NonameTV qw/MyGet Wordfile2Xml Htmlfile2Xml Utf8Conv/;
 use NonameTV::DataStore::Helper;
 use NonameTV::DataStore::Updater;
-use NonameTV::Log qw/get_logger start_output/;
+use NonameTV::Log qw/info progress error logdie/;
 
 use NonameTV::Importer;
 
@@ -62,8 +62,6 @@ sub new
     'verbose'      => 0,
   };
   
-  $self->{logger} = get_logger(ref($self));
-
   return $self;
 }
 
@@ -76,7 +74,7 @@ sub Import
 
   foreach my $file (@ARGV)
   {
-    $self->{logger}->info(  "Discovery: Processing $file" );
+    progress(  "Discovery: Processing $file" );
     $self->ImportFile( "", $file, $p );
   } 
 }
@@ -86,8 +84,6 @@ sub ImportFile
   my $self = shift;
   my( $contentname, $file, $p ) = @_;
 
-  my $l = $self->{logger};
-
   my( $fnid, $fnlang, $fnmon, $fnyear, $fntype, $ext ) = 
     ( $file =~ /([A-Z\.]+)
                \.(\S+)\s+(...)\s+(\d\d)\s+(.*)\.
@@ -95,25 +91,25 @@ sub ImportFile
 
   if( not defined( $ext ) )
   {
-    $l->error( "Discovery: Unknown filename $file" );
+    error( "Discovery: Unknown filename $file" );
     return;
   }
 
 #  if( $fnlang ne "Swe" )
 #  {
-#    $l->error( "Wrong language $fnlang" );
+#    error( "Wrong language $fnlang" );
 #    return;
 #  }
 
   if( $fnmon eq "High" )
   {
-    $l->warn( "Discovery: Skipping highlights file $file" );
+    progress( "Discovery: Skipping highlights file $file" );
     return;
   }
 
   if( not exists( $self->{channel_data}->{$fnid} ) )
   {
-    $l->error( "Discovery: Unknown channel $fnid in $file" );
+    error( "Discovery: Unknown channel $fnid in $file" );
     return;
   }
 
@@ -131,13 +127,13 @@ sub ImportFile
   }
   else
   {
-    $l->error( "Discovery: Unknown extension $ext in $file" );
+    error( "Discovery: Unknown extension $ext in $file" );
     return;
   }
 
   if( not defined( $doc ) )
   {
-    $l->error( "Discovery: Failed to parse $file" );
+    error( "Discovery: Failed to parse $file" );
     return;
   }
 
@@ -153,7 +149,7 @@ sub ImportFile
   }
   else
   {
-    $l->error( "Discovery: Unknown filetype $fntype for $file" );
+    error( "Discovery: Unknown filetype $fntype for $file" );
     return;
   }
 }
@@ -166,8 +162,6 @@ sub ImportData
   my $self = shift;
   my( $fnid, $filename, $doc, $channel_xmltvid, $channel_id ) = @_;
   
-  my $l = $self->{logger};
-
   my $dsh = $self->{datastorehelper};
 
   # Find all div-entries.
@@ -175,7 +169,7 @@ sub ImportData
   
   if( $ns->size() == 0 )
   {
-    $l->error( "Discovery: No programme entries found in $filename" );
+    error( "Discovery: No programme entries found in $filename" );
     return;
   }
   
@@ -256,7 +250,7 @@ sub ImportData
       }
       else
       {
-	warn "State ST_START, found: $text\n";
+	error( "State ST_START, found: $text" );
       }
     }
     elsif( $state == ST_FHEAD )
@@ -305,14 +299,14 @@ sub ImportData
       }
       else
       {
-	$l->error( "Discovery: $filename State ST_FDATE, found: $text" );
+	error( "Discovery: $filename State ST_FDATE, found: $text" );
       }
     }
     elsif( $state == ST_EPILOG )
     {
       if( ($type != T_TEXT) and ($type != T_DATE) )
       {
-	$l->error( "Discovery: $filename State ST_EPILOG, found: $text" );
+	error( "Discovery: $filename State ST_EPILOG, found: $text" );
       }
     }
   }
@@ -328,8 +322,6 @@ sub ImportAmendments
   my $self = shift;
   my( $fnid, $filename, $doc, $channel_xmltvid, $channel_id ) = @_;
 
-  my $l = $self->{logger};
-
   my $dsu = $self->{datastoreupdater};
 
   # Find all div-entries.
@@ -337,7 +329,7 @@ sub ImportAmendments
   
   if( $ns->size() == 0 )
   {
-    $l->error( "Discovery: $filename: No programme entries found." );
+    error( "Discovery: $filename: No programme entries found." );
     return;
   }
 
@@ -390,7 +382,7 @@ sub ImportAmendments
     {
       if( $state != ST_FOUND_DATE )
       {
-        $l->logdie( "Discovery: $filename Wrong state for $text" );
+        logdie( "Discovery: $filename Wrong state for $text" );
       }
 
       $self->process_command( $channel_id, $e )
@@ -403,7 +395,7 @@ sub ImportAmendments
     {
       if( $state != ST_FOUND_DATE )
       {
-        $l->logdie( "Discovery: $filename Wrong state for $text" );
+        logdie( "Discovery: $filename Wrong state for $text" );
       }
 
       $self->process_command( $channel_id, $e )
@@ -424,7 +416,7 @@ sub ImportAmendments
       }
       else
       {
-        $l->warn( "Discovery: $filename Ignored text: $text" );
+        error( "Discovery: $filename Ignored text: $text" );
       }
     }
     else
@@ -483,8 +475,6 @@ sub process_command
   my $self = shift;
   my( $channel_id, $e ) = @_;
 
-  my $l = $self->{logger};
-
 #  print "DO: $e->{command} $e->{time} $e->{title}\n";
 
   return unless $self->{process_batch};
@@ -531,7 +521,7 @@ sub process_command
   {}
   else
   {
-    $l->logdie( "Discovery: Unknown command $e->{command}" );
+    logdie( "Discovery: Unknown command $e->{command}" );
   }
 }
 
@@ -624,13 +614,11 @@ sub create_dt
   my $self = shift;
   my( $time ) = @_;
 
-  my $l = $self->{logger};
-  
   my $dt = $self->{curr_date}->clone();
   
   my( $hour, $minute ) = split( /[:\.]/, $time );
 
-  $l->logdie( $self->{batch_id} . ": Unknown starttime $time" )
+  logdie( $self->{batch_id} . ": Unknown starttime $time" )
     if( not defined( $minute ) );
 
   # The schedule date doesn't wrap at midnight. This is what
@@ -651,7 +639,7 @@ sub create_dt
   {
     print $self->{batch_id} . ": " . $dt->ymd('-') . " $hour:$minute: $@" ;
     $hour++;
-    $l->error( "Adjusting to $hour:$minute" );
+    error( "Adjusting to $hour:$minute" );
     $dt->set( hour   => $hour,
               minute => $minute,
               );

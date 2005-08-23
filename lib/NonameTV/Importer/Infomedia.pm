@@ -15,7 +15,7 @@ use XML::LibXML;
 
 use NonameTV qw/MyGet Utf8Conv Html2Xml/;
 use NonameTV::DataStore::Helper;
-use NonameTV::Log qw/get_logger start_output/;
+use NonameTV::Log qw/info progress error logdie/;
 
 use NonameTV::Importer::BaseDaily;
 
@@ -42,7 +42,6 @@ sub ImportContent
   my $self = shift;
   my( $batch_id, $cref, $chd ) = @_;
 
-  my $l = $self->{logger};
   my $ds = $self->{datastore};
   my $dsh = $self->{datastorehelper};
 
@@ -52,19 +51,18 @@ sub ImportContent
   
   if( not defined( $doc ) )
   {
-    $l->error( "$batch_id: Failed to parse." );
-    return;
+    error( "$batch_id: Failed to parse." );
+    return 0;
   }
   
   # The data really looks like this...
   my $ns = $doc->find( '//tr[td/@class="schedtime"]' );
   if( $ns->size() == 0 )
   {
-    $l->error( "$batch_id: No data found" );
-    return;
+    error( "$batch_id: No data found" );
+    return 0;
   }
   
-  $dsh->StartBatch( $batch_id, $chd->{id} );
   $dsh->StartDate( $date, "00:00" );
   
   foreach my $pgm ($ns->get_nodelist)
@@ -90,7 +88,7 @@ sub ImportContent
     $dsh->AddProgramme( $ce );
   }
   
-  $dsh->EndBatch( 1 );
+  return 1;
 }
 
 sub FetchDataFromSite

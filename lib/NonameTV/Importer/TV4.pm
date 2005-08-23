@@ -72,6 +72,7 @@ use XML::LibXML;
 
 use NonameTV qw/MyGet Utf8Conv ParseDescCatSwe AddCategory/;
 use NonameTV::DataStore::Helper;
+use NonameTV::Log qw/info progress error logdie/;
 
 use NonameTV::Importer::BaseDaily;
 
@@ -97,7 +98,6 @@ sub ImportContent
   my $self = shift;
   my( $batch_id, $cref, $chd ) = @_;
 
-  my $l = $self->{logger};
   my $ds = $self->{datastore};
   my $dsh = $self->{datastorehelper};
 
@@ -108,7 +108,7 @@ sub ImportContent
   eval { $doc = $xml->parse_string($$cref); };
   if( $@ ne "" )
   {
-    $l->error( "$batch_id: Failed to parse: $@" );
+    error( "$batch_id: Failed to parse: $@" );
     return;
   }
   
@@ -116,7 +116,7 @@ sub ImportContent
   my $ns = $doc->find( "//program" );
   if( $ns->size() == 0 )
   {
-    $l->error( "$batch_id: No data found" );
+    error( "$batch_id: No data found" );
     return;
   }
   
@@ -248,7 +248,7 @@ sub extract_extra_info
 
   if( $ce->{description} =~ /16:9/ )
   {
-    $self->{logger}->error( "TV4: Undetected 16:9: $ce->{description}" );
+    error( "TV4: Undetected 16:9: $ce->{description}" );
   }
 
   # Remove temporary fields

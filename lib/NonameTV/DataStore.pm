@@ -2,7 +2,7 @@ package NonameTV::DataStore;
 
 use strict;
 
-use NonameTV::Log qw/get_logger/;
+use NonameTV::Log qw/info progress error logdie/;
 use Carp;
 use DBI;
 
@@ -39,8 +39,6 @@ dbhost, dbname, username, password
 Specifies how to connect to the MySQL database.
 
 =cut
-
-my $l=get_logger(__PACKAGE__ );
 
 sub new
 {
@@ -153,16 +151,26 @@ sub EndBatch
 {
   my( $self, $success, $log ) = @_;
   
+  $log = "" if not defined $log;
+
   if( $success and not $self->{batcherror} )
   {
     $self->Update( 'batches', { id => $self->{currbatch} }, 
-                   { last_update => time() } );
+                   { last_update => time(),
+                     message => $log } );
+
     $self->DoSql("Commit");
   }
   else
   {
     $self->DoSql("Rollback");
-    $l->error( $self->{currbatchname} . ": Rolling back changes" );
+    error( $self->{currbatchname} . ": Rolling back changes" );
+
+    if( defined( $log ) )
+    {
+      $self->Update( 'batches', { id => $self->{currbatch} },
+                     { abort_message => $log } );
+    }
   }
 
   delete $self->{currbatch};
@@ -195,14 +203,14 @@ sub AddProgramme
 {
   my( $self, $data ) = @_;
 
-  $l->logdie( "You must call StartBatch before AddProgramme" ) 
+  logdie( "You must call StartBatch before AddProgramme" ) 
     unless exists $self->{currbatch};
 
   return if $self->{batcherror};
   
   if( $data->{start_time} le $self->{last_start} )
   {
-    $l->error( $self->{currbatchname} . 
+    error( $self->{currbatchname} . 
       ": Starttime must be later than last starttime: " . 
       $self->{last_start} . " -> " . $data->{start_time} );
     return;
@@ -211,7 +219,7 @@ sub AddProgramme
   if( defined( $self->{last_end} ) and 
       ($self->{last_end} gt $data->{start_time}) )
   {
-    $l->error( $self->{currbatchname} . 
+    error( $self->{currbatchname} . 
       " Starttime must be later than or equal to last endtime: " . 
       $self->{last_end} . " -> " . $data->{start_time} );
     
@@ -225,7 +233,7 @@ sub AddProgramme
   {
     if( $data->{start_time} ge $data->{end_time} )
     {
-      $l->error( $self->{currbatchname} . 
+      error( $self->{currbatchname} . 
 	  ": Stoptime must be later than starttime: " . 
 	  $data->{start_time} . " -> " . $data->{end_time} );
       return;
@@ -249,14 +257,14 @@ sub AddProgrammeRaw
 {
   my( $self, $data ) = @_;
   
-  $l->logdie( "You must call StartBatch before AddProgramme" ) 
+  logdie( "You must call StartBatch before AddProgramme" ) 
     unless exists $self->{currbatch};
 
   return if $self->{batcherror};
   
   if( $data->{title} !~ /\S/ )
   {
-    $l->error( $self->{currbatchname} . ": Empty title at " . $data->{start_time} );
+    error( $self->{currbatchname} . ": Empty title at " . $data->{start_time} );
     $data->{title} = "end-of-transmission";
   }
 
@@ -286,7 +294,7 @@ sub AddProgrammeRaw
 
   if( $@ )
   {
-    $l->error( $self->{currbatchname} . ": " . $@ );
+    error( $self->{currbatchname} . ": " . $@ );
     $self->{batcherror} = 1;
   }
 }

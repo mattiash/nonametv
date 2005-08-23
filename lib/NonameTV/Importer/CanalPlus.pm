@@ -17,6 +17,7 @@ use DateTime;
 use XML::LibXML;
 
 use NonameTV qw/MyGet Utf8Conv AddCategory/;
+use NonameTV::Log qw/info progress error logdie/;
 
 use NonameTV::Importer::BaseWeekly;
 
@@ -41,7 +42,6 @@ sub ImportContent
 
   my( $batch_id, $cref, $chd ) = @_;
 
-  my $l = $self->{logger};
   my $ds = $self->{datastore};
 
   my $xml = XML::LibXML->new;
@@ -49,7 +49,7 @@ sub ImportContent
   eval { $doc = $xml->parse_string($$cref); };
   if( $@ ne "" )
   {
-    $l->error( "$batch_id: Failed to parse $@" );
+    error( "$batch_id: Failed to parse $@" );
     return;
   }
   
@@ -69,8 +69,8 @@ sub ImportContent
     my $start = $self->create_dt( $sc->findvalue( './@CalendarDate' ) );
     if( not defined $start )
     {
-      $l->error( "$batch_id: Invalid starttime '" 
-                 . $sc->findvalue( './@CalendarDate' ) . "'. Skipping." );
+      error( "$batch_id: Invalid starttime '" 
+             . $sc->findvalue( './@CalendarDate' ) . "'. Skipping." );
       next;
     }
 

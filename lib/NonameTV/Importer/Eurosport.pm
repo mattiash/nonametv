@@ -42,7 +42,7 @@ use XML::LibXML;
 use IO::Wrap;
 
 use NonameTV qw/MyGet Utf8Conv/;
-use NonameTV::Log qw/get_logger start_output/;
+use NonameTV::Log qw/info progress error logdie/;
 use NonameTV::DataStore::Helper;
 
 use NonameTV::Importer::BaseOne;
@@ -70,7 +70,6 @@ sub ImportContent
   my $self = shift;
   my( $batch_id, $cref, $chd ) = @_;
 
-  my $l = $self->{logger};
   my $dsh = $self->{datastorehelper};
 
   my $xml = XML::LibXML->new;
@@ -78,7 +77,7 @@ sub ImportContent
   eval { $doc = $xml->parse_string($$cref); };
   if( $@ ne "" )
   {
-    $l->error( "$batch_id: Failed to parse: $@" );
+    error( "$batch_id: Failed to parse: $@" );
     return;
   }
 
@@ -88,7 +87,7 @@ sub ImportContent
   
   if( $ns->size() == 0 )
   {
-    $l->error( "$batch_id: No programme entries found" );
+    error( "$batch_id: No programme entries found" );
     return;
   }
 

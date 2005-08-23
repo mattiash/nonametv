@@ -13,7 +13,7 @@ file per channel.
 use DateTime;
 use POSIX qw/floor/;
 
-use NonameTV::Log qw/get_logger start_output/;
+use NonameTV::Log qw/info progress error logdie/;
 
 use NonameTV::Importer;
 
@@ -32,7 +32,6 @@ sub new {
       'short-grab'   => 0,
     };
 
-    $self->{logger} = get_logger(ref($self));
     return $self;
 }
 
@@ -41,13 +40,12 @@ sub Import
   my $self = shift;
   my( $p ) = @_;
   
-  my $l=$self->{logger};
   start_output( ref($self), $p->{verbose} );
 
   my $ds = $self->{datastore};
 
   my $sth = $ds->Iterate( 'channels', { grabber => $self->{grabber_name} } )
-      or $l->logdie( "$self->{grabber_name}: Failed to fetch grabber data" );
+      or logdie( "$self->{grabber_name}: Failed to fetch grabber data" );
 
   while( my $data = $sth->fetchrow_hashref )
   {
@@ -55,24 +53,24 @@ sub Import
     {
       # Delete all data for this channel.
       my $deleted = $ds->Delete( 'programs', { channel_id => $data->{id} } );
-      $l->warn( "Deleted $deleted records for $data->{xmltvid}" );
+      progress( "Deleted $deleted records for $data->{xmltvid}" );
     }
 
     my $batch_id = $data->{xmltvid};
 
-    $l->info( "$batch_id: Fetching data" );
+    info( "$batch_id: Fetching data" );
     
     my( $content, $code ) = $self->FetchData( $batch_id, $data );
     
     if ( defined( $content ) and
          ($p->{'force-update'} or ($code) ) )
     {
-      $l->warn( "$batch_id: Processing data" );
+      progress( "$batch_id: Processing data" );
       $self->ImportContent( $batch_id, \$content, $data );
     }
     elsif( not defined( $content ) )
     {
-      $l->error( "$batch_id: Failed to fetch data" );
+      error( "$batch_id: Failed to fetch data" );
     }
   }
 

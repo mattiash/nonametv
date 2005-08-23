@@ -3,7 +3,7 @@ package NonameTV::DataStore::Updater;
 use strict;
 
 use Carp;
-use NonameTV::Log qw/get_logger/;
+use NonameTV::Log qw/info progress error logdie/;
 
 =head1 NAME
 
@@ -28,8 +28,6 @@ without deleting all of them, do the following steps:
 =over 4
 
 =cut
-
-my $l=get_logger(__PACKAGE__ );
 
 =item new
 
@@ -62,7 +60,7 @@ Called by an importer to signal the start of an update of a batch.
 Takes a single parameter containing a string that uniquely identifies
 a set of programmes.
 
-Returns 1 on success and 0 on failure. Failure means that this batch doesn't
+Returns 1 on success and 0 on failure. Failure means that this batch does not
 exist.
 
 =cut
@@ -79,7 +77,7 @@ sub StartBatchUpdate
   my $id = $ds->Lookup( 'batches', { name => $batchname }, 'id' );
   if( not defined( $id ) )
   {
-    $l->error( "No such batch $batchname" );
+    error( "No such batch $batchname" );
     return 0;
   }
   
@@ -113,19 +111,18 @@ sub EndBatchUpdate
   
 #  print "EBU: $success\n";
 
-  $l->logdie( "You must call StartBatchUpdate before EndBatchUpdate" ) 
+  logdie( "You must call StartBatchUpdate before EndBatchUpdate" ) 
     unless exists $self->{currbatch};
 
   my $ds = $self->{ds};
 
+  $log = "" if not defined $log;
+
   if( $success and not $self->{batcherror} )
   {
     $ds->Update( 'batches', { id => $self->{currbatch} }, 
-                   { last_update => time() } );
-
-    $ds->Update( 'batches', { id => $self->{currbatch} },
-                 { message => "concat( message, \"$log\" )" } )
-      if defined( $log );
+                   { last_update => time(),
+                     message => "concat( message, \"$log\" )" } );
 
     $ds->DoSql("Commit");
   }
@@ -134,10 +131,9 @@ sub EndBatchUpdate
     $ds->DoSql("Rollback");
 
     $ds->Update( 'batches', { id => $self->{currbatch} },
-                 { message => "concat( abort_message, \"$log\" )" } )
-      if defined( $log );
+                 { abort_message => "concat( abort_message, \"$log\" )" } );
 
-    $l->error( $self->{currbatchname} . ": Rolling back changes" );
+    error( $self->{currbatchname} . ": Rolling back changes" );
   }
 
   delete $self->{currbatch};
@@ -158,7 +154,7 @@ sub AddProgramme
 
 #  print "AP: $data->{title}\n";
 
-  $l->logdie( "You must call StartBatchUpdate before AddProgramme" ) 
+  logdie( "You must call StartBatchUpdate before AddProgramme" ) 
     unless exists $self->{currbatch};
 
   return if $self->{batcherror};
@@ -183,7 +179,7 @@ sub DeleteProgramme
 
 #  print "DP: $data->{title}\n";
 
-  $l->logdie( "You must call StartBatch before DeleteProgramme" ) 
+  logdie( "You must call StartBatch before DeleteProgramme" ) 
     unless exists $self->{currbatch};
   
   $ignore_batch_id = 0
@@ -207,7 +203,7 @@ sub DeleteProgramme
     {
       $mess .= "$key: '$data->{$key}' ";
     }
-    $l->logdie( $self->{currbatchname} . ": $mess" );
+    logdie( $self->{currbatchname} . ": $mess" );
   }
 
   return $del_data;

@@ -12,7 +12,7 @@ use File::Copy;
 use NonameTV::Exporter;
 use NonameTV::XmltvValidate qw/xmltv_validate_file/;
 
-use NonameTV::Log qw/get_logger start_output/;
+use NonameTV::Log qw/info progress error logdie/;
 
 use base 'NonameTV::Exporter';
 
@@ -60,8 +60,6 @@ sub new {
     return $self;
 }
 
-my $l; 
-
 sub Export
 {
   my( $self, $ds, $p ) = @_;
@@ -89,8 +87,7 @@ EOH
     return;
   }
 
-  $l=get_logger(__PACKAGE__);
-  start_output( __PACKAGE__, $p->{verbose} );
+  NonameTV::Log::verbose( $p->{verbose} );
 
   if( $p->{'export-channels'} )
   {
@@ -180,14 +177,14 @@ sub RemoveOld
       # Compare date-strings.
       if( $date lt $keep_date )
       {
-        $l->info( "Xmltv: Removing $file" );
+        info( "Xmltv: Removing $file" );
         unlink( $file );
         $removed++;
       }
     }
   }
 
-  $l->warn( "Xmltv: Removed $removed files" )
+  progress( "Xmltv: Removed $removed files" )
     if( $removed > 0 );
 }
 
@@ -198,7 +195,7 @@ sub create_dt
   my( $year, $month, $day, $hour, $minute, $second ) =
     ( $str =~ /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$/ );
 
-  $l->logdie( "Xmltv: Unknown time format $str" )
+  logdie( "Xmltv: Unknown time format $str" )
     unless defined $second;
 
   return DateTime->new(
@@ -237,7 +234,7 @@ sub ExportData
 
   $self->{outf}=sub {
     my( $file, $line, $err ) = @_;
-    $l->info( "$file $line: $err" );
+    info( "$file $line: $err" );
   };
   
   my $last_update = $ds->Lookup( 'state', { name => "xmltv_last_update" },
@@ -394,8 +391,8 @@ sub export_range
       {
         # The previous programme ends after the current programme starts.
         # Adjust the end_time of the previous programme.
-        $l->warn( "Xmltv: Adjusted endtime for $chd->{xmltvid}: " . 
-                  "$d1->{end_time} => $d2->{start_time}" );
+        error( "Xmltv: Adjusted endtime for $chd->{xmltvid}: " . 
+               "$d1->{end_time} => $d2->{start_time}" );
 
         $d1->{end_time} = $d2->{start_time}
       }        
@@ -434,8 +431,8 @@ sub export_range
       }
       else
       {
-        $l->warn( "Xmltv: Missing end-time for last entry for " .
-                  "$chd->{xmltvid}_$date" );
+        error( "Xmltv: Missing end-time for last entry for " .
+               "$chd->{xmltvid}_$date" );
       }
     }
 
@@ -462,13 +459,13 @@ sub create_writer
   my $path = $self->{Root};
   my $filename =  $xmltvid . "_" . $date . ".xml";
 
-  $l->info( "Xmltv: $filename" );
+  info( "Xmltv: $filename" );
 
   $self->{writer_filename} = $filename;
   $self->{writer_entries} = 0;
 
   my $fh = new IO::File "> $path$filename.new"
-    or $l->logdie( "Xmltv: cannot write to $path$filename.new" );
+    or logdie( "Xmltv: cannot write to $path$filename.new" );
   
   my $w = new XMLTV::Writer( encoding => 'ISO-8859-1',
                              OUTPUT   => $fh );
@@ -496,15 +493,15 @@ sub close_writer
     if( $? )
     {
       move( "$path$filename.new.gz", "$path$filename.gz" );
-      $l->warn( "Exported $filename.gz" );
+      progress( "Exported $filename.gz" );
       if( $self->{writer_entries} == 0 )
       {
-        $l->warn( "Xmltv: $filename.gz is empty" );
+        error( "Xmltv: $filename.gz is empty" );
       }
       else
       {
         (xmltv_validate_file( "$path$filename.gz" ) == 0) 
-          or $l->error( "Xmltv: $filename.gz contains errors\n" );
+          or error( "Xmltv: $filename.gz contains errors\n" );
       }
     }
     else
@@ -515,9 +512,9 @@ sub close_writer
   else
   {
     move( "$path$filename.new.gz", "$path$filename.gz" );
-    $l->warn( "Xmltv: Exported $filename.gz" );
+    progress( "Xmltv: Exported $filename.gz" );
     ( xmltv_validate_file( "$path$filename.gz" ) == 0 )
-      or $l->warn( "Xmltv: $filename.gz contains errors\n" );
+      or error( "Xmltv: $filename.gz contains errors\n" );
   }
 }
 
