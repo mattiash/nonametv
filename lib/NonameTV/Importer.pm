@@ -141,6 +141,7 @@ sub ImportBatch
   elsif( (not ($force_update) and ( not $code ) ) )
   {
     # No changes.
+    $ds->EndBatch( -1 );
     return;
   }
 

@@ -141,12 +141,14 @@ Called by an importer to signal the end of a batch of updates.
 Takes two parameters: 
 
 An integer containing 1 if the batch was processed
-successfully and 0 if the batch failed and the database should
+successfully, 0 if the batch failed and the database should
 be rolled back to the contents as they were before StartBatch was called.
+and -1 if the batch should be rolled back because it has not changed.
 
 A string containing a log-message to add to the batchrecord. If success==1,
 then the log-message is stored in the field 'message'. If success==0, then
-the log-message is stored in abort_message. The log-message can be undef.
+the log-message is stored in abort_message. If success==-1, the log message
+is not stored. The log-message can be undef.
 
 =cut
 
@@ -159,7 +161,7 @@ sub EndBatch
   
   $log = "" if not defined $log;
 
-  if( $success and not $self->{batcherror} )
+  if( $success==1 and not $self->{batcherror} )
   {
     $self->Update( 'batches', { id => $self->{currbatch} }, 
                    { last_update => time(),
@@ -167,7 +169,7 @@ sub EndBatch
 
     $self->DoSql("Commit");
   }
-  else
+  elsif( $success == 0 )
   {
     $self->DoSql("Rollback");
     error( $self->{currbatchname} . ": Rolling back changes" );
@@ -177,6 +179,10 @@ sub EndBatch
       $self->Update( 'batches', { id => $self->{currbatch} },
                      { abort_message => $log } );
     }
+    elsif( $success == -1 )
+    {
+      $self->DoSql("Rollback");
+    } 
   }
 
   delete $self->{currbatch};

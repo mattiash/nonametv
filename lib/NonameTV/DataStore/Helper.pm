@@ -76,9 +76,17 @@ sub StartBatch
 =item EndBatch
 
 Called by an importer to signal the end of a batch of updates.
-Takes a single parameter containing 1 if the batch was received
-successfully and 0 if the batch failed and the database should
+Takes two parameters: 
+
+An integer containing 1 if the batch was processed
+successfully, 0 if the batch failed and the database should
 be rolled back to the contents as they were before StartBatch was called.
+and -1 if the batch should be rolled back because it has not changed.
+
+A string containing a log-message to add to the batchrecord. If success==1,
+then the log-message is stored in the field 'message'. If success==0, then
+the log-message is stored in abort_message. If success==-1, the log message
+is not stored. The log-message can be undef.
 
 =cut
 
