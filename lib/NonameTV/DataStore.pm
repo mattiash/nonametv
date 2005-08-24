@@ -3,7 +3,7 @@ package NonameTV::DataStore;
 use strict;
 
 use NonameTV::Log qw/info progress error logdie/;
-use Carp qw/croak/;
+use Carp qw/confess/;
 use DBI;
 
 =head1 NAME
@@ -104,7 +104,7 @@ sub StartBatch
 {
   my( $self, $batchname ) = @_;
 
-  croak( "Nested calls to StartBatch" )
+  confess( "Nested calls to StartBatch" )
     if( defined( $self->{currbatch} ) );
   
   $self->DoSql( "START TRANSACTION" );
@@ -154,7 +154,7 @@ sub EndBatch
 {
   my( $self, $success, $log ) = @_;
   
-  croak( "EndBatch called without StartBatch" )
+  confess( "EndBatch called without StartBatch" )
     unless defined( $self->{currbatch} );
   
   $log = "" if not defined $log;
