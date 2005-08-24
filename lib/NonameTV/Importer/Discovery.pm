@@ -70,7 +70,7 @@ sub Import
   my $self = shift;
   my( $p ) = @_;
 
-  start_output( ref($self), $p->{verbose} );
+  NonameTV::Log::verbose( $p->{verbose} );
 
   foreach my $file (@ARGV)
   {
