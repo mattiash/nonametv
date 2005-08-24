@@ -18,6 +18,7 @@ use XML::LibXML;
 
 use NonameTV qw/MyGet Wordfile2Xml Htmlfile2Xml Utf8Conv/;
 use NonameTV::DataStore::Helper;
+use NonameTV::Log qw/info progress error logdie/;
 
 use NonameTV::Importer;
 
@@ -36,7 +37,7 @@ sub new
   my $sth = $self->{datastore}->Iterate( 'channels', 
                                          { grabber => 'expressen' },
                                          qw/xmltvid id grabber_info/ )
-    or die "Failed to fetch grabber data";
+    or logdie "Failed to fetch grabber data";
 
   while( my $data = $sth->fetchrow_hashref )
   {
@@ -61,7 +62,7 @@ sub Import
 
   foreach my $file (@ARGV)
   {
-    print  "Expressen: Processing $file\n";
+    prog( "Expressen: Processing $file" );
     $self->ImportFile( "", $file, $p );
   } 
 }
@@ -89,12 +90,13 @@ sub ImportFile
   }
   else
   {
-    print "Expressen: Unknown extension $file\n";
+    error( "Expressen: Unknown extension for $file" );
+    return;
   }
   
   if( not defined( $doc ) )
   {
-    print STDERR "$file failed to parse\n";
+    error( "Expressen: $file failed to parse" );
     return;
   }
   
@@ -108,7 +110,8 @@ sub ImportFile
   }
 
   my $date = undef;
-  
+  my $loghandle;
+
   foreach my $table ($ns->get_nodelist)
   {
     my $ns2 = $table->find( ".//tr" );
@@ -120,11 +123,19 @@ sub ImportFile
 
       if( $starttime =~ /^mån|tis|ons|tor|fre|lör|sön/i )
       {
+        if( defined( $date ) )
+        {
+          $dsh->EndBatch( 1, log_to_string_result( $loghandle ) );
+        }
+
         $date = norm( $tr->findvalue( './/td[2]//text()' ) );
         $date =~ /^\d\d\d\d-\d\d-\d\d$/ 
-          or die "Invalid date $date";
+          or logdie "Invalid date $date";
+
+        $loghandle = log_to_string( 3 );
         $dsh->StartBatch( "${xmltvid}_$date", $channel_id );
         $dsh->StartDate( $date );
+        prog( "${xmltvid}_$date: Processing $file." );
         next;
       }
 
@@ -137,7 +148,7 @@ sub ImportFile
 
       if( $starttime !~ /^\d{1,2}:\d{1,2}$/ )
       {
-        print STDERR "Expressen $date: Unknown starttime $starttime\n";
+        error( "Expressen $date: Unknown starttime $starttime" );
         next;
       }
 
@@ -154,12 +165,13 @@ sub ImportFile
 
       $dsh->AddProgramme( $ce );
     }
-
-    if( defined( $date ) )
-    {
-      $dsh->EndBatch( 1 );
-    }
-  } 
+  }
+ 
+  if( defined( $date ) )
+  {
+    $dsh->EndBatch( 1, log_to_string_result( $loghandle ) );
+  }
+  
 }
 
 sub extract_extra_info

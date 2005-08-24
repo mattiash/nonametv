@@ -89,6 +89,9 @@ sub init
 
   die "Failed to open logfile $conf->{LogFile} for writing"
     unless defined $logfile;
+
+  # Flush the logfile to disk for each write.
+  $logfile->autoflush( 1 );
 }
 
 sub verbose

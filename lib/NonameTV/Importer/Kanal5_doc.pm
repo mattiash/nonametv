@@ -79,7 +79,7 @@ sub ImportContent
   if( not defined( $doc ) )
   {
     error( "$batch_id: Failed to parse" );
-    return;
+    return 0;
   }
   
   # Find all div-entries.
@@ -88,10 +88,8 @@ sub ImportContent
   if( $ns->size() == 0 )
   {
     error( "$batch_id: No programme entries found" );
-    return;
+    return 0;
   }
-  
-  $dsh->StartBatch( $batch_id, $chd->{id} );
   
   # States
   use constant {
@@ -228,7 +226,8 @@ sub ImportContent
     $dsh->AddProgramme( $ce );
   }
   
-  $dsh->EndBatch( 1 );
+  # Success
+  return 1;
 }
 
 # Fetch the association between title and category/program_type for a

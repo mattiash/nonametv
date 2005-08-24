@@ -50,10 +50,8 @@ sub ImportContent
   if( $@ ne "" )
   {
     error( "$batch_id: Failed to parse $@" );
-    return;
+    return 0;
   }
-  
-  $ds->StartBatch( $batch_id );
   
   # Find all "Schedule"-entries.
   my $ns = $doc->find( "//Schedule" );
@@ -62,7 +60,7 @@ sub ImportContent
   {
     # Sanity check. 
     # What does it mean if there are several programs?
-    die "Wrong number of Programs for Schedule " .
+    logdie "Wrong number of Programs for Schedule " .
       $sc->findvalue( '@Id' )
       if( $sc->findvalue( 'count(.//Program)' ) ) != 1;
     
@@ -182,7 +180,8 @@ sub ImportContent
     $ds->AddProgramme( $ce );
   }
   
-  $ds->EndBatch( 1 );
+  # Success
+  return 1;
 }
 
 sub create_dt

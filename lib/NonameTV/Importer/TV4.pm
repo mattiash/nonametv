@@ -109,7 +109,7 @@ sub ImportContent
   if( $@ ne "" )
   {
     error( "$batch_id: Failed to parse: $@" );
-    return;
+    return 0;
   }
   
   # Find all "program"-entries.
@@ -117,10 +117,9 @@ sub ImportContent
   if( $ns->size() == 0 )
   {
     error( "$batch_id: No data found" );
-    return;
+    return 0;
   }
   
-  $dsh->StartBatch( $batch_id, $chd->{id} );
   $dsh->StartDate( $date );
   
   foreach my $pgm ($ns->get_nodelist)
@@ -184,7 +183,8 @@ sub ImportContent
     $dsh->AddProgramme( $ce );
   }
   
-  $dsh->EndBatch( 1 );
+  # Success
+  return 1;
 }
 
 sub FetchDataFromSite

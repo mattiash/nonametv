@@ -55,8 +55,6 @@ sub ImportContent
   my $ds = $self->{datastore};
   my $dsh = $self->{datastorehelper};
 
-  $dsh->StartBatch( $batch_id, $chd->{id} );
-  
   # Decode the string into perl's internal format.
   # see perldoc Encode
 
@@ -152,7 +150,8 @@ sub ImportContent
     $dsh->AddProgramme( $ce );
   }
 
-  $dsh->EndBatch( 1 );
+  # Success
+  return 1;
 }
 
 sub FetchDataFromSite

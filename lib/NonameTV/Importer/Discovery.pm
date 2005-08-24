@@ -44,7 +44,7 @@ sub new
   my $sth = $self->{datastore}->Iterate( 'channels', 
                                          { grabber => 'discovery' },
                                          qw/xmltvid id grabber_info/ )
-    or die "Failed to fetch grabber data";
+    or logdie "Failed to fetch grabber data";
 
   while( my $data = $sth->fetchrow_hashref )
   {
@@ -164,6 +164,8 @@ sub ImportData
   
   my $dsh = $self->{datastorehelper};
 
+  my $loghandle;
+
   # Find all div-entries.
   my $ns = $doc->find( "//div" );
   
@@ -243,6 +245,8 @@ sub ImportData
       }
       elsif( $type == T_DATE )
       {
+        $loghandle = log_to_string( 3 ); 
+        progress( "${channel_xmltvid}_$date: Processing $filename" );
 	$dsh->StartBatch( "${channel_xmltvid}_$date", $channel_id );
 	$dsh->StartDate( $date );
 	$state = ST_FDATE;
@@ -288,7 +292,10 @@ sub ImportData
       }
       elsif( $type == T_DATE )
       {
-	$dsh->EndBatch( 1 );
+	$dsh->EndBatch( 1, log_to_string_result( $loghandle ) );
+
+        $loghandle = log_to_string( 3 ); 
+        progress( "${channel_xmltvid}_$date: Processing $filename" );
 	$dsh->StartBatch( "${channel_xmltvid}_$date", $channel_id );
 	$dsh->StartDate( $date );
 	$state = ST_FDATE;
@@ -310,7 +317,7 @@ sub ImportData
       }
     }
   }
-  $dsh->EndBatch( 1 );
+  $dsh->EndBatch( 1, log_to_string_result( $loghandle ) );
 }
 
 #
@@ -323,6 +330,8 @@ sub ImportAmendments
   my( $fnid, $filename, $doc, $channel_xmltvid, $channel_id ) = @_;
 
   my $dsu = $self->{datastoreupdater};
+
+  my $loghandle;
 
   # Find all div-entries.
   my $ns = $doc->find( "//div" );
@@ -365,12 +374,15 @@ sub ImportAmendments
         $self->process_command( $channel_id, $e )
           if( defined( $e ) );
         $e = undef;
-        $dsu->EndBatchUpdate( 1 )
+        $dsu->EndBatchUpdate( 1, log_to_string_result( $loghandle ) )
           if( $self->{process_batch} ); 
       }
 
       $date = parse_date( $text );
       $state = ST_FOUND_DATE;
+
+      $loghandle = log_to_string( 3 ); 
+      progress( "${channel_xmltvid}_$date: Processing $filename" );
 
       $self->{process_batch} = 
         $dsu->StartBatchUpdate( "${channel_xmltvid}_$date", $channel_id ) ;
@@ -427,7 +439,7 @@ sub ImportAmendments
   $self->process_command( $channel_id, $e )
     if( defined( $e ) );
 
-  $dsu->EndBatchUpdate( 1 )
+  $dsu->EndBatchUpdate( 1, log_to_string_result( $loghandle ) )
     if( $self->{process_batch} ); 
 }
 

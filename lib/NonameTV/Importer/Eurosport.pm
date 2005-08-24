@@ -78,17 +78,15 @@ sub ImportContent
   if( $@ ne "" )
   {
     error( "$batch_id: Failed to parse: $@" );
-    return;
+    return 0;
   }
-
-  $dsh->StartBatch( $batch_id, $chd->{id} );
 
   my $ns = $doc->find( "//programme" );
   
   if( $ns->size() == 0 )
   {
     error( "$batch_id: No programme entries found" );
-    return;
+    return 0;
   }
 
   my $currdate = "none";
@@ -111,7 +109,7 @@ sub ImportContent
     my $title = norm( $sportname );
 
     # Fix encoding error in source-file.
-    $title =~ s/^'ventyr$/Äventyr/;
+    $title =~ s/^\'ventyr$/Äventyr/;
 
     # Fix strange title
     $title =~ s/_\._//;
@@ -126,7 +124,8 @@ sub ImportContent
     $dsh->AddProgramme( $data );            
   }
   
-  $dsh->EndBatch(1);
+  # Success
+  return 1;
 }
 
 sub FetchDataFromSite

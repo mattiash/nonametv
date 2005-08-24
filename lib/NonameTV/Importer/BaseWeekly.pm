@@ -72,20 +72,7 @@ sub Import
       my $batch_id = $data->{xmltvid} . "_" . $dt->week_year . '-' . 
         $dt->week_number;
 
-      info( "$batch_id: Fetching data" );
-
-      my( $content, $code ) = $self->FetchData( $batch_id, $data );
-            
-      if ( defined( $content ) and
-           ($p->{'force-update'} or ($code) ) )
-      {
-        progress( "$batch_id: Processing data" );
-	$self->ImportContent( $batch_id, \$content, $data );
-      }  
-      elsif( not defined( $content ) )
-      {
-        error( "$batch_id: Failed to fetch data" );
-      }
+      $self->ImportBatch( $batch_id, $data, $p->{'force-update'} );
     }
   }
 

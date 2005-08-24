@@ -3,7 +3,7 @@ package NonameTV::DataStore;
 use strict;
 
 use NonameTV::Log qw/info progress error logdie/;
-use Carp;
+use Carp qw/croak/;
 use DBI;
 
 =head1 NAME
@@ -103,6 +103,9 @@ a set of programmes.
 sub StartBatch
 {
   my( $self, $batchname ) = @_;
+
+  croak( "Nested calls to StartBatch" )
+    if( defined( $self->{currbatch} ) );
   
   $self->DoSql( "START TRANSACTION" );
   my $id = $self->Lookup( 'batches', { name => $batchname }, 'id' );
@@ -150,6 +153,9 @@ the log-message is stored in abort_message. The log-message can be undef.
 sub EndBatch
 {
   my( $self, $success, $log ) = @_;
+  
+  croak( "EndBatch called without StartBatch" )
+    unless defined( $self->{currbatch} );
   
   $log = "" if not defined $log;
 

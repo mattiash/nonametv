@@ -100,8 +100,8 @@ sub ImportFile
 
 ImportBatch
 
-Called from Base*.pm to import data for a single batch. Hooks into log4perl
-to log errors to the batch-entry in the database.
+Called from Base*.pm to import data for a single batch. Logs errors to the 
+batch-entry in the database.
 
 =cut
 

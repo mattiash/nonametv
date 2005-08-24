@@ -61,7 +61,7 @@ sub ImportContent
   if( $@ ne "" )
   {
     error( "$batch_id: Failed to parse: $@" );
-    return;
+    return 0;
   }
   
   # Verify the assumption that each file only contains data for
@@ -79,10 +79,8 @@ sub ImportContent
   if( $ns->size() == 0 )
   {
     error( "$batch_id: No data found" );
-    return;
+    return 0;
   }
-  
-  $ds->StartBatch( $batch_id );
   
   foreach my $pgm ($ns->get_nodelist)
   {
@@ -114,7 +112,8 @@ sub ImportContent
     $ds->AddProgramme( $ce );
   }
   
-  $ds->EndBatch( 1 );
+  # Success
+  return 1;
 }
 
 sub FetchDataFromSite

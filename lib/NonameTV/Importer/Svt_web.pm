@@ -70,7 +70,7 @@ sub ImportContent
   if( not defined( $doc ) )
   {
     error( "$batch_id: Failed to parse." );
-    return;
+    return 0;
   }
 
   # Check that we have downloaded data for the correct day.
@@ -81,7 +81,7 @@ sub ImportContent
   if( $day != $dateday )
   {
     error( "$batch_id: Wrong day: $daytext" );
-    return;
+    return 0;
   }
         
   # The data really looks like this...
@@ -89,10 +89,9 @@ sub ImportContent
   if( $ns->size() == 0 )
   {
     error( "$batch_id: No data found" );
-    return;
+    return 0;
   }
 
-  $dsh->StartBatch( $batch_id, $chd->{id} );
   $dsh->StartDate( $date, "03:00" );
   
   my $skipfirst = 1;
@@ -130,7 +129,8 @@ sub ImportContent
     $dsh->AddProgramme( $ce );
   }
   
-  $dsh->EndBatch( 1 );
+  # Success
+  return 1;
 }
 
 # Fetch the association between title and category/program_type for a
