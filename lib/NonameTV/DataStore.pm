@@ -165,7 +165,9 @@ sub EndBatch
   {
     $self->Update( 'batches', { id => $self->{currbatch} }, 
                    { last_update => time(),
-                     message => $log } );
+                     message => $log,
+                     abort_message => "",
+                   } );
 
     $self->DoSql("Commit");
   }
@@ -182,7 +184,11 @@ sub EndBatch
     elsif( $success == -1 )
     {
       $self->DoSql("Rollback");
-    } 
+    }
+    else
+    {
+      confess( "Wrong value for success" );
+    }
   }
 
   delete $self->{currbatch};
