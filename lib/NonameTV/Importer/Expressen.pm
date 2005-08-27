@@ -18,7 +18,8 @@ use XML::LibXML;
 
 use NonameTV qw/MyGet Wordfile2Xml Htmlfile2Xml Utf8Conv/;
 use NonameTV::DataStore::Helper;
-use NonameTV::Log qw/info progress error logdie/;
+use NonameTV::Log qw/info progress error logdie 
+                     log_to_string log_to_string_result/;
 
 use NonameTV::Importer;
 
@@ -62,7 +63,7 @@ sub Import
 
   foreach my $file (@ARGV)
   {
-    prog( "Expressen: Processing $file" );
+    progress( "Expressen: Processing $file" );
     $self->ImportFile( "", $file, $p );
   } 
 }
@@ -132,10 +133,10 @@ sub ImportFile
         $date =~ /^\d\d\d\d-\d\d-\d\d$/ 
           or logdie "Invalid date $date";
 
-        $loghandle = log_to_string( 3 );
+        $loghandle = log_to_string( 4 );
         $dsh->StartBatch( "${xmltvid}_$date", $channel_id );
         $dsh->StartDate( $date );
-        prog( "${xmltvid}_$date: Processing $file." );
+        progress( "${xmltvid}_$date: Processing $file." );
         next;
       }
 
@@ -143,12 +144,12 @@ sub ImportFile
       my $description = norm( $tr->findvalue( './/td[3]//text()' ) );
 
 
-      $starttime =~ tr/\./:/;
+      $starttime =~ tr/\.o/:0/;
       $starttime =~ tr/ \t//d;
 
       if( $starttime !~ /^\d{1,2}:\d{1,2}$/ )
       {
-        error( "Expressen $date: Unknown starttime $starttime" );
+        error( "$file: Unknown starttime $starttime" );
         next;
       }
 
