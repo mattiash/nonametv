@@ -29,7 +29,7 @@ sub new {
     $self->{MaxWeeks} = 52 unless defined $self->{MaxWeeks};
     $self->{MaxWeeksShort} = 1 unless defined $self->{MaxWeeksShort};
 
-    $self->{OptionSpec} = [ qw/force-update verbose short-grab/ ];
+    $self->{OptionSpec} = [ qw/force-update verbose+ short-grab/ ];
     $self->{OptionDefaults} = { 
       'force-update' => 0,
       'verbose'      => 0,
