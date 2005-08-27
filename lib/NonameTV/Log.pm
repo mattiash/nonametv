@@ -98,7 +98,18 @@ sub verbose
 {
   my( $verbose ) = @_;
 
-  $stderr_level = $verbose ? INFO : ERROR;
+  if( $verbose == 0 )
+  {
+    $stderr_level = ERROR;
+  }
+  elsif( $verbose == 1 )
+  {
+    $stderr_level = PROGRESS;
+  }
+  else
+  {
+    $stderr_level = INFO;
+  }
 }
  
 sub log_to_string
