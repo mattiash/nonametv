@@ -1,0 +1,53 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+use NonameTV;
+use NonameTV::DataStore;
+
+use Getopt::Long;
+use POSIX qw/strftime/;
+
+# Read configuration
+my $conf = NonameTV::ReadConfig();
+
+# Create Datastore
+my $ds = NonameTV::DataStore->new( $conf->{DataStore} );
+
+print '<html><body>';
+
+# Retrieve a list of all batches that have been aborted due to errors.
+my( $res, $sth ) = $ds->Sql( 
+        "select * from batches where abort_message!='' order by id" );
+
+print "<h1>Errors:</h1>";
+while( my $d = $sth->fetchrow_hashref() )
+{
+  print "<h2>$d->{name}</h2>";
+  my $lastok =   $d->{last_update} > 0 ? 
+                  strftime( '%F %T', localtime( $d->{last_update} ) ) : 
+                  '(never)';
+  print "Last ok: $lastok\n";
+  print "<pre>$d->{abort_message}</pre>";
+}
+
+$sth->finish();
+
+# Retrieve a list of all batches that generated a warning.
+( $res, $sth ) = $ds->Sql( 
+        "select * from batches where message!='' order by id" );
+
+print "<h1>Warnings</h1>";
+while( my $d = $sth->fetchrow_hashref() )
+{
+  print "<h3>$d->{name}</h3>";
+  my $lastok =  $d->{last_update} > 0 ? 
+                  strftime( '%F %T', localtime( $d->{last_update} ) ) : 
+                  '(never)';
+  print "Last updated: $lastok\n";
+  print "<pre>$d->{message}</pre>";
+}
+
+$sth->finish();
+
+print "</body></html>";
