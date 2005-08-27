@@ -107,15 +107,17 @@ sub StartBatch
   confess( "Nested calls to StartBatch" )
     if( defined( $self->{currbatch} ) );
   
-  $self->DoSql( "START TRANSACTION" );
   my $id = $self->Lookup( 'batches', { name => $batchname }, 'id' );
+
   if( defined( $id ) )
   {
+    $self->DoSql( "START TRANSACTION" );
     $self->Delete( 'programs', { batch_id => $id } );
   }
   else
   {
     $id = $self->Add( 'batches', { name => $batchname } );
+    $self->DoSql( "START TRANSACTION" );
   }
     
   $self->{last_end} = "1970-01-01 00:00:00";
@@ -181,14 +183,14 @@ sub EndBatch
       $self->Update( 'batches', { id => $self->{currbatch} },
                      { abort_message => $log } );
     }
-    elsif( $success == -1 )
-    {
-      $self->DoSql("Rollback");
-    }
-    else
-    {
-      confess( "Wrong value for success" );
-    }
+  }
+  elsif( $success == -1 )
+  {
+    $self->DoSql("Rollback");
+  }
+  else
+  {
+    confess( "Wrong value for success" );
   }
 
   delete $self->{currbatch};
