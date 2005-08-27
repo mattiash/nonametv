@@ -67,8 +67,15 @@ sub ImportContent
   $str = encode( "iso-8859-1", $str );
 
   my @rows = split("\n", $str );
+
+  if( scalar( @rows < 2 ) )
+  {
+    error( "$batch_id: No data found" );
+    return 0;
+  }
+
   my $columns = [ split( "\t", $rows[0] ) ];
-  
+
   for ( my $i = 1; $i < scalar @rows; $i++ )
   {
     my $inrow = $self->row_to_hash($batch_id, $rows[$i], $columns );
