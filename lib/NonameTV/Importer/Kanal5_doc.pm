@@ -250,8 +250,8 @@ sub FetchCategories
             
   if( not defined( $content ) )
   {
-    error( "$batch_id: Failed to fetch listings" );
-    return $cat;
+    error( "$batch_id: Failed to fetch category-listings" );
+    return {};
   }
    
   my $xml = XML::LibXML->new;
