@@ -76,6 +76,13 @@ sub ImportContent
   # Check that we have downloaded data for the correct day.
   my $daytext = $doc->findvalue( '//font[@class="header"]' );
   my( $day ) = ($daytext =~ /\b(\d{1,2})\D+(\d{4})\b/);
+
+  if( not defined( $day ) )
+  {
+    error( "$batch_id: Failed to find date in page ($daytext)" );
+    return 0;
+  }
+
   my( $dateday ) = ($date =~ /(\d\d)$/);
 
   if( $day != $dateday )
