@@ -1,47 +1,58 @@
-# $Id: Nickelodeon.pm,v 1.18 2005/09/01 16:18:04 frax Exp $
-#package NonameTV::Importer::Nickelodeon;
-# The above should probably be the final package name after Mattias have finished it.
-# For now we use this:
-package Nickelodeon;
+package NonameTV::Importer::Nickelodeon;
 
 use strict;
 use warnings;
 
+=pod
+
+Import data from Word-files delivered via e-mail. 
+
+Features:
+
+=cut
+
 use DateTime;
 use DateTime::Duration;
-
-use Unicode::String qw/utf8/;
-
-# The subroutine "*2HTMLTree" should probably be in NonameTV.pm
-# If we should continue to use it 
-# (Mattis might want to use XMLLib instead of the HTML libs)
-# I have also implemented a fake DataStore::Helper object 
-# use NonameTV 
-use frax qw(&WordFile2HTMLTree &HTMLFile2HTMLTree &DataStoreHelper_new &Utf8Conv);
-
-# These should probably be used in Mattias final version
-#use NonameTV::DataStore::Helper;
-#use NonameTV::Importer;
-#use base 'NonameTV::Importer';
 
 use HTML::TreeBuilder;
 use HTML::Entities; 
 
+use NonameTV qw/MyGet Wordfile2HtmlTree Htmlfile2HtmlTree Utf8Conv/;
+use NonameTV::DataStore::Helper;
+use NonameTV::Log qw/info progress error logdie/;
 
-# Since I don't have access to the NonameTV::Importer module which
-# this probably should be inherited from, we do just a simple
-# constructor
+use NonameTV::Importer;
+
+use base 'NonameTV::Importer';
+
 sub new 
 {
-  my $this= shift;
-  my $class= ref($this) || $this;
-  my $self= {};
-  bless $self, $class;
+  my $proto = shift;
+  my $class = ref($proto) || $proto;
+  my $self  = $class->SUPER::new( @_ );
+  bless ($self, $class);
   
-  my $dsh= &DataStoreHelper_new(); 
-  #NonameTV::DataStore::Helper->new( $self->{datastore} );
+  my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore} );
   $self->{datastorehelper} = $dsh;
-  
+
+  my $sth = $self->{datastore}->Iterate( 'channels', 
+                                         { grabber => 'nickelodeon' },
+                                         qw/xmltvid id grabber_info/ )
+    or logdie "Failed to fetch grabber data";
+
+  while( my $data = $sth->fetchrow_hashref )
+  {
+    $self->{channel_data}->{$data->{xmltvid}} = 
+                            { id => $data->{id}, };
+  }
+
+  $sth->finish;
+
+  $self->{OptionSpec} = [ qw/verbose/ ];
+  $self->{OptionDefaults} = { 
+    'verbose'      => 0,
+  };
+
   return $self;
 }
 
@@ -49,11 +60,12 @@ sub Import
 {
   my $self = shift;
   my( $p ) = @_;
-  
-  foreach my $file (@ARGV) {
-    print  "Nickelodeon: Processing $file\n";
+
+  foreach my $file (@ARGV)
+  {
+    progress( "Nickelodeon: Processing $file" );
     $self->ImportFile( "", $file, $p );
-  }
+  } 
 }
 
 sub ImportFile
@@ -63,26 +75,25 @@ sub ImportFile
   
   my $xmltvid= "nickelodeon.se";
   
-  my $channel_id= 'cid';
-  # Should probably be as below
-  # my $channel_id= $self->{channel_data}->{$xmltvid}->{id};
+  my $channel_id= $self->{channel_data}->{$xmltvid}->{id};
   
   my $dsh= $self->{datastorehelper};
   
   my $tree;
   if($file =~  m/\.doc$/i) {
-    $tree= &WordFile2HTMLTree($file);
+    $tree= &Wordfile2HtmlTree($file);
   }
   elsif($file =~ /\.html$/) {
-    $tree= &HTMLFile2HTMLTree($file);
+    $tree= &Htmlfile2HtmlTree($file);
   }
   else {
-    print "Nickelodeon: Unknown extension \"$file\"\n";
+    error( "Nickelodeon: Unknown extension \"$file\"" );
+    return 0;
   }
   
   if(!defined $tree) {
-    print STDERR "Nickelodeon: \"$file\" failed to parse\n";
-    return;
+    error( "Nickelodeon: \"$file\" failed to parse" );
+    return 0;
   }
   
   # Some statics used more then once
@@ -163,29 +174,30 @@ sub ImportFile
     } 
     else 
     {
-      die "This should only happen if the regexps above are wrong!";
+      logdie "This should only happen if the regexps above are wrong!";
     }
     
     unless(defined($startday) && defined($endday)) 
     {
-      print('WARNING! Invalid date in time period: "',&norm($e->as_text()),
-            "\" ... skipping!\n");
+      error('$file: WARNING! Invalid date in time period: "' .
+            &norm($e->as_text()) . "\" ... skipping!");
       next;
     }
 
     #print $startday->ymd,' => ',$endday->ymd,"\n";
     if($startday->compare($endday) > 0) 
     {
-      print("WARNING! Start day (",$startday->ymd('-'),") is after End day (", 
-            $endday->ymd('-'), "), I'm swapping them!\n");
+      error("$file: Start day (" . $startday->ymd('-') . 
+            ") is after End day (" . $endday->ymd('-') .
+            "), I'm swapping them!");
       my $tmp= $startday;
       $startday= $endday;
       $endday= $tmp;
     }
 
-    print "WARNING! Does not recognize document structure trying to get schedule anyway ...\n"
+    error( "$file: Does not recognize document structure. " . 
+           "Trying to get schedule anyway ..." )
       unless $e->right()->attr('_tag') eq 'p';
-	
 
     my %sched= ();
     my $title= my $time= undef;
@@ -198,7 +210,7 @@ sub ImportFile
         if(defined $time) 
         { 
           # store previous entry when we find new start time
-          print "WARNING! Overwriting exisiting entry (starttime=$time)!\n"
+          error( "$file: Overwriting exisiting entry (starttime=$time)!" )
             if exists $sched{$time};
 
           $sched{$time}{'title'}= $title;
@@ -208,7 +220,7 @@ sub ImportFile
         }
 
         $time= "$1:$2";
-        $title= &norm($3);
+        $title= norm($3);
         if($title =~ m/^End|Slut$/) 
         {
           $title= 'End';
@@ -218,12 +230,14 @@ sub ImportFile
       } 
       else 
       {
-        my $txt= &norm($t->as_text());
+        my $txt= norm($t->as_text());
 
         if(lc($txt) eq 'end' && defined $time) 
-        { # Danish schedule have end-tag without time
-          print "WARNING! Overwriting exisiting entry (starttime=$time)!\n"
+        { 
+          # Danish schedule have end-tag without time
+          error( "$file: Overwriting exisiting entry (starttime=$time)!" )
             if exists $sched{$time};
+
           $sched{$time}{'title'}= $title;
           $sched{$time}{'descr'}= $descr if length $descr;
           $title= 'End';
@@ -236,7 +250,7 @@ sub ImportFile
             $m-= 60;
           }
           $time= sprintf("%02d:%02d", $h, $m);
-          print "WARNING! End of transmission time not found using: $time\n";
+          error( "$file: End of transmission time not found using: $time" );
           $sched{"$time"}{'title'}= 'end-of-transmission';
           last;
         }
@@ -247,11 +261,12 @@ sub ImportFile
 
     unless(scalar(keys %sched)) 
     {
-      print "WARNING! Schedule not found ... skipping!\n";
+      error( "$file: Schedule not found ... skipping!" );
       next;
     }
 
-    print "WARNING! End of transmission not found!\n" unless $title eq 'End';
+    error( "$file: End of transmission not found!" )
+      unless $title eq 'End';
 
     # Got entire schedule and days, lets Import it!
     my $weekdays= $e->as_text() =~ m/$vard/ ? '[1-5]' : '[67]';
@@ -268,23 +283,27 @@ sub ImportFile
           start_time  => $time
         };
 
-        $ce->{'descr'}= $sched{$time}{'descr'} if exists $sched{$time}{'descr'};
+        $ce->{'description'}= $sched{$time}{'descr'} 
+          if exists $sched{$time}{'descr'};
+
         $dsh->AddProgramme($ce);
       }
+      $dsh->EndBatch(1);
     } 
     continue 
     {
       $startday->add_duration($oneday);
     }
-    $dsh->EndBatch(1);
   }
+
+  $tree->delete;
 }
 
 sub norm
 {
   return '' unless defined $_[0];
   
-  my $str = Utf8Conv(&utf8($_[0])->latin1);
+  my $str = Utf8Conv($_[0]);
   
   $str =~ tr/\n\r\t\xa0 /    /s; # a0 is nonbreaking space.
   

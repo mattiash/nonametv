@@ -4,11 +4,11 @@ use strict;
 use warnings;
 
 use LWP::UserAgent;
-use File::Temp qw/tempfile/;
+use File::Temp qw/tempfile tempdir/;
 use Unicode::String qw/utf8/;
 
 use NonameTV::StringMatcher;
-use NonameTV::Log;
+use NonameTV::Log qw/logdie/;
 
 BEGIN {
     use Exporter   ();
@@ -22,6 +22,7 @@ BEGIN {
     %EXPORT_TAGS = ( );     # eg: TAG => [ qw!name1 name2! ],
     @EXPORT_OK   = qw/MyGet expand_entities 
                       Html2Xml Htmlfile2Xml
+                      Wordfile2HtmlTree Htmlfile2HtmlTree
                       Word2Xml Wordfile2Xml 
                       Utf8Conv AddCategory
                       ParseDescCatSwe/;
@@ -111,6 +112,7 @@ sub expand_entities
 
   return $str;
 }
+
 =item Html2Xml( $content )
 
 Convert the HTML in $content into an XML::LibXML::Document.
@@ -231,10 +233,38 @@ sub Utf8Conv
   return undef unless defined( $str );
 
   $str =~ tr/\x{201d}\x{201c}/""/;
-  $str =~ tr/\x{2013}\x{2019}/-'/;
+  $str =~ tr/\x{2013}\x{2019}/-'/; #' Fix syntax-highlighting...
   $str =~ tr/\x{17d}\x{17e}/''/;
+  $str =~ s/\x{2026}/.../;
   
   return utf8( $str )->latin1;
+}
+
+# Generate HTML file in tempdir and run Htmlfile2HtmlTree
+sub Wordfile2HtmlTree
+{
+  my ($filename) = @_;
+
+  my $dir= tempdir( CLEANUP => 1 );
+  (my $htmlfile= "$filename.html") =~ s|.*/([^/]+)$|$1|;
+  if(system "$wvhtml --targetdir=\"$dir\" \"$filename\" \"$htmlfile\"") {
+      print "$wvhtml --targetdir=\"$dir\" \"$filename\" \"$htmlfile\" failed: $?\n";
+      return undef;
+  }
+  return &Htmlfile2HtmlTree("$dir/$htmlfile");
+}
+
+# Generate HTML::Tree from html file
+sub Htmlfile2HtmlTree
+{
+    my ($filename)= @_;
+    my $tree = HTML::TreeBuilder->new();
+    open(my $fh, "<:utf8", "$filename") 
+      or logdie( "Failed to read from $filename" );
+    
+    $tree->parse_file($fh); 
+
+    return $tree;
 }
 
 =item AddCategory
