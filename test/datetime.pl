@@ -2,6 +2,8 @@
 
 use strict;
 
+# Code to test the DateTime module.
+
 use DateTime;
 use DateTime::Span;
 use DateTime::SpanSet;
