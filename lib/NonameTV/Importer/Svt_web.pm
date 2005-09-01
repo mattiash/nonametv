@@ -374,12 +374,14 @@ sub extract_episode
   my( $ep, $eps );
   my $episode;
 
+  my $dummy;
+
   # Del 2
-  ( $ep ) = ($d =~ /\bDel\s+(\d+)/ );
+  ( $dummy, $ep ) = ($d =~ /\b(Del|Avsnitt)\s+(\d+)/ );
   $episode = sprintf( " . %d .", $ep-1 ) if defined $ep;
 
   # Del 2 av 3
-  ( $ep, $eps ) = ($d =~ /\bDel\s+(\d+)\s*av\s*(\d+)/ );
+  ( $dummy, $ep, $eps ) = ($d =~ /\b(Del|Avsnitt)\s+(\d+)\s*av\s*(\d+)/ );
   $episode = sprintf( " . %d/%d . ", $ep-1, $eps ) 
     if defined $eps;
   
