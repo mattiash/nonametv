@@ -38,6 +38,8 @@ use warnings;
 use POSIX qw/strftime/;
 use IO::File;
 
+use Carp qw/confess/;
+
 BEGIN 
 {
   use Exporter   ();
@@ -155,7 +157,7 @@ sub logdie
   my( $message ) = @_;
 
   writelog( FATAL, $message );
-  croak( $message );
+  confess( $message );
 }
 
 sub writelog
