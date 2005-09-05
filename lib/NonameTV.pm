@@ -233,9 +233,9 @@ sub Utf8Conv
   return undef unless defined( $str );
 
   $str =~ tr/\x{201d}\x{201c}/""/;
-  $str =~ tr/\x{2013}\x{2019}/-'/; #' Fix syntax-highlighting...
+  $str =~ tr/\x{2013}\x{2019}\x{2014}/-'-/; #' Fix syntax-highlighting...
   $str =~ tr/\x{17d}\x{17e}/''/;
-  $str =~ s/\x{2026}/.../;
+  $str =~ s/\x{2026}/.../sg;
   
   return utf8( $str )->latin1;
 }
