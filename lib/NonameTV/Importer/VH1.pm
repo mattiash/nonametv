@@ -17,6 +17,7 @@ Features:
 =cut
 
 use DateTime;
+use Text::Capitalize qw/capitalize_title/;
 
 use NonameTV qw/Wordfile2HtmlTree Htmlfile2HtmlTree Utf8Conv/;
 use NonameTV::DataStore::FilePrint;
@@ -199,13 +200,13 @@ sub ImportFile
       my $title= my $descr= '';
 
       # If we are lucky the title is in bold face and would be easy to find
-      if(defined($b= $t->look_down('_tag', 'b')))
+      if(defined(my $b= $t->look_down('_tag', 'b')))
       { 
 	# Grab first (if any) bold entry withing this programme
-	$title= $b->as_text();
+	($title= $b->as_text()) =~ s/^\s+//;
 	$title=~ s/([()])/\\$1/sg; # escape '(' and ')' for regexp use
       }
-      if(length($title) && $t->as_text() =~ m/^\s*$h$m\s$title\s*(.*)/s) 
+      if(length($title) && $t->as_text() =~ m/^\s*$h$m\s+$title\s*(.*)/s) 
       {
 	# The found bold text is first after the start time,
 	# so we consider it to be the title
@@ -235,9 +236,12 @@ sub ImportFile
 	}
       }
       $title=~ s/\\([()])/$1/sg; # remove ()-esc
+      $title = capitalize_title( &norm($title) );
+      $title =~ s/Vh1/VH1/g;
+
       my $ce = 
       { 
-	title       => &norm($title),
+	title       => $title,
 	start_time  => "$h:$m",
       };
       $ce->{'description'}= &norm($descr)
