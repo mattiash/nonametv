@@ -1,4 +1,3 @@
-# $Id: VH1.pm,v 1.6 2005/09/05 11:30:47 frax Exp $
 package NonameTV::Importer::VH1;
 
 use strict;
@@ -22,8 +21,7 @@ use DateTime;
 use NonameTV qw/Wordfile2HtmlTree Htmlfile2HtmlTree Utf8Conv/;
 use NonameTV::DataStore::FilePrint;
 use NonameTV::DataStore::Helper;
-# frax -- replace above ln with next ln: 
-#use NonameTV::DataStore::Helper;
+
 use NonameTV::Log qw/progress error logdie/;
 
 use NonameTV::Importer;
@@ -40,42 +38,30 @@ sub new
   my $self  = $class->SUPER::new(@_);
   bless ($self, $class);
   
-  my $dsh= NonameTV::DataStore::Helper->new(NonameTV::DataStore::FilePrint->new(new IO::File ">&STDOUT"), 
-					    'Europe/Stockholm');
-  # frax -- replace above ln with next ln: 
-  #my $dsh=  NonameTV::DataStore::Helper->new( $self->{datastore} );
+  my $dsh=  NonameTV::DataStore::Helper->new( $self->{datastore},
+                                              'Europe/Stockholm');
   $self->{datastorehelper} = $dsh;
 
   # Set the below to an interger in the range 2000 - 2999 to
-  # override automatic year detection (could be sent as a parameter
-  # to this constructor or to the ImportFile method, but I leave
-  # that to Mattias to decide.
+  # override automatic year detection.
   $self->{year} = undef;
 
-  $self->{xmltvid}= 'vh1.com';
-  $self->{channel_data}->{'vh1.com'} = { id => 'vh1id' };
-  # frax -- replace above with next replace region:
-  ### frax -- replace region ###
-  #my $sth = $self->{datastore}->Iterate( 'channels', 
-  #                                       { grabber => 'vh1' },
-  #                                       qw/xmltvid id grabber_info/ )
-  #    or &logdie("Failed to fetch grabber data");
-  #
-  #while( my $data = $sth->fetchrow_hashref )
-  #{
-  #  $self->{channel_data}->{$data->{xmltvid}} = 
-  #  { id => $data->{id}, };
-  #}
-  #$sth->finish;
-  ### frax -- eo replace region ###
+  my $sth = $self->{datastore}->Iterate( 'channels', 
+                                         { grabber => 'vh1' },
+                                         qw/xmltvid id grabber_info/ )
+    or logdie("Failed to fetch grabber data");
+  
+  while( my $data = $sth->fetchrow_hashref )
+  {
+    $self->{channel_data}->{$data->{xmltvid}} = 
+    { id => $data->{id}, };
+  }
+  $sth->finish;
 
   $self->{OptionSpec} = [ qw/verbose/ ];
   $self->{OptionDefaults} = { 
     'verbose' => 0,
   };
-  
-  # frax -- Logfile should probably not be initiated here
-  NonameTV::Log::init({LogFile => '/dev/console'});
   
   return $self;
 }
@@ -98,6 +84,8 @@ sub ImportFile
 {
   my $self= shift;
   my ($contentname, $file, $p)= @_;
+
+  $self->{xmltvid}="vh1.com";
 
   my $channel_id= $self->{channel_data}->{$self->{xmltvid}}->{id};
 
@@ -168,22 +156,23 @@ sub ImportFile
     # Consistency check
     unless(defined $date) 
     { 
-      &error('WARNING! Invalid date "'.&norm($e->as_text()).
-	     "\" (using year $year) ... skipping");
+      &error("$file: Invalid date '" . &norm($e->as_text()) .
+	     "' (using year $year) ... skipping" );
       next;
     }
-    # Extra check to see that chart week-day matches the one we get for this year
+    # Extra check to see that chart week-day 
+    # matches the one we get for this year
     unless($date->wday == $wday) 
     {
-      &error('WARNING! Invalid weekday for "'.&norm($e->as_text()).
-	     "\", probably wrong year ($year) ... skipping");
+      &error("$file: Invalid weekday for '" . &norm($e->as_text()) .
+	     "', probably wrong year ($year) ... skipping");
       next;
     }
     # EO Consistency check
     
     $dsh->StartBatch($self->{xmltvid}.'_'.$date->ymd('-'), $channel_id);
 
-    &error("WARNING! Does not recognize document structure trying to get schedule anyway ...\n")
+    &error("$file: Does not recognize document structure trying to get schedule anyway ...\n")
 	unless $e->right()->attr('_tag') eq 'p';
 
     my $first= 0;
@@ -206,13 +195,6 @@ sub ImportFile
 	$first= "$h$m";
 	$dsh->StartDate($date->ymd('-'));
       }
-# frax -- This seem to be handled by the DataStore::Helper
-#     elsif(int("$h$m") < $first) 
-#     { # next day
-#	$first= "$h$m";
-#	$date->add(days => 1);
-#	$dsh->StartDate($date->ymd('-'));
-#     }
 
       my $title= my $descr= '';
 
@@ -246,8 +228,8 @@ sub ImportFile
 	} 
 	else 
 	{
-	  &error('WARNING! Did not find title in the following entry: "'. 
-		 &norm($e->as_text())."\" at $h:$m\n");
+	  &error("$file: Did not find title in the following entry: '" . 
+		 &norm($e->as_text()) . "' at $h:$m");
 	  $title= 'UNKNOWN';
 	  ($descr= $t->as_text()) =~ s/^\s*[0-9]{4}\s+//;
 	}
@@ -268,7 +250,7 @@ sub ImportFile
     }
     else 
     {
-      &error('WARNING! No programmes found for "'.&norm($e->as_text()).'"');
+      &error("$file: No programmes found for '" . &norm($e->as_text()) ."'" );
       $dsh->EndBatch(0, 'Did not find any programmes');
     }
   }
