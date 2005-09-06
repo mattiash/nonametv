@@ -176,7 +176,7 @@ sub ImportFile
     &error("$file: Does not recognize document structure trying to get schedule anyway ...\n")
 	unless $e->right()->attr('_tag') eq 'p';
 
-    my $first= 0;
+    my $first= undef;
     for my $t ($e->right())
     {
       next unless ref($t) eq 'HTML::Element';
@@ -191,7 +191,7 @@ sub ImportFile
       (my $h, my $m)= ($1,$2);
       
 
-      unless($first) # Save first entry's time
+      unless(defined $first) # Save first entry's time
       { 
 	$first= "$h$m";
 	$dsh->StartDate($date->ymd('-'));
@@ -215,7 +215,7 @@ sub ImportFile
       else 
       {
 	# Let's Check for Upper-Case title instead
-	if($t->as_text() =~ m/\s*[0-9]{4}\s+((([A-Z0-9\'\"\&.,!?<>{}()\[\];:_-]+|([0-9]+\'?[sS]))+\s+)+)(.*)/s) 
+	if($t->as_text() =~ m/\s*[0-9]{4}\s+((([^a-z]+|([0-9]+\'?[sS]))+\s+)+)(.*)/s) 
 	{
 	  $title= $1;
 	  $descr= $5;
@@ -248,7 +248,7 @@ sub ImportFile
 	  unless $descr =~ m/^\s*$/;
       $dsh->AddProgramme($ce);
     }
-    if($first) 
+    if(defined $first) 
     {
       $dsh->EndBatch(1);
     }
