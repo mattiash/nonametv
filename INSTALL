@@ -15,10 +15,18 @@ sitecopy from http://www.lyra.org/sitecopy/
 
 INSTALLATION
 
-Create a new mysql database.
+Create a new mysql database called listings.
 
-Create tables in the database and populate them with data by running the
-commands in examples/listings.sql.
+Create tables in the database and populate them with tables by running the
+commands in examples/listings.sql. Then populate the channels and trans_cat
+tables with data from examples/channels.txt and trans_cat.txt. This can be
+done with the following (untested) MySQL command:
+
+LOAD DATA INFILE 'channels.txt' INTO TABLE channels
+FIELDS TERMINATED BY ',' ENCLOSED BY '"';
+
+LOAD DATA INFILE 'trans_cat.txt' INTO TABLE trans_cat
+FIELDS TERMINATED BY ',' ENCLOSED BY '"';
 
 Create a directory called /var/local/nonametv.
 
@@ -35,10 +43,12 @@ override/delete
 override/new
 xmltv_old
 
+Also create a directory /var/log/nonametv/
+
 Make sure that the user you intend to run the scripts as can read/write the
 directories above.
 
-Copy examples/nonametv.conf to /etc/nonametv.conf.
+Copy nonametv.conf to /etc/nonametv.conf.
 
 Edit /etc/nonametv.conf to match your installation.
 
@@ -51,10 +61,10 @@ The only command that must be run manually is
 perl -I lib tools/nonametv-export Xmltv --export-channels
 
 (run from the nonametv-directory). It creates the channels.xml.gz file.
-Additionally, some of the Importers (Discovery) must be run manually
-to import data from files received via email.
+
+Most of the commands take one or several --verbose parameters.
 
 Note that not all commands in tools/ are actually working...
 
-
-
+Everytime data is imported or exported, an entry is written to 
+/var/log/nonametv/nonametv.log.
