@@ -86,6 +86,7 @@ sub ImportContent
     }
     
     my $title = $sc->findvalue( './Program/@Title' );
+    my $org_title = $sc->findvalue( './Program/@OriginalTitle' );
     my $desc  = $sc->findvalue( './Program/@LongSynopsis' );
     
     my $genre = norm($sc->findvalue( './Program/@Genre' ));
@@ -141,7 +142,7 @@ sub ImportContent
 
     my $ce = {
       channel_id  => $chd->{id},
-      title       => norm($title),
+      title       => norm($title) || norm($org_title),
       description => norm($desc),
       start_time  => $start->ymd("-") . " " . $start->hms(":"),
       end_time    => $end->ymd("-") . " " . $end->hms(":"),
