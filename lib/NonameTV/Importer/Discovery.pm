@@ -22,7 +22,8 @@ use XML::LibXML;
 use NonameTV qw/MyGet Wordfile2Xml Htmlfile2Xml Utf8Conv/;
 use NonameTV::DataStore::Helper;
 use NonameTV::DataStore::Updater;
-use NonameTV::Log qw/info progress error logdie/;
+use NonameTV::Log qw/info progress error logdie 
+                     log_to_string log_to_string_result/;
 
 use NonameTV::Importer;
 
@@ -85,8 +86,8 @@ sub ImportFile
   my( $contentname, $file, $p ) = @_;
 
   my( $fnid, $fnlang, $fnmon, $fnyear, $fntype, $ext ) = 
-    ( $file =~ /([A-Z\.]+)
-               \.(\S+)\s+(...)\s+(\d\d)\s+(.*)\.
+    ( $file =~ /([A-Z]+[\. ]+[A-Z]+)
+               [\. ](\S+)\s+(...)\s+(\d\d)\s+(.*)\.
                ([^\.]+)$/x );
 
   if( not defined( $ext ) )
@@ -94,6 +95,8 @@ sub ImportFile
     error( "Discovery: Unknown filename $file" );
     return;
   }
+
+  $fnid =~ tr/ /./;
 
 #  if( $fnlang ne "Swe" )
 #  {
