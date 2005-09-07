@@ -163,17 +163,7 @@ sub EndBatch
   
   $log = "" if not defined $log;
 
-  if( $success==1 and not $self->{batcherror} )
-  {
-    $self->Update( 'batches', { id => $self->{currbatch} }, 
-                   { last_update => time(),
-                     message => $log,
-                     abort_message => "",
-                   } );
-
-    $self->DoSql("Commit");
-  }
-  elsif( $success == 0 )
+  if( $success == 0 or $self->{batcherror} )
   {
     $self->DoSql("Rollback");
     error( $self->{currbatchname} . ": Rolling back changes" );
@@ -183,6 +173,16 @@ sub EndBatch
       $self->Update( 'batches', { id => $self->{currbatch} },
                      { abort_message => $log } );
     }
+  }
+  elsif( $success==1 )
+  {
+    $self->Update( 'batches', { id => $self->{currbatch} }, 
+                   { last_update => time(),
+                     message => $log,
+                     abort_message => "",
+                   } );
+
+    $self->DoSql("Commit");
   }
   elsif( $success == -1 )
   {
