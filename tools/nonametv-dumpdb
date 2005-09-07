@@ -1,5 +1,9 @@
 #!/bin/sh
 
-mysqldump -uroot --add-drop-table --no-data listings
-mysqldump -uroot --no-create-info listings channels trans_cat
 
+TMPDIR=`mktemp -d`
+chmod og+rwx $TMPDIR
+mysqldump -uroot --add-drop-table --no-data listings > $TMPDIR/listings.sql
+mysqldump -uroot --no-create-info -T $TMPDIR --fields-terminated-by=, --fields-optionally-enclosed-by=\" listings channels trans_cat
+mv $TMPDIR/* .
+rmdir $TMPDIR
