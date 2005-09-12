@@ -11,6 +11,7 @@
 "CanalPlus","avslutning med tipsredovisning","",""
 "CanalPlus","basket","Sports",""
 "CanalPlus","deckare","",""
+"CanalPlus","deckarkomedi","",""
 "CanalPlus","deckarserie","Crime",""
 "CanalPlus","dokumentär","",""
 "CanalPlus","drama","Drama",""

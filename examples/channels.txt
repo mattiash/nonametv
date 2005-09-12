@@ -48,4 +48,5 @@
 50,"C More Film2","cmorefilm2.canalplus.se","CanalPlus",1,"33",0,"movie","","sv"
 51,"TV4 Fakta","fakta.tv4.se","TV4",1,"7",0,"","","sv"
 52,"Nickelodeon","nickelodeon.se","Nickelodeon",1,"",1,"","Children's","sv"
-53,"VH1","vh1.com","VH1",1,"",0,"0","","en"
+53,"VH1","vh1.com","VH1",1,"",0,"","","en"
+54,"Nature/Action/Nickelodeon","viasat-action-nick.spa.se","Combiner",1,"",0,"","","sv"

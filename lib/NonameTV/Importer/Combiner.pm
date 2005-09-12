@@ -148,6 +148,30 @@ $channel_data{ "kunskapbarn.svt.se" } =
       ],
   };
 
+=pod
+
+Viasat Nature/Action och Nickelodeon samsänder hos SPA.
+Vad jag vet är det aldrig några överlapp, så jag
+inkluderar alla program på båda kanalerna.
+
+=cut
+
+$channel_data{ "viasat-action-nick.spa.se" } =
+  { 
+    "action.viasat.se" => 
+      [ 
+        {
+          day => 'all',
+        },
+      ],
+    "nickelodeon.se" =>
+      [
+        {
+          day => 'all',
+        },
+      ],
+  };
+
 use DateTime;
 use XML::LibXML;
 use Compress::Zlib;
