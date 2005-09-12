@@ -16,6 +16,9 @@ Generate a table with data for each day and channel. The .xml.gz-files
 should be located in <dir> and the table will be written to 
 <dir>/00index.html.
 
+Furthermore, the program generates a file 00logos.html that contains
+a list of all channels and shows their logos.
+
 If the result of nonametv-xmltv-genhtml is identical to the previous
 content of 00index.html, the original file will be left untouched.
 
@@ -133,3 +136,52 @@ else
 {
   unlink( "$dir/00index.html.new" );
 }
+
+open OUT, "> $dir/00logos.html.new" 
+  or die "Failed to open output file: $@";
+
+print OUT << "EOHEAD";
+<html>
+<head>
+<style type="text/css">
+  body {  background-color: lightgrey; }
+</style>
+</head>
+<body>
+<h1>Schedules</h1>
+<table>
+  
+EOHEAD
+
+foreach my $channel (sort keys %channels)
+{
+  print OUT << "EOREC";
+<tr>
+  <td>$channel</td>
+  <td><img src="http://tv.swedb.se/chanlogos/$channel.png"></td>
+  <td><img src="http://tv.swedb.se/chanlogos/44x44/$channel.png"></td>
+  <td><img src="http://tv.swedb.se/chanlogos/16x16/$channel.png"></td>
+</tr>
+
+EOREC
+
+}
+
+print OUT << "EOFOOT";
+</table>
+</body>
+</html>
+
+EOFOOT
+
+close(OUT);
+system("diff $dir/00logos.html.new $dir/00logos.html > /dev/null 2>&1");
+if( $? )
+{
+  move( "$dir/00logos.html.new", "$dir/00logos.html" );
+}
+else
+{
+  unlink( "$dir/00logos.html.new" );
+}
+
