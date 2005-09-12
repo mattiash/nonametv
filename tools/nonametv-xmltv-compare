@@ -157,7 +157,7 @@ EOD
     }
     else
     {
-      print OUT "<td class='$files{$file}'><a href='displayfile.html?$file'>$files{$file}</a></td>";
+      print OUT "<td class='$files{$file}'><a href='../xmltv/displayfile.html?$file'>$files{$file}</a></td>";
     }
   }
 
