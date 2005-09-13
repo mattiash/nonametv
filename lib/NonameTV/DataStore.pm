@@ -268,7 +268,7 @@ sub AddProgramme
 
 =item AddProgrammeRaw
 
-Same as AddProgramme but doesn't check for overlapping programmes or
+Same as AddProgramme but does not check for overlapping programmes or
 require that the programmes are added in order.
 
 =cut
@@ -308,14 +308,54 @@ sub AddProgrammeRaw
     $data->{description} =~ s/\s+$//;
   }
 
-  eval {
-    $self->Add( 'programs', $data );
-  };
-
-  if( $@ )
+  if( $self->Add( 'programs', $data, 0 ) == -1 )
   {
-    error( $self->{currbatchname} . ": " . $@ );
-    $self->{batcherror} = 1;
+    my $err = $self->{dbh}->errstr;
+
+    # Check for common error-conditions
+    my $data_org = $self->Lookup( "programs", 
+                                  { 
+                                    channel_id => $data->{channel_id},
+                                    start_time => $data->{start_time}
+                                  }
+                                  );
+
+    if( defined( $data_org ) )
+    {
+      if( $data_org->{title} eq "end-of-transmission" )
+      {
+        error( $self->{currbatchname} . ": Replacing end-of-transmission " .
+               "for $data->{channel_id}-$data->{start_time}" );
+
+        $self->Delete( "programs", 
+                                  { 
+                                    channel_id => $data->{channel_id},
+                                    start_time => $data->{start_time}
+                                  }
+                       );
+
+        if( $self->Add( 'programs', $data, 0 ) == -1 )
+        {
+          error( $self->{currbatchname} . ": " . $self->{dbh}->errstr );
+          $self->{batcherror} = 1;
+        }
+      }
+      elsif( $data_org->{title} eq $data->{title} )
+      {
+        error( $self->{currbatchname} . ": Skipping duplicate entry " .
+               "for $data->{channel_id}-$data->{start_time}" );
+      }
+      else
+      {
+        error( $self->{currbatchname} . ": $err" );
+        $self->{batcherror} = 1;
+      }
+    }
+    else
+    {
+      error( $self->{currbatchname} . ": $err" );
+      $self->{batcherror} = 1;
+    }
   }
 }
 
@@ -494,18 +534,21 @@ sub Delete
   return $res;
 }
 
-=item Add( $table, $values )
+=item Add( $table, $values, $die_on_error )
 
 Add a new record to a table. $table should be a string containing the name 
 of a table, $values should be a hash-reference with field-names and values.
-Returns the primary key assigned to the new record.
+$die_on_error defaults to 1.
+Returns the primary key assigned to the new record or -1 if the Add failed.
 
 =cut 
 
 sub Add
 {
   my $self = shift;
-  my( $table, $args ) = @_;
+  my( $table, $args, $die_on_error ) = @_;
+
+  $die_on_error = 1 unless defined( $die_on_error );
 
   my $dbh=$self->{dbh};
 
@@ -521,8 +564,18 @@ sub Add
   my $sth = $dbh->prepare_cached( $sql )
       or die "Prepare failed. $sql\nError: " . $dbh->errstr;
 
-  $sth->execute( @values ) 
-      or die "Execute failed. $sql\nError: " . $dbh->errstr;
+  if( not $sth->execute( @values ) )
+  {
+    if( $die_on_error ) 
+    {
+      die "Execute failed. $sql\nError: " . $dbh->errstr;
+    }
+    else
+    {
+      $sth->finish();
+      return -1;
+    }
+  }
 
   $sth->finish();
 
