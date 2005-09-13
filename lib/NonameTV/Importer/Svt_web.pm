@@ -102,6 +102,8 @@ sub ImportContent
   $dsh->StartDate( $date, "03:00" );
   
   my $skipfirst = 1;
+  my $programs = 0;
+
   foreach my $pgm ($ns->get_nodelist)
   {
     if( $skipfirst )
@@ -118,6 +120,10 @@ sub ImportContent
     my( $endtime ) = ( $time =~ /-\s*(\d+.\d+)/ );
     
     $starttime =~ tr/\./:/;
+    if( $starttime !~ /\d+:\d+/ )
+    {
+      next;
+    }
     
     my $ce =  {
       start_time  => $starttime,
@@ -134,10 +140,21 @@ sub ImportContent
     
     $self->extract_extra_info( $ce );
     $dsh->AddProgramme( $ce );
+    $programs++;
   }
   
-  # Success
-  return 1;
+  if( $programs > 0 )
+  {
+    # Success
+    return 1;
+  }
+  else
+  {
+    # This is normal for some channels. We do not want to rollback
+    # because of this.
+    error( "$batch_id: No programs found" );
+    return 1;
+  }
 }
 
 # Fetch the association between title and category/program_type for a
