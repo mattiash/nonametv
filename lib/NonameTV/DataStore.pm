@@ -310,7 +310,7 @@ sub AddProgrammeRaw
 
   if( $self->Add( 'programs', $data, 0 ) == -1 )
   {
-    my $err = $self->{dbh}->errstr;
+    my $err = $self->{dbh_errstr};
 
     # Check for common error-conditions
     my $data_org = $self->Lookup( "programs", 
@@ -347,7 +347,9 @@ sub AddProgrammeRaw
       }
       else
       {
-        error( $self->{currbatchname} . ": $err" );
+        error( $self->{currbatchname} . ": Duplicate programs " .
+               $data->{start_time} . ": '" . $data->{title} . "', '" . 
+               $data_org->{title} . "'" );
         $self->{batcherror} = 1;
       }
     }
@@ -564,6 +566,8 @@ sub Add
   my $sth = $dbh->prepare_cached( $sql )
       or die "Prepare failed. $sql\nError: " . $dbh->errstr;
 
+  $sth->{PrintError} = 0;
+
   if( not $sth->execute( @values ) )
   {
     if( $die_on_error ) 
@@ -572,11 +576,12 @@ sub Add
     }
     else
     {
+      $self->{dbh_errstr} = $dbh->errstr;
       $sth->finish();
       return -1;
     }
   }
-
+  
   $sth->finish();
 
   return $sth->{'mysql_insertid'};
