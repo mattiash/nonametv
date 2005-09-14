@@ -81,7 +81,10 @@ sub process_parts
     $part->decoded->print(\*FH);
     close(FH);
 
-    print qx%perl -I lib tools/nonametv-import $importer "$filename" 2>&1%;
+    my $command = "perl -I lib tools/nonametv-import";
+    my $args = join " ", @ARGV;
+
+    print qx%$command $importer "$filename" $args 2>&1%;
     unlink( $filename );
   }
 }
