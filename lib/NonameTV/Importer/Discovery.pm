@@ -29,6 +29,12 @@ use NonameTV::Importer;
 
 use base 'NonameTV::Importer';
 
+# The highest log-level to store in the batch entry.
+# ERROR = 1
+# INFO = 2
+# PROGRESS = 3
+my $BATCH_LOG_LEVEL = 2;
+
 sub new 
 {
   my $proto = shift;
@@ -248,7 +254,7 @@ sub ImportData
       }
       elsif( $type == T_DATE )
       {
-        $loghandle = log_to_string( 3 ); 
+        $loghandle = log_to_string( $BATCH_LOG_LEVEL ); 
         progress( "${channel_xmltvid}_$date: Processing $filename" );
 	$dsh->StartBatch( "${channel_xmltvid}_$date", $channel_id );
 	$dsh->StartDate( $date );
@@ -297,7 +303,7 @@ sub ImportData
       {
 	$dsh->EndBatch( 1, log_to_string_result( $loghandle ) );
 
-        $loghandle = log_to_string( 3 ); 
+        $loghandle = log_to_string( $BATCH_LOG_LEVEL ); 
         progress( "${channel_xmltvid}_$date: Processing $filename" );
 	$dsh->StartBatch( "${channel_xmltvid}_$date", $channel_id );
 	$dsh->StartDate( $date );
@@ -384,7 +390,7 @@ sub ImportAmendments
       $date = parse_date( $text );
       $state = ST_FOUND_DATE;
 
-      $loghandle = log_to_string( 3 ); 
+      $loghandle = log_to_string( $BATCH_LOG_LEVEL ); 
       progress( "${channel_xmltvid}_$date: Processing $filename" );
 
       $self->{process_batch} = 
