@@ -250,7 +250,8 @@ sub FetchDataFromSite
                           day   => $day 
                           );
 
-  my $day_diff = $dt->subtract_datetime( DateTime->today )->delta_days;
+  my $today = DateTime->today( time_zone=>'local' );
+  my $day_diff = $dt->subtract_datetime( $today )->delta_days;
 
   my $u = URI->new('http://www.pressinfo.svt.se/app/schedule_full.html.dl');
   $u->query_form( {
@@ -289,9 +290,6 @@ sub extract_extra_info
   # is always at least one entry in @sentences.
   #
 
-  # Replace strange bullets with end-of-sentence.
-  $ce->{description} =~ s/\.*\s*\x95\s*/. /g;
-
   my @sentences = (split_text( $ce->{description} ), "");
   
   ( $program_type, $category ) = ParseDescCatSwe( $sentences[0] );
@@ -324,8 +322,7 @@ sub extract_extra_info
 
   for( my $i=0; $i<scalar(@sentences); $i++ )
   {
-#    print "::$sentences[$i]\n";
-    if( $sentences[$i] eq "Bredbild" )
+    if( $sentences[$i] eq "Bredbild." )
     {
       $ce->{aspect} = "16:9";
       $sentences[$i] = "";
@@ -374,6 +371,7 @@ sub parse_person_list
     # The Cast-entry is sometimes cutoff, which means that the
     # character name might be missing a trailing ).
     s/\s*\(.*$//;
+    s/.*\s+-\s+//;
   }
 
   return join( ", ", grep( /\S/, @persons ) );
@@ -415,35 +413,42 @@ sub split_text
   # Remove any trailing whitespace
   $t =~ s/\s*$//;
 
-  # Replace ... with ::.
-  $t =~ s/\.{3,}/::./;
-
   # Replace strange dots.
   $t =~ tr/\x2e/./;
 
-  # Replace newlines followed by a capital with space and make sure that there is a dot
-  # to mark the end of the sentence. 
-  $t =~ s/\.*\s*\n\s*([A-ZÅÄÖ])/. $1/g;
+  # Replace strange bullets with end-of-sentence.
+  $t =~ s/\.*\s*\x95\s*/. \n/g;
 
-  # Turn all whitespace into pure spaces and compress multiple whitespace to a single.
+  # We might have introduced some errors above. Fix them.
+  $t =~ s/([\?\!])\./$1/g;
+
+  # Replace ... with ::.
+  $t =~ s/\.{3,}/::./g;
+
+  # Lines ending with a comma is not the end of a sentence
+  $t =~ s/,\s*\n+\s*/, /g;
+
+  # Replace newlines followed by a capital with space and make sure that there 
+  # is a dot to mark the end of the sentence. 
+  $t =~ s/([\!\?])\s*\n+\s*([A-ZÅÄÖ])/$1 $2/g;
+  $t =~ s/\.*\s*\n+\s*([A-ZÅÄÖ])/. $1/g;
+
+  # Turn all whitespace into pure spaces and compress multiple whitespace 
+  # to a single.
   $t =~ tr/\n\r\t \xa0/     /s;
 
-  # Split on a dot and whitespace followed by a capital letter,
-  # but the capital letter is included in the output string and
-  # is not removed by split. (?=X) is called a look-ahead.
-#  my @sent = grep( /\S/, split( /\.\s+(?=[A-ZÅÄÖ])/, $t ) );
-
-  # Mark sentences ending with a dot for splitting.
-  $t =~ s/\.\s+([A-ZÅÄÖ])/;;$1/g;
-
-  # Mark sentences ending with ! or ? for split, but preserve the "!?".
-  $t =~ s/([\!\?])\s+([A-ZÅÄÖ])/$1;;$2/g;
+  # Mark sentences ending with '.', '!', or '?' for split, but preserve the 
+  # ".!?".
+  $t =~ s/([\.\!\?])\s+([A-ZÅÄÖ])/$1;;$2/g;
   
-  my @sent = grep( /\S/, split( ";;", $t ) );
+  my @sent = grep( /\S\S/, split( ";;", $t ) );
 
   if( scalar( @sent ) > 0 )
   {
-    $sent[-1] =~ s/\.*\s*$//;
+    # Make sure that the last sentence ends in a proper way.
+    $sent[-1] =~ s/\s+$//;
+    $sent[-1] .= "." 
+      unless $sent[-1] =~ /[\.\!\?]$/;
   }
 
   return @sent;
@@ -453,12 +458,8 @@ sub split_text
 # Performs the inverse of split_text
 sub join_text
 {
-  my $t = join( ". ", grep( /\S/, @_ ) );
-  $t .= "." if $t =~ /\S/;
+  my $t = join( " ", grep( /\S/, @_ ) );
   $t =~ s/::/../g;
-
-  # The join above adds dots after sentences ending in ! or ?. Remove them.
-  $t =~ s/([\!\?])\./$1/g;
 
   return $t;
 }
