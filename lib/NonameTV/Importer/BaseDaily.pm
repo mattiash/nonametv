@@ -61,7 +61,8 @@ sub Import
       progress( "Deleted $deleted records for $data->{xmltvid}" );
     }
 
-    my $start_dt = DateTime->today->subtract( days => 1 );
+    my $start_dt = DateTime->today(time_zone => 'local')
+                    ->subtract( days => 1 );
 
     for( my $days = 0; $days <= $maxdays; $days++ )
     {
