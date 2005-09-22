@@ -143,12 +143,25 @@ open OUT, "> $dir/00logos.html.new"
 print OUT << "EOHEAD";
 <html>
 <head>
-<style type="text/css">
-  body {  background-color: lightgrey; }
-</style>
+
+<script language="JavaScript">
+function changeBg(col)
+{
+  document.bgColor = col;
+}
+
+</script>
+
 </head>
 <body>
-<h1>Schedules</h1>
+<h1>Logos</h1>
+Background: 
+<a href="javascript:changeBg('#ffffff')">White</a>
+<a href="javascript:changeBg('#dddddd')">Light grey</a>
+<a href="javascript:changeBg('#333333')">Dark grey</a>
+<a href="javascript:changeBg('#000000')">Black</a>
+<a href="javascript:changeBg('#0000dd')">Dark blue</a>
+
 <table>
   
 EOHEAD
