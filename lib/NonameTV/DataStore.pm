@@ -415,8 +415,26 @@ sub LookupCat
   $self->LoadCategories()
     if not exists( $self->{categories} );
 
-  $self->AddCategory( $type, $org )
-    if not exists( $self->{categories}->{"$type++$org"} );
+  
+  if( not exists( $self->{categories}->{"$type++$org"} ) )
+  {
+    # MySQL considers some characters as equal, e.g. e and é.
+    # Trying to insert both anime and animé will give an error-message
+    # from MySql. Therefore, I try to lookup the new entry before adding
+    # it to see if MySQL thinks it already exists. I should probably
+    # normalize the strings before inserting them instead...
+    my $data = $self->Lookup( "trans_cat", 
+                              { type => $type, original => $org } );
+    if( defined( $data ) )
+    {
+      $self->{categories}->{ $type . "++" . $org}
+        = [$data->{program_type}, $data->{category} ];
+    }
+    else
+    {
+      $self->AddCategory( $type, $org );
+    }
+  }
 
   if( defined( $self->{categories}->{"$type++$org"} ) )
   {
