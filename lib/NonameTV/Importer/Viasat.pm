@@ -184,10 +184,10 @@ sub row_to_hash
   my @coldata = split( "\t", $row );
   my %res;
   
-  if( scalar( @coldata ) != scalar( @{$columns} ) )
+  if( scalar( @coldata ) > scalar( @{$columns} ) )
   {
-    error( "$batch_id: Wrong number of columns " .
-           scalar( @coldata ) . " != " . 
+    error( "$batch_id: Too many data columns " .
+           scalar( @coldata ) . " > " . 
            scalar( @{$columns} ) );
   }
 
