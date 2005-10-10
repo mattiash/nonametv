@@ -6,6 +6,8 @@ use NonameTV::Log qw/info progress error logdie/;
 use Carp qw/confess/;
 use DBI;
 
+use Storable qw/dclone/;
+
 =head1 NAME
 
 NonameTV::DataStore
@@ -120,8 +122,8 @@ sub StartBatch
     $self->DoSql( "START TRANSACTION" );
   }
     
-  $self->{last_end} = "1970-01-01 00:00:00";
   $self->{last_start} = "1970-01-01 00:00:00";
+  $self->{last_prog} = undef;
 
   $self->SetBatch( $id, $batchname );
 }
@@ -162,6 +164,8 @@ sub EndBatch
     unless defined( $self->{currbatch} );
   
   $log = "" if not defined $log;
+
+  $self->AddLastProgramme( undef );
 
   if( $success == 0 or $self->{batcherror} )
   {
@@ -236,18 +240,18 @@ sub AddProgramme
     return;
   }
 
-  if( defined( $self->{last_end} ) and 
-      ($self->{last_end} gt $data->{start_time}) )
-  {
-    error( $self->{currbatchname} . 
-      " Starttime must be later than or equal to last endtime: " . 
-      $self->{last_end} . " -> " . $data->{start_time} );
-    
-    # Add the programme anyway and let the exporter sort it out.
-  }
+  $self->AddLastProgramme( $data->{start_time} );
 
   $self->{last_start} = $data->{start_time};
-  $self->{last_end} = undef;
+
+  if( $data->{title} eq 'end-of-transmission' )
+  {
+    # We have already added all the necessary info with the call to
+    # AddLastProgramme. Do not add an explicit entry for end-of-transmission
+    # since this might collide with the start of tomorrows shows.
+    return;
+  }
+
 
   if( exists( $data->{end_time} ) )
   {
@@ -258,12 +262,41 @@ sub AddProgramme
 	  $data->{start_time} . " -> " . $data->{end_time} );
       return;
     }
-    $self->{last_end} = $data->{end_time};
   }
 
   fix_programme_data( $data );
 
+  $self->{last_prog} = dclone( $data );
+}
+
+sub AddLastProgramme
+{
+  my $self = shift;
+  my( $nextstart ) = @_;
+
+  my $data = $self->{last_prog};
+  return if not defined $data;
+
+  if( defined( $nextstart ) )
+  {
+    if( defined( $data->{end_time} ) )
+    {
+      if( $nextstart lt $data->{end_time} )
+      {
+        error( $self->{currbatchname} . 
+               " Starttime must be later than or equal to last endtime: " . 
+               $data->{end_time} . " -> " . $nextstart );
+        $data->{end_time} = $nextstart;
+      }
+    }
+    else
+    {
+      $data->{end_time} = $nextstart;
+    }
+  }
+
   $self->AddProgrammeRaw( $data );
+  $self->{last_prog} = undef;
 }
 
 =item AddProgrammeRaw
