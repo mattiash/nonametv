@@ -74,7 +74,15 @@ sub ImportContent
 
     my $next_start = $self->create_dt( $sc->findvalue( './@NextStart' ) );
 
+    # NextStart is sometimes off by one day.
+    if( defined( $next_start ) and $next_start < $start )
+    {
+      $next_start = $next_start->add( days => 1 );
+    }
+
     my $length  = $sc->findvalue( './Program/@Length ' );
+    die if $length < 0;
+
     my $end = $start->clone()->add( minutes => $length );
 
     # Sometimes the claimed length of the movie makes the movie end
