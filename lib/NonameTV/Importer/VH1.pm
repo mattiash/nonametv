@@ -197,25 +197,35 @@ sub ImportFile
 	$dsh->StartDate($date->ymd('-'));
       }
 
-      my $title= my $descr= '';
+      my $title = '';
+      my $descr= '';
+
+      my $entry = $t->as_text();
+      $entry =~ s/^\s+//;
+      $entry =~ tr/ / /s;
+
+      my( undef, $entrytext ) = ($entry =~ /^\s*([0-9]{4})\s+(.*)/);
 
       # If we are lucky the title is in bold face and would be easy to find
       if(defined(my $b= $t->look_down('_tag', 'b')))
       { 
 	# Grab first (if any) bold entry withing this programme
-	($title= $b->as_text()) =~ s/^\s+//;
-	$title=~ s/([()])/\\$1/sg; # escape '(' and ')' for regexp use
+	$title= $b->as_text();
+        $title =~ s/^\s+//;
+        $title =~ tr/ / /s;
       }
-      if(length($title) && $t->as_text() =~ m/^\s*$h$m\s+$title\s*(.*)/s) 
+      
+      if(length($title) > 0 and 
+         substr($entrytext, 0, length($title) ) eq $title )
       {
-	# The found bold text is first after the start time,
-	# so we consider it to be the title
-	$descr= $1;
+        # The found bold text is first after the start time,
+        # so we consider it to be the title
+        $descr= substr( $entrytext, length( $title ) );
       }
       else 
       {
 	# Let's Check for Upper-Case title instead
-	if($t->as_text() =~ m/\s*[0-9]{4}\s+((([^a-z]+|([0-9]+\'?[sS]))+\s+)+)(.*)/s) 
+	if($entry =~ m/\s*[0-9]{4}\s+((([^a-z]+|([0-9]+\'?[sS]))+\s+)+)(.*)/s) 
 	{
 	  $title= $1;
 	  $descr= $5;
@@ -230,9 +240,9 @@ sub ImportFile
 	else 
 	{
 	  &error("$file: Did not find title in the following entry: '" . 
-		 &norm($e->as_text()) . "' at $h:$m");
+		 &norm($entry) . "' at $h:$m");
 	  $title= 'UNKNOWN';
-	  ($descr= $t->as_text()) =~ s/^\s*[0-9]{4}\s+//;
+	  $descr= $entrytext;
 	}
       }
       $title=~ s/\\([()])/$1/sg; # remove ()-esc
