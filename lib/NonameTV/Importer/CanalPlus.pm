@@ -29,7 +29,7 @@ sub new {
     my $self  = $class->SUPER::new( @_ );
     bless ($self, $class);
 
-     $self->{grabber_name} = "CanalPlus";
+    $self->{grabber_name} = "CanalPlus";
 
     defined( $self->{UrlRoot} ) or die "You must specify UrlRoot";
 
@@ -43,6 +43,7 @@ sub ImportContent
   my( $batch_id, $cref, $chd ) = @_;
 
   my $ds = $self->{datastore};
+  $ds->{SILENCE_END_START_OVERLAP}=1;
 
   my $xml = XML::LibXML->new;
   my $doc;

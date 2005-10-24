@@ -72,6 +72,9 @@ sub new
   $self->{dbh} = DBI->connect($dsn, $self->{username}, $self->{password})
       or die "Cannot connect: " . $DBI::errstr;
 
+
+  $self->{SILENCE_END_START_OVERLAP} = 0;
+
   return $self;
 }
 
@@ -285,7 +288,9 @@ sub AddLastProgramme
       {
         error( $self->{currbatchname} . 
                " Starttime must be later than or equal to last endtime: " . 
-               $data->{end_time} . " -> " . $nextstart );
+               $data->{end_time} . " -> " . $nextstart ) 
+          unless $self->{SILENCE_END_START_OVERLAP};
+
         $data->{end_time} = $nextstart;
       }
     }
