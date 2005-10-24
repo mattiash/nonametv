@@ -189,10 +189,8 @@ sub ImportFile
     {
       error("$file: Start day (" . $startday->ymd('-') . 
             ") is after End day (" . $endday->ymd('-') .
-            "), I'm swapping them!");
-      my $tmp= $startday;
-      $startday= $endday;
-      $endday= $tmp;
+            "), I'm adding a year to End day!");
+      $endday = $endday->add( years => 1 );
     }
 
     error( "$file: Does not recognize document structure. " . 
