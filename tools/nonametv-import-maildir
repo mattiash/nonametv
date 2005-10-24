@@ -9,6 +9,32 @@ use File::Temp qw/tempdir/;
 use File::Basename;
 
 use MIME::WordDecoder;
+use Getopt::Long;
+
+my %opt = ( manual => 0,
+            test => 0,
+            );
+
+my $res = GetOptions( \%opt, qw/manual test/ );
+
+if( not $res )
+{
+  print << 'EOHELP';
+nonametv-import-maildir [--manual] [--test]
+
+Import data into the database. Data is fetched from files attached to
+messages in a maildir.
+
+  --manual  Ask the user which Importer to use if the information
+            cannot be derived from the message. 
+
+  --test    Run the importer in test-mode.
+
+EOHELP
+
+  exit 1;
+}
+
 
 # Flag messages AFTER they have been processed. Then I normally
 # only have to move the message to the correct folder.
@@ -34,19 +60,22 @@ foreach my $message ($folder->messages)
 
   my $importer = guess_importer( $from, $subject );
 
-  next unless defined $importer;
+  if( not defined( $importer ) )
+  {
+    if( $opt{manual} )
+    {
+      $importer = "manual";
+    }
+    else
+    {
+      next;
+    }
+  }
 
-#  my $labels = $message->labels;
-#  foreach my $l (keys %{$labels})
-#  {
-#    print "  $l $labels->{$l}\n";
-#  }
-
-#  print "Processing $subject\n";
-  process_parts( $message, $importer );
-
-  $message->label( 'flagged' => 1 );
-
+  if( process_parts( $message, $importer ) )
+  {
+    $message->label( 'flagged' => 1 );
+  }
 }
 
 $mgr->closeAllFolders;
@@ -56,14 +85,16 @@ sub process_parts
   my( $part, $importer ) = @_;
 
   my $type = $part->get('Content-Type');
-  return if $type eq "text/plain";
+  return 0 if $type eq "text/plain";
 
   if($part->isMultipart)
-  {   
+  {
+    my $count = 0;
     foreach my $child ($part->parts)
-    {   
-      process_parts( $child, $importer );
+    {
+      $count += process_parts( $child, $importer );
     }
+    return $count;
   }
   else
   {
@@ -71,6 +102,14 @@ sub process_parts
     my $name = $disp->attribute('filename') 
       || $disp->attribute('name') 
       || 'noname';
+
+    if( $importer eq "manual" )
+    {
+      print "$name: ";
+      $importer = <STDIN>;
+      $importer =~ tr/\n\r //d;
+      return 0 if $importer eq "";
+    }
     
 #    print "  $importer $name $type " . $part->size . "\n";
 
@@ -84,9 +123,17 @@ sub process_parts
     my $command = "perl -I lib tools/nonametv-import";
     my $args = join " ", @ARGV;
 
-    print qx%$command $importer "$filename" $args 2>&1%;
+    if( $opt{test} )
+    {
+      print qx%$command $importer test "$filename" $args 2>&1%;
+    }
+    else
+    {
+      print qx%$command $importer "$filename" $args 2>&1%;
+    }
     unlink( $filename );
   }
+  return 1;
 }
 
 sub guess_importer
