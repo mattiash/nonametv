@@ -412,7 +412,7 @@ sub ImportAmendments
       $e = $self->parse_command( $prevtime, $command, $title );
     }
     elsif( ($time, $command, $title) = 
-           ($text =~ /^(\d\d[\.:]\d\d) ([A-ZÅÄÖ][ A-ZÅÄÖ]+) (.*?)(\(.*\))*$/) )
+           ($text =~ /^(\d\d[\.:]\d\d) ([A-ZÅÄÖ][ A-ZÅÄÖ]+)\s+([A-ZÅÄÖ].*?)(\(.*\))*$/) )
     {
       if( $state != ST_FOUND_DATE )
       {
