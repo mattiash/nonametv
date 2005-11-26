@@ -81,6 +81,9 @@ sub ImportContent
     return 0;
   }
 
+  $self->LoadSportId( $xml )
+    or return 0;
+
   my $ns = $doc->find( "//programme" );
   
   if( $ns->size() == 0 )
@@ -92,7 +95,17 @@ sub ImportContent
   my $currdate = "none";
   foreach my $p ($ns->get_nodelist)
   {
-    my $sportname = $p->findvalue('sportname/text()');
+    my $sportid = $p->findvalue( 'sportid' );
+    my $sportname = $self->{sportidname}->{$sportid};
+
+    if( not defined( $sportname ) )
+    {
+      print "Unknown sportid $sportid\n";
+      $sportname = $p->findvalue( 'sportname' );
+
+      $sportname = ucfirst( lc( $sportname ) );
+    }
+
     my $emidate = $p->findvalue('emidate/text()');
 
     my $starttime = $p->findvalue( 'startdate/text()' );
@@ -107,12 +120,6 @@ sub ImportContent
     }
 
     my $title = norm( $sportname );
-
-    # Fix encoding error in source-file.
-    $title =~ s/^\'ventyr$/Äventyr/;
-
-    # Fix strange title
-    $title =~ s/_\._//;
 
     my $data = {
       title       => $title,
@@ -140,6 +147,57 @@ sub FetchDataFromSite
   my( $content, $code ) = MyGet( $url );
   return( $content, $code );
 }
+
+sub LoadSportId
+{
+  my $self = shift;
+  my( $xml ) = @_;
+
+  return 1 if( defined( $self->{sportidname} ) );
+
+  my( $content, $code ) = MyGet( $self->{SportIdUrl} );
+
+  if( not defined $content )
+  {
+    error( "Eurosport: Failed to fetch sport_id mappings" );
+    return 0;
+  }
+
+  # Some characters are encoded in CP1252 even though the 
+  # header says iso-8859-1
+  $content =~ tr/\x86\x84\x94/åäö/;
+
+  my $doc;
+  eval { $doc = $xml->parse_string($content); };
+  if( $@ ne "" )
+  {
+    error( "Eurosport: Failed to parse sport_id mappings" );
+    return 0;
+  }
+  
+  my %id;
+  my $ns = $doc->find( '//SPTR[@LAN_ID="7"]' );
+  
+  if( $ns->size() == 0 )
+  {
+    error( "Eurosport: No sport_id mappings found" );
+    return 0;
+  }
+  
+  foreach my $p ($ns->get_nodelist)
+  {
+    my $short_name = norm( $p->findvalue('@SPTR_SHORTNAME') );
+    my $sport_id = norm( $p->findvalue( '@SPO_ID' ) );
+
+    # TODO: This does not work correctly for changing the case of åäö.
+    # Luckily, all åäö's are already the correct case.
+    $id{$sport_id} = ucfirst(lc($short_name));
+  }
+
+  $self->{sportidname} = \%id;
+  return 1;
+}
+
 
 # Delete leading and trailing space from a string.
 # Convert all whitespace to spaces. Convert multiple
