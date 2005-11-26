@@ -2,7 +2,7 @@
 --
 -- Host: localhost    Database: listings
 -- ------------------------------------------------------
--- Server version	4.1.11-Debian_4sarge1
+-- Server version	4.1.11-Debian_4sarge2
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
