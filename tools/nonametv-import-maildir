@@ -109,10 +109,24 @@ sub process_parts
       $importer = <STDIN>;
       $importer =~ tr/\n\r //d;
       return 0 if $importer eq "";
+
+      if( $importer eq "save" )
+      {
+        # a major security hole if you accept any path!
+        my $filename = "/tmp/" . basename( $name );
+        
+        open(FH, "> $filename");
+        $part->decoded->print(\*FH);
+        close(FH);
+
+        print "Wrote $filename\n";
+        return 1;
+      }
+        
     }
     
 #    print "  $importer $name $type " . $part->size . "\n";
-
+    
     # a major security hole if you accept any path!
     my $filename = "$tmpdir/" . basename( $name );
   
@@ -125,7 +139,7 @@ sub process_parts
 
     if( $opt{test} )
     {
-      print qx%$command $importer test "$filename" $args 2>&1%;
+      print qx%$command test $importer "$filename" $args 2>&1%;
     }
     else
     {
@@ -133,7 +147,8 @@ sub process_parts
     }
     unlink( $filename );
   }
-  return 1;
+
+  return $opt{test} ? 0 : 1;
 }
 
 sub guess_importer
