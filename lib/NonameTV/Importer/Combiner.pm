@@ -150,15 +150,15 @@ $channel_data{ "kunskapbarn.svt.se" } =
 
 =pod
 
-Viasat Nature/Action och Nickelodeon samsänder hos SPA.
+Viasat Nature/Crime och Nickelodeon samsänder hos SPA.
 Vad jag vet är det aldrig några överlapp, så jag
 inkluderar alla program på båda kanalerna.
 
 =cut
 
-$channel_data{ "viasat-action-nick.spa.se" } =
+$channel_data{ "viasat-nature-nick.spa.se" } =
   { 
-    "action.viasat.se" => 
+    "nature.viasat.se" => 
       [ 
         {
           day => 'all',
