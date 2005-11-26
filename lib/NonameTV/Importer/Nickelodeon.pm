@@ -117,9 +117,39 @@ sub ImportFile
   # Lets find those schedules
   for my $e ($tree->look_down('_tag', 'p',
      sub { 
-       $_[0]->as_text() =~ 
-         m/^\s*($vard|$helg)\s*([0-9][0-9]?)(\s*($month))?(\s*2[0-9]{3})?\s*-\s*([0-9][0-9]?)\s*($month)\s*(2[0-9]{3})\s*$/i
-       } ) ) 
+       # Strict test
+       my $a = $_[0]->as_text() =~ 
+         m/^\s*($vard|$helg)\s*
+            ([0-9]{1,2})\s*
+            ($month)?\s*
+            (2[0-9]{3})?\s*
+            -\s*
+            ([0-9]{1,2})\s*
+            ($month)\s*
+            (2[0-9]{3})\s*
+            $/ix;
+
+       # Loose test
+       my $b = $_[0]->as_text() =~ 
+         m/^\s*([a-zåäöÅÄÖ]+)\s*
+            ([0-9]{1,2})\s*
+            ([a-zåäöÅÄÖ]+)?\s*
+            (2[0-9]{3})?\s*
+            -\s*
+            ([0-9]{1,2})\s*
+            ([a-zåäöÅÄÖ]+)\s*
+            (2[0-9]{3})\s*
+            $/ix;
+       
+       if( $a != $b ) 
+       { 
+         error( "Nickelodeon: $file has ambiguous period: " . 
+                $_[0]->as_text() ); 
+       }
+ 
+       return $a;
+     } ) )
+
   {
     my $startday= my $endday= undef;
     #print $e->as_text(),"\n";
