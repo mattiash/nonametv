@@ -121,14 +121,6 @@ sub ImportFile
 		   friday => 5, saturday => 6, sunday => 7 ); 
   my $weekday= join '|', keys %weekdayno;
 
-  # Automatic year detection, first try -- from filename
-  # If this fails the current year will be used if the current month
-  # is less than or equal to the chart month, otherwise the next year is used
-  if(!defined( $self->{year} ) && $file =~ m/($month)[ _]*(2[0-9]{3})/i)
-  {
-    $self->{year}= $2;
-  }
-
   # Lets find those schedules
   for my $e ($tree->look_down('_tag', 'p', sub { $_[0]->as_text() =~ m/^\s*($weekday)\s*[0-9][0-9]?\s*($month)\s*$/i }) ) 
   {
