@@ -74,18 +74,23 @@ sub StartBatchUpdate
 #  print "SBU: $batchname\n";
 
   $ds->DoSql( "START TRANSACTION" );
-  my $id = $ds->Lookup( 'batches', { name => $batchname }, 'id' );
-  if( not defined( $id ) )
+  my $data = $ds->Lookup( 'batches', { name => $batchname } );
+  if( not defined( $data->{id} ) )
   {
     error( "No such batch $batchname" );
     return 0;
   }
-  
+
+  my $id = $data->{id};
+
   $ds->SetBatch( $id, $batchname );
 
   $self->{currbatch} = $id;
   $self->{currbatchname} = $batchname;
   $self->{batcherror} = 0;
+  $self->{oldmessage} = $data->{message};
+  $self->{oldabortmessage} = $data->{abort_message};
+
   return 1;
 }
 
@@ -122,7 +127,7 @@ sub EndBatchUpdate
   {
     $ds->Update( 'batches', { id => $self->{currbatch} }, 
                    { last_update => time(),
-                     message => "concat( message, \"$log\" )" } );
+                     message => $self->{oldmessage} .  "\n$log" } );
 
     $ds->DoSql("Commit");
   }
@@ -131,7 +136,7 @@ sub EndBatchUpdate
     $ds->DoSql("Rollback");
 
     $ds->Update( 'batches', { id => $self->{currbatch} },
-                 { abort_message => "concat( abort_message, \"$log\" )" } );
+                 { abort_message => $self->{oldabortmessage} . "\n$log" } );
 
     error( $self->{currbatchname} . ": Rolling back changes" );
   }
