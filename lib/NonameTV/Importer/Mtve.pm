@@ -53,6 +53,9 @@ sub ImportContent
 <!ENTITY \% ISOdia PUBLIC "ISO 8879:1986//ENTITIES Diacritical Marks//EN"
     "http://www.w3.org/2003/entities/iso8879/isodia.ent">
 \%ISOdia; 
+<!ENTITY \% HTMLlat1 PUBLIC "-//W3C//ENTITIES Latin 1 for XHTML//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml-lat1.ent">
+%HTMLlat1;
 ]>);
 
   my $xml = XML::LibXML->new;
