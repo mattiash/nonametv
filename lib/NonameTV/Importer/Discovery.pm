@@ -399,7 +399,10 @@ sub ImportAmendments
       $self->start_date( $date );
     }
     elsif( ($command, $title) = 
-           ($text =~ /^([A-ZÅÄÖ][ A-ZÅÄÖ]+) (.*?)\s*(\(.*\))*$/) )
+           ($text =~ /^([A-ZÅÄÖ][ A-ZÅÄÖ]+)\s
+                       (.*?)\s*
+                       ( \( [^)]* \) )*
+                     $/x ) )
     {
       if( $state != ST_FOUND_DATE )
       {
@@ -412,7 +415,11 @@ sub ImportAmendments
       $e = $self->parse_command( $prevtime, $command, $title );
     }
     elsif( ($time, $command, $title) = 
-           ($text =~ /^(\d\d[\.:]\d\d) ([A-ZÅÄÖ][ A-ZÅÄÖ]+)\s+([A-ZÅÄÖ].*?)(\(.*\))*$/) )
+           ($text =~ /^(\d\d[\.:]\d\d)\s
+                       ([A-ZÅÄÖ][ A-ZÅÄÖ]+)\s+
+                       ([A-ZÅÄÖ].*?)\s*
+                       ( \( [^)]* \) )*
+                     $/x ) )
     {
       if( $state != ST_FOUND_DATE )
       {
