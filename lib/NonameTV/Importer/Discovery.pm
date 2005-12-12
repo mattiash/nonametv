@@ -399,7 +399,7 @@ sub ImportAmendments
       $self->start_date( $date );
     }
     elsif( ($command, $title) = 
-           ($text =~ /^([A-ZÅÄÖ][ A-ZÅÄÖ]+) (.*?)(\(.*\))*$/) )
+           ($text =~ /^([A-ZÅÄÖ][ A-ZÅÄÖ]+) (.*?)\s*(\(.*\))*$/) )
     {
       if( $state != ST_FOUND_DATE )
       {
