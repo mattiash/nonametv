@@ -29,11 +29,13 @@ use NonameTV::Importer;
 
 use base 'NonameTV::Importer';
 
-# The highest log-level to store in the batch entry.
-# ERROR = 1
+# The lowest log-level to store in the batch entry.
+# DEBUG = 1
 # INFO = 2
 # PROGRESS = 3
-my $BATCH_LOG_LEVEL = 2;
+# ERROR = 4
+# FATAL = 5
+my $BATCH_LOG_LEVEL = 4;
 
 sub new 
 {
@@ -91,9 +93,9 @@ sub ImportFile
   my $self = shift;
   my( $contentname, $file, $p ) = @_;
 
-  my( $fnid, $fnlang, $fnmon, $fnyear, $fntype, $ext ) = 
+  my( $fnid, $fnlang, $fntype, $ext ) = 
     ( $file =~ /([A-Z]+[\. ]+[A-Z]+)
-               [\. ](\S+)\s+(...)\s+(\d\d)\s+(.*)\.
+               [\. ](\S+).*?(\S+)\.
                ([^\.]+)$/x );
 
   if( not defined( $ext ) )
@@ -110,7 +112,7 @@ sub ImportFile
 #    return;
 #  }
 
-  if( $fnmon eq "High" )
+  if( $fntype =~ /^high/i )
   {
     progress( "Discovery: Skipping highlights file $file" );
     return;
@@ -126,7 +128,7 @@ sub ImportFile
   my $channel_xmltvid = $self->{channel_data}->{$fnid}->{xmltvid};
 
   my $doc;
-  if( $ext eq 'doc' )
+  if( $ext =~  /doc/i )
   {
     $doc = Wordfile2Xml( $file );
   }
@@ -146,12 +148,12 @@ sub ImportFile
     return;
   }
 
-  if( $fntype =~ /^Amend/ )
+  if( $fntype =~ /^amend/i )
   {
     $self->ImportAmendments( $fnid, $file, $doc, 
                              $channel_xmltvid, $channel_id );
   }
-  elsif( $fntype =~ /^FINAL/ )
+  elsif( $fntype =~ /^final|rei/i )
   {
     $self->ImportData( $fnid, $file, $doc, 
                        $channel_xmltvid, $channel_id );
