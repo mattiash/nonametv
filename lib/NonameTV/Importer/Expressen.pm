@@ -119,10 +119,10 @@ sub ImportFile
     
     foreach my $tr ($ns2->get_nodelist)
     {
-      my $starttime = norm( $tr->findvalue( './/td[1]//text()' ) );
-      next if( $starttime !~ /\S.*\S/ );
+      my $time = norm( $tr->findvalue( './/td[1]//text()' ) );
+      next if( $time !~ /\S.*\S/ );
 
-      if( $starttime =~ /^mån|tis|ons|tor|fre|lör|sön/i )
+      if( $time =~ /^mån|tis|ons|tor|fre|lör|sön/i )
       {
         if( defined( $date ) )
         {
@@ -143,9 +143,10 @@ sub ImportFile
       my $title = norm( $tr->findvalue( './/td[2]//text()' ) );
       my $description = norm( $tr->findvalue( './/td[3]//text()' ) );
 
+      $time =~ tr/\.o/:0/;
+      $time =~ tr/ \t//d;
 
-      $starttime =~ tr/\.o/:0/;
-      $starttime =~ tr/ \t//d;
+      my( $starttime, $endtime ) = split( "-", $time);
 
       if( $starttime !~ /^\d{1,2}:\d{1,2}$/ )
       {
@@ -153,10 +154,19 @@ sub ImportFile
         next;
       }
 
+      if( defined( $endtime ) and $endtime !~ /^\d{1,2}:\d{1,2}$/ )
+      {
+        error( "$file: Unknown endtime $endtime" );
+        next;
+      }
+
       my $ce = {
         title       => $title,
         start_time  => $starttime,
       };
+
+      $ce->{end_time} = $endtime 
+        if defined $endtime;
 
       # Some descriptions just contain a single non-alpha character.
       $ce->{description} = $description 
