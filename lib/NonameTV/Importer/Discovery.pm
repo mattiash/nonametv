@@ -94,8 +94,9 @@ sub ImportFile
   my( $contentname, $file, $p ) = @_;
 
   my( $fnid, $fnlang, $fntype, $ext ) = 
-    ( $file =~ /([A-Z]+[\. ]+[A-Z]+)
-               [\. ](\S+).*?(\S+)\.
+    ( $file =~ /([A-Z]+[\. ]+[A-Z]+)[\. ]
+               (\S+).*?
+               (\S+\s*[0-9]*)\.
                ([^\.]+)$/x );
 
   if( not defined( $ext ) )
