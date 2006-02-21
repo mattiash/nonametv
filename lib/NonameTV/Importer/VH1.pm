@@ -116,6 +116,10 @@ sub ImportFile
   my %monthno= ( january => 1, february => 2, march => 3, april => 4, may => 5,
 		 june => 6, july => 7, august => 8, september => 9,
 		 october => 10, november => 11, december => 12 );
+
+  # Misspelled month-names.
+  $monthno{febuary} = 2;
+
   my $month= join '|', keys %monthno;
   my %weekdayno= ( monday => 1, tuesday => 2, wednesday => 3, thursday => 4,
 		   friday => 5, saturday => 6, sunday => 7 ); 
@@ -125,7 +129,7 @@ sub ImportFile
   for my $e ($tree->look_down('_tag', 'p', sub { $_[0]->as_text() =~ m/^\s*($weekday)\s*[0-9][0-9]?\s*($month)\s*$/i }) ) 
   {
     $e->as_text() =~ m/^\s*($weekday)\s*([0-9][0-9]?)\s*($month)\s*$/i
-	or &logdie("This should not happen if the regexps are correct!");
+	or &logdie("Mismatched heading: " . $e->as_text() );
     my $wday= $weekdayno{lc($1)};
     my $mday= $2;
     my $mno= $monthno{lc($3)};
