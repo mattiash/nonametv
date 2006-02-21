@@ -113,6 +113,11 @@ sub StartDate
                                       second => 0,
                                       time_zone => $self->{timezone} );
 
+  if( $self->{curr_date} < DateTime->today->subtract( days => 7 ) )
+  {
+    error( "$self->{batch_id}: StartDate called with old date, " .
+           $self->{curr_date}->ymd("-") . "." );
+  }
   if( defined( $time ) )
   {
     $self->{lasttime} = $self->create_dt( $self->{curr_date}, $time );

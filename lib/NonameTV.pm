@@ -25,7 +25,7 @@ BEGIN {
                       Wordfile2HtmlTree Htmlfile2HtmlTree
                       Word2Xml Wordfile2Xml 
                       Utf8Conv AddCategory
-                      ParseDescCatSwe/;
+                      ParseDescCatSwe FixProgrammeData/;
 }
 our @EXPORT_OK;
 
@@ -364,6 +364,33 @@ sub ParseDescCatSwe
   else
   {
     return (undef,undef);
+  }
+}
+
+sub FixProgrammeData
+{
+  my( $d ) = @_;
+
+  $d->{title} =~ s/^s.songs+tart\s*:*\s*//gi;
+  $d->{title} =~ s/^seriestart\s*:*\s*//gi;
+  $d->{title} =~ s/^reprisstart\s*:*\s*//gi;
+  $d->{title} =~ s/^programstart\s*:*\s*//gi;
+
+  $d->{title} =~ s/^s.songs*avslutning\s*:*\s*//gi;
+  $d->{title} =~ s/^sista\s+delen\s*:*\s*//gi;
+
+  if( $d->{title} =~ s/^((matin.)|(fredagsbio))\s*:\s*//gi )
+  {
+    $d->{program_type} = 'movie';
+    $d->{category} = 'Movies';
+  }
+
+  # Set program_type to series if the entry has an episode-number
+  # but doesn't have a program_type.
+  if( exists( $d->{episode} ) and defined( $d->{episode} ) and
+      ( (not defined($d->{program_type})) or ($d->{program_type} =~ /^\s*$/) ) )
+  {
+    $d->{program_type} = "series";
   }
 }
   
