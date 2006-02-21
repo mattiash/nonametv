@@ -85,16 +85,13 @@ sub ImportFile
   {
     $doc = Wordfile2Xml( $file );
   }
-  elsif( $file =~ /\.html$/ )
+
+  # It may be a html-file even though it is called .doc...
+  if( not defined $doc )
   {
     $doc = Htmlfile2Xml( $file );
   }
-  else
-  {
-    error( "Expressen: Unknown extension for $file" );
-    return;
-  }
-  
+
   if( not defined( $doc ) )
   {
     error( "Expressen: $file failed to parse" );
@@ -106,7 +103,7 @@ sub ImportFile
   
   if( $ns->size() == 0 )
   {
-    print STDERR "$file: No tables found.\n";
+    error( "Expressen: $file: No tables found." ) ;
     return;
   }
 
@@ -120,18 +117,24 @@ sub ImportFile
     foreach my $tr ($ns2->get_nodelist)
     {
       my $time = norm( $tr->findvalue( './/td[1]//text()' ) );
+
       next if( $time !~ /\S.*\S/ );
 
-      if( $time =~ /^mån|tis|ons|tor|fre|lör|sön/i )
+      if( $time =~ /^mån|tis|ons|tor|fre|lör|sön|\d\d\d\d-\d\d-\d\d/i )
       {
+        # Sometimes there is a weekday in the first column and a date in
+        # the second, sometimes they are both in the first column.
+        # Sometimes there is no weekday, only a date.
+        my $day = norm( $tr->findvalue( './/td[1]//text()' ) ) . " " . 
+          norm( $tr->findvalue( './/td[2]//text()' ) );
+
         if( defined( $date ) )
         {
           $dsh->EndBatch( 1, log_to_string_result( $loghandle ) );
         }
 
-        $date = norm( $tr->findvalue( './/td[2]//text()' ) );
-        $date =~ /^\d\d\d\d-\d\d-\d\d$/ 
-          or logdie "Invalid date $date";
+        ($date) = ($day =~ /(\d\d\d\d-\d\d-\d\d)/)
+          or logdie "Invalid day $day";
 
         $loghandle = log_to_string( 4 );
         $dsh->StartBatch( "${xmltvid}_$date", $channel_id );
@@ -150,7 +153,7 @@ sub ImportFile
 
       if( $starttime !~ /^\d{1,2}:\d{1,2}$/ )
       {
-        error( "$file: Unknown starttime $starttime" );
+        error( "$file: Ignoring starttime $starttime" );
         next;
       }
 
