@@ -2,6 +2,7 @@ package NonameTV::DataStore;
 
 use strict;
 
+use NonameTV qw/FixProgrammeData/;
 use NonameTV::Log qw/info progress error logdie/;
 use Carp qw/confess/;
 use DBI;
@@ -267,7 +268,7 @@ sub AddProgramme
     }
   }
 
-  fix_programme_data( $data );
+  FixProgrammeData( $data );
 
   $self->{last_prog} = dclone( $data );
 }
@@ -396,33 +397,6 @@ sub AddProgrammeRaw
       error( $self->{currbatchname} . ": $err" );
       $self->{batcherror} = 1;
     }
-  }
-}
-
-sub fix_programme_data
-{
-  my( $d ) = @_;
-
-  $d->{title} =~ s/^s.songs+tart\s*:*\s*//gi;
-  $d->{title} =~ s/^seriestart\s*:*\s*//gi;
-  $d->{title} =~ s/^reprisstart\s*:*\s*//gi;
-  $d->{title} =~ s/^programstart\s*:*\s*//gi;
-
-  $d->{title} =~ s/^s.songs*avslutning\s*:*\s*//gi;
-  $d->{title} =~ s/^sista\s+delen\s*:*\s*//gi;
-
-  if( $d->{title} =~ s/^((matin.)|(fredagsbio))\s*:\s*//gi )
-  {
-    $d->{program_type} = 'movie';
-    $d->{category} = 'Movies';
-  }
-
-  # Set program_type to series if the entry has an episode-number
-  # but doesn't have a program_type.
-  if( exists( $d->{episode} ) and defined( $d->{episode} ) and
-      ( (not defined($d->{program_type})) or ($d->{program_type} =~ /^\s*$/) ) )
-  {
-    $d->{program_type} = "series";
   }
 }
 
