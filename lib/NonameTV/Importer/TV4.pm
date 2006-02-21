@@ -70,7 +70,7 @@ use warnings;
 use DateTime;
 use XML::LibXML;
 
-use NonameTV qw/MyGet Utf8Conv ParseDescCatSwe AddCategory/;
+use NonameTV qw/MyGet Utf8Conv ParseDescCatSwe AddCategory FixProgrammeData/;
 use NonameTV::DataStore::Helper;
 use NonameTV::Log qw/info progress error logdie/;
 
@@ -260,6 +260,21 @@ sub extract_extra_info
     $ce->{title} = "Pokémon";
     $ce->{subtitle} = $1;
   }
+
+  # Must remove "Reprisstart: " and similar strings before the next check.
+  FixProgrammeData( $ce );
+
+#  if( defined($ce->{program_type}) and ($ce->{program_type} eq 'series') )
+#  {
+    my( $t, $st ) = ($ce->{title} =~ /(.*)\: (.*)/);
+    if( defined( $st ) )
+    {
+      # This program is part of a series and it has a colon in the title.
+      # Assume that the colon separates the title from the subtitle.
+      $ce->{title} = $t;
+      $ce->{subtitle} = $st;
+    }
+#  }
 }
 
 # Split a string into individual sentences.
