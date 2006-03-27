@@ -38,6 +38,8 @@ sub ImportContent
   my $self = shift;
   my( $batch_id, $cref, $chd ) = @_;
 
+  $self->{batch_id} = $batch_id;
+
   my $ds = $self->{datastore};
   my $dsh = $self->{datastorehelper};
 
@@ -89,7 +91,7 @@ sub ImportContent
   {
     my $starttime = $pgm->findvalue( 'ShowDate' );
     
-    my $start_dt = create_dt( $starttime );
+    my $start_dt = $self->create_dt( $starttime );
     
     my $title =$pgm->findvalue( 'ShowName' );
     my $desc = $pgm->findvalue( 'ShowText' );
@@ -134,7 +136,7 @@ sub FetchDataFromSite
 
 sub create_dt
 {
-  my( $datetime ) = @_;
+  my( $self, $datetime ) = @_;
 
   my( $date, $time, $timezone ) = split( /\s+/, $datetime );
 
@@ -144,17 +146,37 @@ sub create_dt
   my( $year, $month, $day ) = split( "-", $date );
   my( $hour, $minute ) = split( ":", $time );
   
-  my $dt = DateTime->new( 
-                          year => $year,
-                          month => $month, 
-                          day => $day,
-                          hour => $hour,
-                          minute => $minute,
-                          time_zone => "Europe/Stockholm" 
-                          );
-  
+  my $dt;
+
+  my $res = eval {
+    $dt = DateTime->new( 
+                            year => $year,
+                            month => $month, 
+                            day => $day,
+                            hour => $hour,
+                            minute => $minute,
+                            time_zone => "Europe/Stockholm" 
+                            );
+    
+  };
+
+  if( not defined $res )
+  {
+    error( $self->{batch_id} . ": $year-$month-$day $hour:$minute: $@" );
+    $hour++;
+    error( "Adjusting to $hour:$minute" );
+    $dt = DateTime->new( 
+                         year => $year,
+                         month => $month, 
+                         day => $day,
+                         hour => $hour,
+                         minute => $minute,
+                         time_zone => "Europe/Stockholm" 
+                         );
+  }    
+
   $dt->set_time_zone( "UTC" );
-  
+
   return $dt;
 }
 
