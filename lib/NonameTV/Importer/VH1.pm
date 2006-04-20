@@ -210,37 +210,22 @@ sub ImportFile
         $title =~ s/^\s+//;
         $title =~ tr/ / /s;
       }
-      
-      if(length($title) > 0 and 
-         substr($entrytext, 0, length($title) ) eq $title )
+
+      # The title is always in upper-case and is followed by the
+      # description in Mixed Case.
+      if($entry =~ m/\s*[0-9]{4}\s+([A-Z0-9\'\&s\/ \-]+)\s+([A-Z].*)/)
       {
-        # The found bold text is first after the start time,
-        # so we consider it to be the title
-        $descr= substr( $entrytext, length( $title ) );
-      }
+        $title= $1;
+        $descr= $2;
+      } 
       else 
       {
-	# Let's Check for Upper-Case title instead
-	if($entry =~ m/\s*[0-9]{4}\s+((([^a-z]+|([0-9]+\'?[sS]))+\s+)+)(.*)/s) 
-	{
-	  $title= $1;
-	  $descr= $5;
-	  if($descr =~ m/^[a-z&]/) 
-	  {
-	    # if the next word after the title starts with
-	    # lowercase or is an '&' we probably got one word to much
-	    $title=~ s/([^\s]+)\s*$//;
-	    $descr= "$1 $descr";
-	  }
-	} 
-	else 
-	{
-	  &error("$file: Did not find title in the following entry: '" . 
-		 &norm($entry) . "' at $h:$m");
-	  $title= 'UNKNOWN';
-	  $descr= $entrytext;
-	}
+        &error("$file: Did not find title in the following entry: '" . 
+               &norm($entry) . "' at $h:$m");
+        $title= 'UNKNOWN';
+        $descr= $entrytext;
       }
+
       $title=~ s/\\([()])/$1/sg; # remove ()-esc
       $title = capitalize_title( &norm($title) );
       $title =~ s/Vh1/VH1/g;
