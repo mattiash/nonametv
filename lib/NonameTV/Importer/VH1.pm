@@ -213,7 +213,7 @@ sub ImportFile
 
       # The title is always in upper-case and is followed by the
       # description in Mixed Case.
-      if($entry =~ m/\s*[0-9]{4}\s+([A-Z0-9\'\&s\/ \-]+)\s+([A-Z].*)/)
+      if($entry =~ m/\s*[0-9]{4}\s+([A-Z0-9\'\&s\/ \-:]+)\s+([A-Z].*)/)
       {
         $title= $1;
         $descr= $2;
