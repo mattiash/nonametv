@@ -208,8 +208,6 @@ sub extract_extra_info
   my $self = shift;
   my( $ce ) = @_;
 
-  extract_episode( $ce );
-
   #
   # Try to extract category and program_type by matching strings
   # in the description.
@@ -231,6 +229,8 @@ sub extract_extra_info
   {
     $ce->{production_date} = "$1-01-01";
   }
+
+  extract_episode( $ce );
 
   # Remove control characters {\b Text in bold}
   $ce->{description} =~ s/\{\\b\s+//g;
@@ -315,6 +315,11 @@ sub extract_episode
   
   if( defined( $episode ) )
   {
+    if( exists( $ce->{production_date} ) )
+    {
+      my( $year ) = ($ce->{production_date} =~ /(\d{4})-/ );
+      $episode = ($year-1) . $episode;
+    }
     $ce->{episode} = $episode;
     $ce->{program_type} = 'series';
   }
