@@ -2,7 +2,7 @@
 --
 -- Host: localhost    Database: listings
 -- ------------------------------------------------------
--- Server version	4.1.11-Debian_4sarge2
+-- Server version	4.1.11-Debian_4sarge3
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -43,6 +43,7 @@ CREATE TABLE `channels` (
   `def_pty` varchar(20) default '',
   `def_cat` varchar(20) default '',
   `sched_lang` varchar(4) NOT NULL default '',
+  `empty_ok` tinyint(1) NOT NULL default '0',
   PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
