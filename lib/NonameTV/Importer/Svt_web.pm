@@ -16,6 +16,7 @@ use warnings;
 
 use DateTime;
 use XML::LibXML;
+use DateTime;
 
 use NonameTV qw/MyGet Utf8Conv Html2Xml ParseDescCatSwe AddCategory/;
 use NonameTV::DataStore::Helper;
@@ -31,6 +32,10 @@ my @SVT_CATEGORIES = qw(Barn Sport Unclassified
                         Nöje Film Fakta);
 
 # my @SVT_CATEGORIES = ("");
+
+my %channelids = ( "SVT1" => "svt1.svt.se",
+                   "SVT2" => "svt2.svt.se",
+                   );
 
 sub new {
     my $proto = shift;
@@ -60,9 +65,17 @@ sub ImportContent
 
   my $ds = $self->{datastore};
   my $dsh = $self->{datastorehelper};
+  $self->{currxmltvid} = $chd->{xmltvid};
 
   my( $date ) = ($batch_id =~ /_(.*)$/);
- 
+
+  {
+    my( $year, $month, $day ) = split("-", $date);
+    $self->{currdate} = DateTime->new( year => $year,
+                                       month => $month, 
+                                       day => $day );
+  }
+
   my $cat = $self->FetchCategories( $chd, $date );
 
   my $doc = Html2Xml( $$cref );
@@ -152,7 +165,8 @@ sub ImportContent
   {
     # This is normal for some channels. We do not want to rollback
     # because of this.
-    error( "$batch_id: No programs found" );
+    error( "$batch_id: No programs found" )
+      if( not $chd->{empty_ok} );
     return 1;
   }
 }
@@ -337,10 +351,27 @@ sub extract_extra_info
       $ce->{actors} = parse_person_list( $actors );
       $sentences[$i] = "";
     }
-    elsif( my( $year ) = ($sentences[$i] =~ /^Från (\d+)$/))
+    elsif( $sentences[$i] =~ /^(Även|Från)
+     ((
+      \s+|
+      [A-Z]\S+|
+      i\s+[A-Z]\S+|
+      tidigare\s+i\s*dag|senare\s+i\s*dag|
+      tidigare\s+i\s*kväll|senare\s+i\s*kväll|
+      \d+\/\d+|
+      ,|och|samt
+     ))+
+     \.\s*
+     $/x )
     {
-      # This should go into previously shown.
-#      $ce->{production_date} = "$year-01-01";
+      $self->parse_other_showings( $ce, $sentences[$i] );
+
+#      print STDERR $sentences[$i] . "\n";
+#      $sentences[$i] = "";
+    }
+    elsif( $sentences[$i] =~ /^Text(at|-tv)\s+sid(an)*\s+\d+\.$/ )
+    {
+#      $ce->{subtitle} = 'sv,teletext';
 #      $sentences[$i] = "";
     }
   }
@@ -401,6 +432,120 @@ sub extract_episode
     if defined $eps;
   
   $ce->{episode} = $episode if defined $episode;
+}
+
+sub parse_other_showings
+{
+  my $self = shift;
+  my( $ce, $l ) = @_;
+
+  my $type;
+  my $channel = "same";
+  my $date = "unknown";
+
+ PARSER: 
+  {
+    if( $l =~ /\G(Även|Från)\s*/gcx ) 
+    {
+      $type = ($1 eq "Även") ? "also" : "previously";
+      
+      redo PARSER;
+    }
+    if( $l =~ /\Gi*\s* ([A-Z]\w*) \s*/gcx ) 
+    {
+      $channel = $1;
+      redo PARSER;
+    }
+    if( $l=~ /\G(tidigare\s+i\s*dag
+                 |senare\s+i\s*dag
+                 |tidigare\s+i\s*kväll
+                 |senare\s+i\s*kväll)\s*/gcx )  
+    {
+      $date = "today";
+      redo PARSER;
+    }
+    if( $l =~ /\G(\d+\/\d+)\s*/gcx )
+    {
+      $date = $1;
+      redo PARSER;
+    }
+    if( $l =~ /\G(,|och|samt)\s*/gcx ) 
+    {
+      $self->add_showing( $ce, $type, $date, $channel );
+      $date = "unknown";
+      $channel = "same";
+      redo PARSER;
+    }
+    if( $l =~ /\G(\.)\s*/gcx ) 
+    {
+      $self->add_showing( $ce, $type, $date, $channel );
+      $date = "unknown";
+      $channel = "same";
+      redo PARSER;
+    }
+    if( $l =~ /\G(.+)/gcx ) 
+    {
+      print "error: $1\n";
+      redo PARSER;
+    }
+    
+  }
+}
+    
+sub add_showing
+{
+  my $self = shift;
+  my( $ce, $type, $date, $channel ) = @_;
+
+  my $chid;
+
+  # Ignore entries caused by ", och"
+  return if $date eq "unknown" and $channel eq "same";
+
+  if( $channel eq "same" )
+  {
+    $chid = $self->{currxmltvid};
+  }
+  else
+  {
+    $chid = $channelids{$channel};
+  }
+
+  my $dt = DateTime->today();
+  
+  if( $date ne "today" )
+  {
+    my( $day, $month ) = ($date =~ /(\d+)\s*\/\s*(\d+)/);
+    if( not defined( $month ) )
+    {
+      error( "Unknown date $date" );
+      return;
+    }
+    $dt->set( month => $month,
+              day => $day );
+
+    if( $dt > $self->{currdate} )
+    {
+      if( $type eq "previously" )
+      {
+        $dt->subtract( years => 1 );
+      }
+    }
+    else
+    {
+      if( $type eq "also" )
+      {
+        $dt->add( years => 1 );
+      }
+    }
+  }
+
+  $date = $dt->ymd("-");
+
+  error( "Unknown channel $channel" )
+    unless defined $chid;
+
+#  print STDERR "$type $date $chid\n";
 }
 
 # Split a string into individual sentences.
