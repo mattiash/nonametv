@@ -70,7 +70,7 @@ use warnings;
 use DateTime;
 use XML::LibXML;
 
-use NonameTV qw/MyGet Utf8Conv ParseDescCatSwe AddCategory FixProgrammeData/;
+use NonameTV qw/MyGet norm ParseDescCatSwe AddCategory FixProgrammeData/;
 use NonameTV::DataStore::Helper;
 use NonameTV::Log qw/info progress error logdie/;
 
@@ -323,25 +323,6 @@ sub extract_episode
     $ce->{episode} = $episode;
     $ce->{program_type} = 'series';
   }
-}
-
-# Delete leading and trailing space from a string.
-# Convert all whitespace to spaces. Convert multiple
-# spaces to a single space.
-sub norm
-{
-    my( $str ) = @_;
-
-    return "" if not defined( $str );
-
-    $str = Utf8Conv( $str );
-
-    $str =~ s/^\s+//;
-    $str =~ s/\s+$//;
-
-    $str =~ tr/\n\r\t /    /s;
-
-    return $str;
 }
 
 1;

@@ -13,7 +13,7 @@ use warnings;
 use DateTime;
 use XML::LibXML;
 
-use NonameTV qw/MyGet Utf8Conv Html2Xml/;
+use NonameTV qw/MyGet norm Html2Xml/;
 use NonameTV::DataStore::Helper;
 use NonameTV::Log qw/info progress error logdie/;
 
@@ -115,25 +115,6 @@ sub extract_extra_info
 {
   my( $ce ) = shift;
 
-}
-
-# Delete leading and trailing space from a string.
-# Convert all whitespace to spaces. Convert multiple
-# spaces to a single space.
-sub norm
-{
-    my( $str ) = @_;
-
-    return "" if not defined( $str );
-
-    $str = Utf8Conv( $str );
-
-    $str =~ s/^\s+//;
-    $str =~ s/\s+$//;
-
-    $str =~ tr/\n\r\t /    /s;
-    
-    return $str;
 }
 
 1;

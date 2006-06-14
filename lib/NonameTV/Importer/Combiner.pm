@@ -177,7 +177,7 @@ use XML::LibXML;
 use Compress::Zlib;
 use DateTime::Event::Recurrence;
 
-use NonameTV qw/MyGet Utf8Conv/;
+use NonameTV qw/MyGet/;
 
 use NonameTV::Importer::BaseDaily;
 
@@ -405,36 +405,36 @@ sub ParseXmltv
     my %e = (
       start_dt => $start_dt,
       stop_dt => $stop_dt,
-      title => norm( $title ),
-      description => norm( $desc ),
+      title => $title,
+      description => $desc,
     );
 
     if( $subtitle =~ /\S/ )
     {
-      $e{subtitle} = norm( $subtitle );
+      $e{subtitle} = $subtitle;
     }
 
     if( $episode =~ /\S/ )
     {
-      $e{episode} = norm( $episode );
+      $e{episode} = $episode;
     }
 
     if( $cat1 =~ /^[a-z]/ )
     {
-      $e{program_type} = norm($cat1);
+      $e{program_type} = $cat1;
     }
     elsif( $cat1 =~ /^[A-Z]/ )
     {
-      $e{category} = norm($cat1);
+      $e{category} = $cat1;
     }
 
     if( $cat2 =~ /^[a-z]/ )
     {
-      $e{program_type} = norm($cat2);
+      $e{program_type} = $cat2;
     }
     elsif( $cat2 =~ /^[A-Z]/ )
     {
-      $e{category} = norm($cat2);
+      $e{category} = $cat2;
     }
 
     if( $production_date =~ /\S/ )
@@ -545,15 +545,4 @@ sub FetchDataFromSite
   return( $content, $code );
 }
     
-sub norm
-{
-    my( $instr ) = @_;
-
-    return "" if not defined( $instr );
-
-    my $str = Utf8Conv( $instr );
-
-    return $str;
-}
-
 1;

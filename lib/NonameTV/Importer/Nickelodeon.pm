@@ -3,6 +3,8 @@ package NonameTV::Importer::Nickelodeon;
 use strict;
 use warnings;
 
+use utf8;
+
 =pod
 
 Import data from Word-files delivered via e-mail. 
@@ -17,7 +19,7 @@ use DateTime::Duration;
 use HTML::TreeBuilder;
 use HTML::Entities; 
 
-use NonameTV qw/MyGet Wordfile2HtmlTree Htmlfile2HtmlTree Utf8Conv/;
+use NonameTV qw/MyGet Wordfile2HtmlTree Htmlfile2HtmlTree norm/;
 use NonameTV::DataStore::Helper;
 use NonameTV::Log qw/info progress error logdie/;
 
@@ -131,13 +133,13 @@ sub ImportFile
 
        # Loose test
        my $b = $_[0]->as_text() =~ 
-         m/^\s*([a-zåäöÅÄÖ]+)\s*
+         m/^\s*([a-zÃ¥Ã¤Ã¶Ã…Ã„Ã–]+)\s*
             ([0-9]{1,2})\s*
-            ([a-zåäöÅÄÖ]+)?\s*
+            ([a-zÃ¥Ã¤Ã¶Ã…Ã„Ã–]+)?\s*
             (2[0-9]{3})?\s*
             -\s*
             ([0-9]{1,2})\s*
-            ([a-zåäöÅÄÖ]+)\s*
+            ([a-zÃ¥Ã¤Ã¶Ã…Ã„Ã–]+)\s*
             (2[0-9]{3})\s*
             $/ix;
        
@@ -327,18 +329,9 @@ sub ImportFile
   $tree->delete;
 }
 
-sub norm
-{
-  return '' unless defined $_[0];
-  
-  my $str = Utf8Conv($_[0]);
-  
-  $str =~ tr/\n\r\t\xa0 /    /s; # a0 is nonbreaking space.
-  
-  $str =~ s/^\s+//;
-  $str =~ s/\s+$//;
-  
-  return $str;
-}
-
 1;
+
+### Setup coding system
+## Local Variables:
+## coding: utf-8
+## End:

@@ -13,10 +13,12 @@ Features:
 
 =cut
 
+use utf8;
+
 use DateTime;
 use XML::LibXML;
 
-use NonameTV qw/MyGet Wordfile2Xml Htmlfile2Xml Utf8Conv/;
+use NonameTV qw/MyGet Wordfile2Xml Htmlfile2Xml norm/;
 use NonameTV::DataStore::Helper;
 use NonameTV::Log qw/info progress error logdie 
                      log_to_string log_to_string_result/;
@@ -120,7 +122,7 @@ sub ImportFile
 
       next if( $time !~ /\S.*\S/ );
 
-      if( $time =~ /^mån|tis|ons|tor|fre|lör|sön|\d\d\d\d-\d\d-\d\d/i )
+      if( $time =~ /^mÃ¥n|tis|ons|tor|fre|lÃ¶r|sÃ¶n|\d\d\d\d-\d\d-\d\d/i )
       {
         # Sometimes there is a weekday in the first column and a date in
         # the second, sometimes they are both in the first column.
@@ -200,23 +202,9 @@ sub extract_extra_info
   return;
 }
 
-# Delete leading and trailing space from a string.
-# Convert all whitespace to spaces. Convert multiple
-# spaces to a single space.
-sub norm
-{
-    my( $instr ) = @_;
-
-    return "" if not defined( $instr );
-
-    my $str = Utf8Conv( $instr );
-
-    $str =~ tr/\n\r\t\xa0 /    /s; # a0 is nonbreaking space.
-
-    $str =~ s/^\s+//;
-    $str =~ s/\s+$//;
-    
-    return $str;
-}
-
 1;
+
+### Setup coding system
+## Local Variables:
+## coding: utf-8
+## End:

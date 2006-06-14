@@ -16,10 +16,12 @@ Subtitles.
 
 =cut
 
+use utf8;
+
 use DateTime;
 use XML::LibXML;
 
-use NonameTV qw/MyGet Wordfile2Xml Htmlfile2Xml Utf8Conv/;
+use NonameTV qw/MyGet Wordfile2Xml Htmlfile2Xml norm/;
 use NonameTV::DataStore::Helper;
 use NonameTV::DataStore::Updater;
 use NonameTV::Log qw/info progress error logdie 
@@ -371,7 +373,7 @@ sub ImportAmendments
     my( $time, $command, $title );
 
     if( ($text =~ /^sida \d+ av \d+$/i) or
-        ($text =~ /tablÂn forts‰tter som tidigare/i) )
+        ($text =~ /tabl√•n forts√§tter som tidigare/i) )
     {
       next;
     }
@@ -379,7 +381,7 @@ sub ImportAmendments
     {
       last;
     }
-    elsif( $text =~ /^(mÂndag|tisdag|onsdag|torsdag|fredag|lˆrdag|sˆndag|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\s*\d+\s*\D+\s*\d+$/i  )
+    elsif( $text =~ /^(m√•ndag|tisdag|onsdag|torsdag|fredag|l√∂rdag|s√∂ndag|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\s*\d+\s*\D+\s*\d+$/i  )
     {
       if( $state != ST_HEAD )
       {
@@ -402,7 +404,7 @@ sub ImportAmendments
       $self->start_date( $date );
     }
     elsif( ($command, $title) = 
-           ($text =~ /^([A-Z≈ƒ÷][ A-Z≈ƒ÷]+)\s
+           ($text =~ /^([A-Z√Ö√Ñ√ñ][ A-Z√Ö√Ñ√ñ]+)\s
                        (.*?)\s*
                        ( \( [^)]* \) )*
                      $/x ) )
@@ -419,8 +421,8 @@ sub ImportAmendments
     }
     elsif( ($time, $command, $title) = 
            ($text =~ /^(\d\d[\.:]\d\d)\s
-                       ([A-Z≈ƒ÷][ A-Z≈ƒ÷]+)\s+
-                       ([A-Z≈ƒ÷].*?)\s*
+                       ([A-Z√Ö√Ñ√ñ][ A-Z√Ö√Ñ√ñ]+)\s+
+                       ([A-Z√Ö√Ñ√ñ].*?)\s*
                        ( \( [^)]* \) )*
                      $/x ) )
     {
@@ -474,7 +476,7 @@ sub parse_command
   $e->{title} = $title;
   $e->{desc} = "";
 
-  if( $command eq "ƒNDRA" or $command eq "RADERA")
+  if( $command eq "√ÑNDRA" or $command eq "RADERA")
   {
     $e->{command} = "DELETEBLIND";
   }
@@ -489,7 +491,7 @@ sub parse_command
   {
     $e->{command} = "INSERT";
   }
-  elsif( $command eq "EJ ƒNDRAD" or $command eq "UNCHANGED")
+  elsif( $command eq "EJ √ÑNDRAD" or $command eq "UNCHANGED")
   {
     $e->{command} = "IGNORE";
   }
@@ -534,7 +536,7 @@ sub process_command
     };
     extract_extra_info( $ce );
 
-    if( $e->{desc} =~ /Programfˆrklaring ej ‰ndrad/ )
+    if( $e->{desc} =~ /Programf√∂rklaring ej √§ndrad/ )
     {
       # This is a program that has gotten a new title. It means
       # that it is a record CHANGE ... TO ... Thus, the description
@@ -602,25 +604,6 @@ sub parse_date
   return sprintf( '%d-%02d-%02d', $year, $month, $day );
 }
 
-# Delete leading and trailing space from a string.
-# Convert all whitespace to spaces. Convert multiple
-# spaces to a single space.
-sub norm
-{
-    my( $instr ) = @_;
-
-    return "" if not defined( $instr );
-
-    my $str = Utf8Conv( $instr );
-
-    $str =~ s/^\s+//;
-    $str =~ s/\s+$//;
-
-    $str =~ tr/\n\r\t /    /s;
-
-    return $str;
-}
-
 sub start_date
 {
   my $self = shift;
@@ -682,3 +665,8 @@ sub create_dt
 }
 
 1;
+
+### Setup coding system
+## Local Variables:
+## coding: utf-8
+## End:

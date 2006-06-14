@@ -25,7 +25,7 @@ CREATE TABLE `batches` (
   `message` text NOT NULL,
   `abort_message` text NOT NULL,
   PRIMARY KEY  (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 --
 -- Table structure for table `channels`
@@ -45,7 +45,7 @@ CREATE TABLE `channels` (
   `sched_lang` varchar(4) NOT NULL default '',
   `empty_ok` tinyint(1) NOT NULL default '0',
   PRIMARY KEY  (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 --
 -- Table structure for table `programs`
@@ -70,7 +70,7 @@ CREATE TABLE `programs` (
   PRIMARY KEY  (`channel_id`,`start_time`),
   KEY `channel_id` (`channel_id`,`start_time`),
   KEY `batch` (`batch_id`,`start_time`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 --
 -- Table structure for table `state`
@@ -81,7 +81,7 @@ CREATE TABLE `state` (
   `name` varchar(60) NOT NULL default '',
   `value` text,
   PRIMARY KEY  (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 --
 -- Table structure for table `trans_cat`
@@ -94,7 +94,7 @@ CREATE TABLE `trans_cat` (
   `category` varchar(20) default '',
   `program_type` varchar(50) default '',
   PRIMARY KEY  (`type`,`original`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
 /*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;

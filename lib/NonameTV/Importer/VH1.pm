@@ -19,7 +19,7 @@ Features:
 use DateTime;
 use Text::Capitalize qw/capitalize_title/;
 
-use NonameTV qw/Wordfile2HtmlTree Htmlfile2HtmlTree Utf8Conv/;
+use NonameTV qw/Wordfile2HtmlTree Htmlfile2HtmlTree norm/;
 use NonameTV::DataStore::FilePrint;
 use NonameTV::DataStore::Helper;
 
@@ -249,19 +249,6 @@ sub ImportFile
       $dsh->EndBatch(0, 'Did not find any programmes');
     }
   }
-}
-
-sub norm
-{
-  return '' unless defined $_[0];
-  my $str = Utf8Conv($_[0]);
-
-  $str =~ tr/\n\r\t\xa0 /    /s; # a0 is nonbreaking space.
-  
-  $str =~ s/^\s+//;
-  $str =~ s/\s+$//;
-  
-  return $str;
 }
 
 1;

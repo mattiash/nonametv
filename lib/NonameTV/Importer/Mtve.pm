@@ -13,7 +13,7 @@ use warnings;
 use DateTime;
 use XML::LibXML;
 
-use NonameTV qw/MyGet Utf8Conv/;
+use NonameTV qw/MyGet norm/;
 use NonameTV::Log qw/info progress error logdie/;
 
 use NonameTV::Importer::BaseDaily;
@@ -178,25 +178,6 @@ sub create_dt
   $dt->set_time_zone( "UTC" );
 
   return $dt;
-}
-
-# Delete leading and trailing space from a string.
-# Convert all whitespace to spaces. Convert multiple
-# spaces to a single space.
-sub norm
-{
-    my( $instr ) = @_;
-
-    return "" if not defined( $instr );
-
-    my $str = Utf8Conv( $instr );
-
-    $str =~ s/^\s+//;
-    $str =~ s/\s+$//;
-
-    $str =~ tr/\n\r\t /    /s;
-
-    return $str;
 }
 
 1;

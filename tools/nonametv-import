@@ -5,7 +5,7 @@ use strict;
 use NonameTV;
 use NonameTV::DataStore;
 use NonameTV::DataStore::Dummy;
-use HTTP::TransparentCache;
+use HTTP::Cache::Transparent;
 
 use Getopt::Long;
 
@@ -66,7 +66,7 @@ else
 }
 
 # Initialize cache
-HTTP::TransparentCache::init( $conf->{Cache} );
+HTTP::Cache::Transparent::init( $conf->{Cache} );
 
 # Create the right importer
 my $imp_data = $conf->{Importers}->{$imp_name};

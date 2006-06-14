@@ -4,7 +4,7 @@ use strict;
 
 use NonameTV;
 use NonameTV::DataStore;
-use HTTP::TransparentCache;
+use HTTP::Cache::Transparent;
 
 if( scalar( @ARGV ) != 2 )
 {
@@ -46,7 +46,7 @@ my $conf = NonameTV::ReadConfig();
 my $ds = NonameTV::DataStore->new( $conf->{DataStore} );
 
 # Initialize cache
-HTTP::TransparentCache::init( $conf->{Cache} );
+HTTP::Cache::Transparent::init( $conf->{Cache} );
 
 my( $imp_name, $batch_id ) = @ARGV;
 

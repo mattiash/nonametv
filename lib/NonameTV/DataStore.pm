@@ -5,9 +5,12 @@ use strict;
 use NonameTV qw/FixProgrammeData/;
 use NonameTV::Log qw/info progress error logdie/;
 use Carp qw/confess/;
-use DBI;
+use UTF8DBI;
 
 use Storable qw/dclone/;
+use Encode qw/decode_utf8/;
+
+use utf8;
 
 =head1 NAME
 
@@ -70,9 +73,12 @@ sub new
   
   my $dsn = "DBI:$driver:database=$database;host=$host";
   
-  $self->{dbh} = DBI->connect($dsn, $self->{username}, $self->{password})
+  $self->{dbh} = UTF8DBI->connect($dsn, $self->{username}, $self->{password})
       or die "Cannot connect: " . $DBI::errstr;
 
+
+  $self->{dbh}->do("set character set utf8");
+  $self->{dbh}->do("set names utf8");
 
   $self->{SILENCE_END_START_OVERLAP} = 0;
 
@@ -215,7 +221,7 @@ about the programme.
     channel_id => 1,
     start_time => "2004-12-24 14:00:00",
     end_time   => "2004-12-24 15:00:00", # Optional
-    title      => "Kalle Anka och hans vänner",
+    title      => "Kalle Anka och hans vÃ¤nner",
     subtitle   => "Episode title"        # Optional
     description => "Traditionsenligt julfirande",
     episode    =>  "0 . 12/13 . 0/3", # Season, episode and part as xmltv_ns
@@ -422,7 +428,7 @@ sub LookupCat
 
   # I should be using locales, but I don't dare turn them on.
   $org = lc( $org );
-  $org =~ tr/ÅÄÖ/åäö/;
+  $org =~ tr/Ã…Ã„Ã–/Ã¥Ã¤Ã¶/;
 
   $self->LoadCategories()
     if not exists( $self->{categories} );
@@ -430,8 +436,8 @@ sub LookupCat
   
   if( not exists( $self->{categories}->{"$type++$org"} ) )
   {
-    # MySQL considers some characters as equal, e.g. e and é.
-    # Trying to insert both anime and animé will give an error-message
+    # MySQL considers some characters as equal, e.g. e and Ã©.
+    # Trying to insert both anime and animÃ© will give an error-message
     # from MySql. Therefore, I try to lookup the new entry before adding
     # it to see if MySQL thinks it already exists. I should probably
     # normalize the strings before inserting them instead...
@@ -466,6 +472,12 @@ sub LoadCategories
   my $d = {};
 
   my $sth = $self->Iterate( 'trans_cat', {} );
+  if( not defined( $sth ) )
+  {
+    $self->{categories} = {};
+    error( "No categories found in database." );
+    return;
+  }
 
   while( my $data = $sth->fetchrow_hashref() )
   {
@@ -718,6 +730,7 @@ sub Lookup
 
   my $row = $sth->fetchrow_hashref;
 
+  
   $sth->finish();
 
   return $row->{$field} if defined $field;
@@ -801,3 +814,8 @@ Copyright (C) 2004 Mattias Holmlund.
 =cut
 
 1;
+
+### Setup coding system
+## Local Variables:
+## coding: utf-8
+## End:

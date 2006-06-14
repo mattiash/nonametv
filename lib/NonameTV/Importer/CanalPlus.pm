@@ -16,7 +16,7 @@ Features:
 use DateTime;
 use XML::LibXML;
 
-use NonameTV qw/MyGet Utf8Conv AddCategory/;
+use NonameTV qw/MyGet norm AddCategory/;
 use NonameTV::Log qw/info progress error logdie/;
 
 use NonameTV::Importer::BaseWeekly;
@@ -246,25 +246,6 @@ sub FetchDataFromSite
 
   my( $content, $code ) = MyGet( $url );
   return( $content, $code );
-}
-
-# Delete leading and trailing space from a string.
-# Convert all whitespace to spaces. Convert multiple
-# spaces to a single space.
-sub norm
-{
-    my( $str ) = @_;
-
-    return "" if not defined( $str );
-
-    $str = Utf8Conv( $str );
-
-    $str =~ s/^\s+//;
-    $str =~ s/\s+$//;
-
-    $str =~ tr/\n\r\t /    /s;
-
-    return $str;
 }
 
 1;

@@ -3,6 +3,8 @@ package NonameTV::Exporter::Xmltv;
 use strict;
 use warnings;
 
+use utf8;
+
 use IO::File;
 use DateTime;
 use XMLTV;
@@ -54,6 +56,7 @@ sub new {
     my $self  = $class->SUPER::new( @_ );
     bless ($self, $class);
 
+    defined( $self->{Encoding} ) or die "You must specify Encoding.";
     defined( $self->{Root} ) or die "You must specify Root";
     $self->{MaxDays} = 365 unless defined $self->{MaxDays};
 
@@ -113,14 +116,15 @@ sub ExportChannels
 
   my $output = new IO::File("> $self->{Root}channels.xml");
   
-  my %w_args = ( encoding    => 'ISO-8859-1',
+  my %w_args = ( 
+                 encoding    => $self->{Encoding},
                  DATA_INDENT => 2, 
                  DATA_MODE   => 1,
                  OUTPUT      => $output,
                  );
   my $w = new XML::Writer( %w_args );
 
-  $w->xmlDecl( 'iso-8859-1' );
+  $w->xmlDecl( $self->{Encoding} );
 
   $w->startTag( 'tv', 'generator-info-name' => 'nonametv' );
 
@@ -464,10 +468,10 @@ sub create_writer
   $self->{writer_filename} = $filename;
   $self->{writer_entries} = 0;
 
-  my $fh = new IO::File "> $path$filename.new"
+  open( my $fh, '>:encoding(' . $self->{Encoding} . ')', "$path$filename.new")
     or logdie( "Xmltv: cannot write to $path$filename.new" );
-  
-  my $w = new XMLTV::Writer( encoding => 'ISO-8859-1',
+
+  my $w = new XMLTV::Writer( encoding => $self->{Encoding},
                              OUTPUT   => $fh );
   
   $w->start({ 'generator-info-name' => 'nonametv' });
@@ -557,7 +561,7 @@ sub write_entry
 
     my $ep_text = "Del $ep_nr";
     $ep_text .= " av $ep_max" if defined $ep_max;
-    $ep_text .= " säsong $season" if( $season );
+    $ep_text .= " sÃ¤song $season" if( $season );
 
     $d->{'episode-num'} = [[ $data->{episode}, 'xmltv_ns' ],
                            [ $ep_text, 'onscreen'] ];
@@ -606,3 +610,8 @@ sub write_entry
 }
 
 1;
+
+### Setup coding system
+## Local Variables:
+## coding: utf-8
+## End:

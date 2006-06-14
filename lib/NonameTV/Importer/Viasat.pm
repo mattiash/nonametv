@@ -22,7 +22,7 @@ program_type
 use DateTime;
 use Encode;
 
-use NonameTV qw/MyGet expand_entities AddCategory/;
+use NonameTV qw/MyGet expand_entities AddCategory norm/;
 use NonameTV::DataStore::Helper;
 use NonameTV::Log qw/info progress error logdie/;
 
@@ -60,11 +60,6 @@ sub ImportContent
 
 #  my $str = decode( "utf-8", $$cref );
   my $str = decode( "iso-8859-1", $$cref );
- 
- 
-  # The encode step should really be performed as the last
-  # step before sending the data outside of perl.
-  $str = encode( "iso-8859-1", $str );
 
   my @rows = split("\n", $str );
 
@@ -233,33 +228,6 @@ sub extract_extra_info
   
   delete( $ce->{Viasat_category} );
   delete( $ce->{Viasat_genre} );
-}
-
-# Delete leading and trailing space from a string.
-# Convert all whitespace to spaces. Convert multiple
-# spaces to a single space.
-sub norm
-{
-    my( $str ) = @_;
-
-    return "" if not defined( $str );
-
-# This doesn't work. The Utf8Conv is now performed on the whole input-file
-# at once instead.
-#    $str = Utf8Conv( $str );
-    
-#    $str = decode_entities( $str );
-    $str = expand_entities( $str );
-
-    $str =~ s/^\s+//;
-    $str =~ s/\s+$//;
-
-    $str =~ tr/\n\r\t /    /s;
-
-    # Strange quote-sign.
-    $str =~ tr/\x93\x94\x96/""-/;
-
-    return $str;
 }
 
 1;

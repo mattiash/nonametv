@@ -18,7 +18,7 @@ use DateTime;
 use XML::LibXML;
 use DateTime;
 
-use NonameTV qw/MyGet Utf8Conv Html2Xml ParseDescCatSwe AddCategory/;
+use NonameTV qw/MyGet norm Html2Xml ParseDescCatSwe AddCategory/;
 use NonameTV::DataStore::Helper;
 use NonameTV::Log qw/info progress error logdie/;
 
@@ -140,8 +140,8 @@ sub ImportContent
     
     my $ce =  {
       start_time  => $starttime,
-      title       => norm($title),
-      description => Utf8Conv($desc),
+      title       => norm_title($title),
+      description => norm_desc($desc),
       svt_cat     => $cat->{$title},
     };
     
@@ -561,9 +561,6 @@ sub split_text
   # Replace strange dots.
   $t =~ tr/\x2e/./;
 
-  # Replace strange bullets with end-of-sentence.
-  $t =~ s/\.*\s*\x95\s*/. \n/g;
-
   # We might have introduced some errors above. Fix them.
   $t =~ s/([\?\!])\./$1/g;
 
@@ -571,12 +568,13 @@ sub split_text
   $t =~ s/\.{3,}/::./g;
 
   # Lines ending with a comma is not the end of a sentence
-  $t =~ s/,\s*\n+\s*/, /g;
+#  $t =~ s/,\s*\n+\s*/, /g;
 
+# newlines have already been removed by norm() 
   # Replace newlines followed by a capital with space and make sure that there 
   # is a dot to mark the end of the sentence. 
-  $t =~ s/([\!\?])\s*\n+\s*([A-ZÅÄÖ])/$1 $2/g;
-  $t =~ s/\.*\s*\n+\s*([A-ZÅÄÖ])/. $1/g;
+#  $t =~ s/([\!\?])\s*\n+\s*([A-ZÅÄÖ])/$1 $2/g;
+#  $t =~ s/\.*\s*\n+\s*([A-ZÅÄÖ])/. $1/g;
 
   # Turn all whitespace into pure spaces and compress multiple whitespace 
   # to a single.
@@ -609,26 +607,26 @@ sub join_text
   return $t;
 }
 
-# Delete leading and trailing space from a string.
-# Convert all whitespace to spaces. Convert multiple
-# spaces to a single space.
-sub norm
+sub norm_desc
 {
-    my( $str ) = @_;
+  my( $str ) = @_;
 
-    return "" if not defined( $str );
+  # Replace strange bullets with end-of-sentence.
+  $str =~ s/([\.!?])\s*\x{95}\s*/$1 /g;
+  $str =~ s/\s*\x{95}\s*/. /g;
 
-    $str = Utf8Conv( $str );
-
-    # Delete "bullet-character" used by Svt.
-    $str =~ tr/\x95//d;
-
-    $str =~ s/^\s+//;
-    $str =~ s/\s+$//;
-
-    $str =~ tr/\n\r\t /    /s;
-    
-    return $str;
+  return norm( $str );
 }
+
+sub norm_title
+{
+  my( $str ) = @_;
+
+  # Remove strange bullets.
+  $str =~ s/\x{95}/ /g;
+
+  return norm( $str );
+}
+
 
 1;

@@ -41,7 +41,7 @@ use DateTime;
 use XML::LibXML;
 use IO::Wrap;
 
-use NonameTV qw/MyGet Utf8Conv/;
+use NonameTV qw/MyGet norm/;
 use NonameTV::Log qw/info progress error logdie/;
 use NonameTV::DataStore::Helper;
 
@@ -196,27 +196,6 @@ sub LoadSportId
 
   $self->{sportidname} = \%id;
   return 1;
-}
-
-
-# Delete leading and trailing space from a string.
-# Convert all whitespace to spaces. Convert multiple
-# spaces to a single space.
-# Remove all html-tags.
-sub norm
-{
-    my( $instr ) = @_;
-
-    return "" if not defined( $instr );
-
-    my $str = Utf8Conv( $instr );
-
-    $str =~ s/^\s+//;
-    $str =~ s/\s+$//;
-
-    $str =~ tr/\n\r\t /    /s;
-
-    return $str;
 }
 
 1;

@@ -3,6 +3,9 @@ package NonameTV;
 use strict;
 use warnings;
 
+# Mark this source-file as encoded in utf-8.
+use utf8;
+
 use LWP::UserAgent;
 use File::Temp qw/tempfile tempdir/;
 use Unicode::String qw/utf8/;
@@ -24,7 +27,7 @@ BEGIN {
                       Html2Xml Htmlfile2Xml
                       Wordfile2HtmlTree Htmlfile2HtmlTree
                       Word2Xml Wordfile2Xml 
-                      Utf8Conv AddCategory
+                      norm AddCategory
                       ParseDescCatSwe FixProgrammeData/;
 }
 our @EXPORT_OK;
@@ -36,6 +39,7 @@ sub ReadConfig
 {
   my( $file ) = @_;
 
+#  $file = "/etc/nonametv-utf8.conf" unless defined $file;
   $file = "/etc/nonametv.conf" unless defined $file;
 
   open IN, "< $file" or die "Failed to read from configuration file $file";
@@ -77,10 +81,10 @@ sub MyGet
   }
 }
 
-# åäö ÅÄÖ
+# Ã¥Ã¤Ã¶ Ã…Ã„Ã–
 my %ent = (
-           257  => 'ä',
-           337  => 'ö',
+           257  => 'Ã¤',
+           337  => 'Ã¶',
            8211 => '-',
            8212 => '--',
            8216 => "'",
@@ -224,20 +228,38 @@ sub Wordfile2Xml
   return Html2Xml( $html );
 }
 
-# Convert a UTF-8 string to ISO-8859-1. Replace any characters that
-# cannot be represented in ISO-8859-1 with sensible replacements.
-sub Utf8Conv
+# Remove any strange quotation marks and other syntactic marks
+# that we don't want to have. Remove leading and trailing space as well
+# multiple whitespace characters.
+# Returns the empty string if called with an undef string.
+sub norm
 {
   my( $str ) = @_;
 
-  return undef unless defined( $str );
+  return "" if not defined( $str );
 
-  $str =~ tr/\x{201d}\x{201c}/""/;
-  $str =~ tr/\x{2013}\x{2019}\x{2014}/-'-/; #' Fix syntax-highlighting...
-  $str =~ tr/\x{17d}\x{17e}/''/;
-  $str =~ s/\x{2026}/.../sg;
+# Uncomment the code below and change the regexp to learn which
+# character code perl thinks a certain character has.
+# These codes can be used in \x{YY} expressions as shown below.
+#  if( $str =~ /unique string/ ) {
+#    for( my $i=0; $i < length( $str ); $i++ ) {
+#      printf( "%2x: %s\n", ord( substr( $str, $i, 1 ) ), 
+#               substr( $str, $i, 1 ) ); 
+#    }
+#  }
+
+  $str = expand_entities( $str );
   
-  return utf8( $str )->latin1;
+  $str =~ tr/\x{96}\x{93}\x{94}/-""/; #
+  $str =~ tr/\x{201d}\x{201c}/""/;
+  $str =~ s/\x{85}/... /g;
+  $str =~ s/\x{2026}/.../sg;
+
+  $str =~ s/^\s+//;
+  $str =~ s/\s+$//;
+  $str =~ tr/\n\r\t /    /s;
+  
+  return $str;
 }
 
 # Generate HTML file in tempdir and run Htmlfile2HtmlTree
@@ -298,7 +320,7 @@ sub AddCategory
 Parse a program description in Swedish and return program_type
 and category that can be deduced from the description.
 
-  my( $pty, $cat ) = ParseDescCatSwe( "Amerikansk äventyrsserie" );
+  my( $pty, $cat ) = ParseDescCatSwe( "Amerikansk Ã¤ventyrsserie" );
 
 =cut
 
@@ -311,18 +333,18 @@ $sm->AddRegexp( qr/tecknad serie/i,      [ 'series', undef ] );
 $sm->AddRegexp( qr/animerad serie/i,     [ 'series', undef ] );
 $sm->AddRegexp( qr/dramakomediserie/i,   [ 'series', 'Comedy' ] );
 $sm->AddRegexp( qr/dramaserie/i,         [ 'series', 'Drama' ] );
-$sm->AddRegexp( qr/resedokumentärserie/i,[ 'series', 'Food/Travel' ] );
+$sm->AddRegexp( qr/resedokumentÃ¤rserie/i,[ 'series', 'Food/Travel' ] );
 $sm->AddRegexp( qr/komediserie/i,        [ 'series', 'Comedy' ] );
 $sm->AddRegexp( qr/realityserie/i,       [ 'series', 'Reality' ] );
 $sm->AddRegexp( qr/realityshow/i,        [ 'series', 'Reality' ] );
-$sm->AddRegexp( qr/dokusåpa/i,           [ 'series', 'Reality' ] );
+$sm->AddRegexp( qr/dokusÃ¥pa/i,           [ 'series', 'Reality' ] );
 $sm->AddRegexp( qr/actiondramaserie/i,   [ 'series', 'Action' ] );
 $sm->AddRegexp( qr/actionserie/i,        [ 'series', 'Action' ] );
-$sm->AddRegexp( qr/underhållningsserie/i,[ 'series', undef ] );
-$sm->AddRegexp( qr/äventyrsserie/i,      [ 'series', 'Action/Adv' ] );
-$sm->AddRegexp( qr/äventyrskomediserie/i,[ 'series', 'Comedy' ] );
-$sm->AddRegexp( qr/dokumentärserie/i,    [ 'series', 'Documentary' ] );
-$sm->AddRegexp( qr/dramadokumentär/i,    [ undef,    'Documentary' ] );
+$sm->AddRegexp( qr/underhÃ¥llningsserie/i,[ 'series', undef ] );
+$sm->AddRegexp( qr/Ã¤ventyrsserie/i,      [ 'series', 'Action/Adv' ] );
+$sm->AddRegexp( qr/Ã¤ventyrskomediserie/i,[ 'series', 'Comedy' ] );
+$sm->AddRegexp( qr/dokumentÃ¤rserie/i,    [ 'series', 'Documentary' ] );
+$sm->AddRegexp( qr/dramadokumentÃ¤r/i,    [ undef,    'Documentary' ] );
 
 $sm->AddRegexp( qr/barnserie/i,          [ 'series', "Children's" ] );
 $sm->AddRegexp( qr/matlagningsserie/i,   [ 'series', 'Cooking' ] );
@@ -396,4 +418,7 @@ sub FixProgrammeData
   
 1;
 
-  
+### Setup coding system
+## Local Variables:
+## coding: utf-8
+## End:

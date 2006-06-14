@@ -30,7 +30,7 @@ use DateTime;
 use XML::LibXML;
 use POSIX qw/floor/;
 
-use NonameTV qw/MyGet Word2Xml Html2Xml Utf8Conv AddCategory ParseDescCatSwe/;
+use NonameTV qw/MyGet Word2Xml Html2Xml norm AddCategory ParseDescCatSwe/;
 use NonameTV::DataStore::Helper;
 use NonameTV::Log qw/info progress error logdie/;
 
@@ -558,23 +558,4 @@ sub extract_episode
   return 0;
 }
   
-# Delete leading and trailing space from a string.
-# Convert all whitespace to spaces. Convert multiple
-# spaces to a single space.
-sub norm
-{
-    my( $str ) = @_;
-
-    return "" if not defined( $str );
-
-    $str = Utf8Conv( $str );
-
-    $str =~ s/^\s+//;
-    $str =~ s/\s+$//;
-
-    $str =~ tr/\n\r\t /    /s;
-
-    return $str;
-}
-
 1;
