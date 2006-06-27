@@ -449,6 +449,9 @@ sub export_range
   {
     if( $dates{$date} )
     {
+      error( "Xmltv: No data for $chd->{xmltvid} $date." )
+        unless $chd->{empty_ok};
+
       my $w = $self->create_writer( $chd->{xmltvid}, $date, $p );
       $self->close_writer( $w );
     }
