@@ -41,6 +41,8 @@ sub ImportContent
   $self->{batch_id} = $batch_id;
 
   my $ds = $self->{datastore};
+  $ds->{SILENCE_DUPLICATE_SKIP}=1;
+
   my $dsh = $self->{datastorehelper};
 
   my( $date ) = ($batch_id =~ /_(.*)$/);

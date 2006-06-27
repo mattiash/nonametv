@@ -44,7 +44,8 @@ sub ImportContent
 
   my $ds = $self->{datastore};
   $ds->{SILENCE_END_START_OVERLAP}=1;
-
+  $ds->{SILENCE_DUPLICATE_SKIP}=1;
+ 
   my $xml = XML::LibXML->new;
   my $doc;
   eval { $doc = $xml->parse_string($$cref); };

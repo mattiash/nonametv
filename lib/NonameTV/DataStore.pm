@@ -81,6 +81,7 @@ sub new
   $self->{dbh}->do("set names utf8");
 
   $self->{SILENCE_END_START_OVERLAP} = 0;
+  $self->{SILENCE_DUPLICATE_SKIP} = 0;
 
   return $self;
 }
@@ -242,7 +243,15 @@ sub AddProgramme
 
   return if $self->{batcherror};
   
-  if( $data->{start_time} le $self->{last_start} )
+  if( ( $data->{start_time} eq $self->{last_start} )
+      and ($data->{title} = $self->{last_title} ) )
+  {
+    error( $self->{currbatchname} . 
+           "Skipping duplicate entry for $data->{start_time}" )
+      unless $self->{SILENCE_DUPLICATE_SKIP};
+    return
+  }
+  elsif( $data->{start_time} le $self->{last_start} )
   {
     error( $self->{currbatchname} . 
       ": Starttime must be later than last starttime: " . 
@@ -253,6 +262,7 @@ sub AddProgramme
   $self->AddLastProgramme( $data->{start_time} );
 
   $self->{last_start} = $data->{start_time};
+  $self->{last_title} = $data->{title};
 
   if( $data->{title} eq 'end-of-transmission' )
   {
@@ -388,7 +398,8 @@ sub AddProgrammeRaw
       elsif( $data_org->{title} eq $data->{title} )
       {
         error( $self->{currbatchname} . ": Skipping duplicate entry " .
-               "for $data->{channel_id}-$data->{start_time}" );
+               "for $data->{channel_id}-$data->{start_time}" ) 
+          unless $self->{SILENCE_DUPLICATE_SKIP};
       }
       else
       {
