@@ -85,16 +85,25 @@ sub ImportContent
     my $length  = $sc->findvalue( './Program/@Length ' );
     die if $length < 0;
 
-    my $end = $start->clone()->add( minutes => $length );
+    my $end;
 
-    # Sometimes the claimed length of the movie makes the movie end
-    # a few minutes after the next movie is supposed to start.
-    # Assume that next_start is correct.
-    if( (defined $next_start ) and ($end > $next_start) )
+    if( $length == 0 )
     {
       $end = $next_start;
     }
-    
+    else
+    {
+      $end = $start->clone()->add( minutes => $length );
+
+      # Sometimes the claimed length of the movie makes the movie end
+      # a few minutes after the next movie is supposed to start.
+      # Assume that next_start is correct.
+      if( (defined $next_start ) and ($end > $next_start) )
+      {
+        $end = $next_start;
+      }
+    }
+
     my $title = $sc->findvalue( './Program/@Title' );
     my $org_title = $sc->findvalue( './Program/@OriginalTitle' );
     my $desc  = $sc->findvalue( './Program/@LongSynopsis' );
