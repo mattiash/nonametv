@@ -55,8 +55,7 @@ sub ImportContent
     return 0;
   }
   
-  # The data really looks like this...
-  my $ns = $doc->find( '//tr[td/@class="schedtime"]' );
+  my $ns = $doc->find( '//table[@class="table_schedule"]//tr' );
   if( $ns->size() == 0 )
   {
     error( "$batch_id: No data found" );
@@ -67,11 +66,13 @@ sub ImportContent
   
   foreach my $pgm ($ns->get_nodelist)
   {
-    my $time = $pgm->findvalue( 'td[@class="schedtime"]//text()' );
-    my $title = $pgm->findvalue( 'td[@class="schedtitle"]//text()' );
-    my $subtitle = $pgm->findvalue( 'td[@class="schedepi"]//text()' );
+    # The data consists of alternating rows with time+title or description.
+    my $time = norm( $pgm->findvalue( './/p[@class="hour"]//text()' ) );
+    next if $time eq "";
+
+    my $title = $pgm->findvalue( './/p[@class="prog"]//text()' );
     my $desc      = $pgm->findvalue( 'following-sibling::tr[1]' . 
-                                     '/td[@class="light"]//text()' );
+                                     '//p[@class="synopsis"]//text()' );
 
 
     my( $starttime ) = ( $time =~ /(\d+:\d+)/);
@@ -82,8 +83,6 @@ sub ImportContent
       description => norm($desc),
     };
     
-    $ce->{subtitle} = $subtitle if $subtitle =~ /\S/;
-
     extract_extra_info( $ce );
     $dsh->AddProgramme( $ce );
   }
