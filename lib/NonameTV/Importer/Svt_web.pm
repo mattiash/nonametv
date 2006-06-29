@@ -330,6 +330,7 @@ sub extract_extra_info
   }
 
   $ce->{title} =~ s/^Seriestart:\s*//;
+  $ce->{title} =~ s/^Novellfilm:\s*//;
 
   # Default aspect is 4:3.
   $ce->{aspect} = "4:3";
