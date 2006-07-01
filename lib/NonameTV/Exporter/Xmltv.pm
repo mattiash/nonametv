@@ -12,7 +12,7 @@ use DateTime::SpanSet;
 use File::Copy;
 
 use NonameTV::Exporter;
-use NonameTV::XmltvValidate qw/xmltv_validate_file/;
+use XMLTV::ValidateFile qw/LoadDtd ValidateFile/;
 
 use NonameTV::Log qw/info progress error logdie/;
 
@@ -50,6 +50,8 @@ our %OptionDefaults = (
                         'verbose' => 0,
                         );
 
+$XMLTV::ValidateFile::REQUIRE_CHANNEL_ID = 0;
+
 sub new {
     my $proto = shift;
     my $class = ref($proto) || $proto;
@@ -57,8 +59,11 @@ sub new {
     bless ($self, $class);
 
     defined( $self->{Encoding} ) or die "You must specify Encoding.";
+    defined( $self->{DtdFile} ) or die "You must specify DtdFile.";
     defined( $self->{Root} ) or die "You must specify Root";
     $self->{MaxDays} = 365 unless defined $self->{MaxDays};
+
+    LoadDtd( $self->{DtdFile} );
 
     return $self;
 }
@@ -507,8 +512,12 @@ sub close_writer
       }
       else
       {
-        (xmltv_validate_file( "$path$filename.gz" ) == 0) 
-          or error( "Xmltv: $filename.gz contains errors\n" );
+        my @errors = ValidateFile( "$path$filename.gz" );
+        if( scalar( @errors ) > 0 )
+        {
+          error( "Xmltv: $filename.gz contains errors: " . 
+                 join( ", ", @errors ) );
+        }
       }
     }
     else
@@ -520,8 +529,12 @@ sub close_writer
   {
     move( "$path$filename.new.gz", "$path$filename.gz" );
     progress( "Xmltv: Exported $filename.gz" );
-    ( xmltv_validate_file( "$path$filename.gz" ) == 0 )
-      or error( "Xmltv: $filename.gz contains errors\n" );
+    my @errors = ValidateFile( "$path$filename.gz" );
+    if( scalar( @errors ) > 0 )
+    {
+      error( "Xmltv: $filename.gz contains errors: " . 
+             join( ", ", @errors ) );
+    }
   }
 }
 
