@@ -1,0 +1,79 @@
+How to write a program that downloads TV-schedules from a Swedb server
+----------------------------------------------------------------------
+
+Data is stored in a number of separate gzipped xml-files that can be
+downloaded from an http-server. To download data, you should start by
+retrieving the root-url. For tv.swedb.se, the root-url is
+http://tv.swedb.se/xmltv/channels.xml.gz. The root-url for Sweden will
+likely remain the same for the foreseeable future, but there might be
+data-sources available in the future, so you should make the root-url
+user configurable.
+
+This file describes which channels are available and where data can be
+found for each channel. A typical entry looks like this:
+
+<channel id="svt1.svt.se">
+  <display-name lang="sv">SVT1</display-name>
+  <base-url>http://xmltv.tvsajten.com/xmltv/</base-url>
+  <icon src="http://xmltv.tvsajten.com/chanlogos/svt1.svt.se.png"/>
+</channel>
+
+The contents of the channel-entry is the same as specified by the
+xmltv-dtd with the addition of the base-url element. The base-url
+specifies where data for this particular channel can be found. Note
+that one base-url is specified for each channel. Right now, all
+channels use the same base-url, but this might change in the future.
+If a channel-entry specifies more than one base-url for the channel,
+the grabber shall use the first base-url.
+
+The actual programs for each channel are stored in one file per
+channel and day in the location specified by the base-url for the
+channel. The name of each file is <id>_<yyyy-mm-dd>.xml.gz. As an
+example, the data for SVT1 on July 2nd, 2006, can be found at
+http://xmltv.tvsajten.com/xmltv/svt1.svt.se_2006-07-02.xml.gz
+
+Each of these files follow the xmltv dtd, with the exception that they
+don't contain any <channel> elements.
+
+A valid xmltv file can be constructed from the above data by removing
+all base-url fields from channels.xml.gz and outputting the relevant
+channel-entries concatenated with the contents of all program-files
+with the first and last lines omitted.
+
+HTTP Caching
+
+All http-requests against swedb-servers must implement http-caching
+properly. The cache must be stored persistently. Each http-response
+from a swedb-server contains a Last-Modified field and/or an ETag
+field. These fields shall be used in subsequent requests for the same
+url as If-Modified-Since and If-None-Match respectively.
+
+For a tutorial on http-caching, see
+http://fishbowl.pastiche.org/2002/10/21/http_conditional_get_for_rss_hackers 
+
+The reason for these caching requirements is that programme data
+change infrequently and by utilizing http caching, the bandwidth
+requirements for our servers decrease drastically.
+
+Proper User-Agent
+
+All http-requests must include a User-Agent value that is unique to
+this particular version of the grabbing application.
+
+The User-Agent gives us two advantages: 
+
+- It allows us to gather statistics of which grabbers are in use. We
+can then share these statistics with the grabber authors.
+- It allows us to block non-conforming grabbers.
+
+We will always work with grabber authors before we decide to block a
+grabber. The reason that we may want to block a grabber is primarily
+that the grabber contains a bug that leads to unnecessarily high
+bandwidth usage, e.g. if the grabber fails to implement http-caching
+properly or requests data too often.
+
+Update Interval
+
+A grabber should normally download data at most once a day. If you
+feel that your particular grabber needs to download data more often
+than that, please contact us.
