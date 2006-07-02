@@ -529,11 +529,18 @@ sub close_writer
   {
     move( "$path$filename.new.gz", "$path$filename.gz" );
     progress( "Xmltv: Exported $filename.gz" );
-    my @errors = ValidateFile( "$path$filename.gz" );
-    if( scalar( @errors ) > 0 )
+    if( $self->{writer_entries} == 0 )
     {
-      error( "Xmltv: $filename.gz contains errors: " . 
-             join( ", ", @errors ) );
+      error( "Xmltv: $filename.gz is empty" );
+    }
+    else
+    {
+      my @errors = ValidateFile( "$path$filename.gz" );
+      if( scalar( @errors ) > 0 )
+      {
+        error( "Xmltv: $filename.gz contains errors: " . 
+               join( ", ", @errors ) );
+      }
     }
   }
 }
