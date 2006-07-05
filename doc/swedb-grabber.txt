@@ -77,3 +77,17 @@ Update Interval
 A grabber should normally download data at most once a day. If you
 feel that your particular grabber needs to download data more often
 than that, please contact us.
+
+Update time
+
+If your application fetches data automatically, it must not have a
+hard-coded time at which it fetches data. The time must be
+user-configurable and it should be randomized as default. If a lot of
+users try to download data from our servers at the exact same time,
+our servers suffer a lot.
+
+Parallel requests
+
+An application may run up to two http-requests against the
+swedb-servers simultaneously, but not more than that.
+
