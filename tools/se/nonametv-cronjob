@@ -27,13 +27,13 @@ then
   h=
 fi
 
-$d tools/nonametv-import-allhttp
-$h tools/nonametv-import-allhttp --short-grab
-tools/nonametv-import-maildir
+$d tools/se/nonametv-import-allhttp
+$h tools/se/nonametv-import-allhttp --short-grab
+tools/se/nonametv-import-maildir
 
 $d perl -I lib/ tools/nonametv-export Xmltv --remove-old
 
-tools/nonametv-updatesite
+tools/se/nonametv-updatesite
 
 # This shouldn't produce any output, but there seems to be a bug
 # somewhere.
@@ -43,6 +43,6 @@ $d perl -I lib tools/nonametv-export Xmltv --force-export --verbose 2>&1 | grep 
 $d perl -I lib tools/nonametv-import Combiner
 $h perl -I lib tools/nonametv-import Combiner --short-grab
 
-tools/nonametv-updatesite
+tools/se/nonametv-updatesite
 
-$d tools/nonametv-xmltv-compare-run
+$d tools/se/nonametv-xmltv-compare-run
