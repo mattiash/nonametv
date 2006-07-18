@@ -58,7 +58,16 @@ requirements for our servers decrease drastically.
 Proper User-Agent
 
 All http-requests must include a User-Agent value that is unique to
-this particular version of the grabbing application.
+this particular version of the grabbing application. The User-Agent
+shall consist of an alphanumeric string that is unique for the
+program, followed by "/" and an alphanumeric
+versionnumber. Optionally, more information may be added with a space
+after the version-number followed by an arbitrary string. 
+
+Examples:
+
+xmltv/0.5.44
+AirTimes/0.9 (Symbian OS; MIDP-1.0 MIDP-2.0; CLDC-1.0; en)
 
 The User-Agent gives us two advantages: 
 
