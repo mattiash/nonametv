@@ -85,6 +85,7 @@ sub ImportContent
     #
     my $title = $sc->getElementsByTagName('title');
     my $org_title = $sc->getElementsByTagName('sub-title');
+    my $subtitle = $sc->getElementsByTagName('sub-title');
     
     #
     # description
@@ -139,12 +140,13 @@ sub ImportContent
 #    }
 
     my $ce = {
-      channel_id  => $chd->{id},
-      title       => norm($title) || norm($org_title),
-      description => norm($desc),
-      start_time  => $start->ymd("-") . " " . $start->hms(":"),
-      end_time    => $end->ymd("-") . " " . $end->hms(":"),
-#      aspect      => $sixteen_nine ? "16:9" : "4:3", 
+      channel_id   => $chd->{id},
+      title        => norm($title) || norm($org_title),
+      subtitle     => norm($subtitle),
+      description  => norm($desc),
+      start_time   => $start->ymd("-") . " " . $start->hms(":"),
+      end_time     => $end->ymd("-") . " " . $end->hms(":"),
+      #aspect       => $sixteen_nine ? "16:9" : "4:3", 
     };
 
     if( defined( $episode ) )
