@@ -107,37 +107,11 @@ sub ImportContent
     #
     my $episode = $sc->getElementsByTagName( 'episode-num' );
 
-    # The director and actor info is in a somewhat strange format. 
-    # Actor is a child of Director and the data seems to contain
-    # all combinations of Actor and Director.
-
-#    my %directors;
-#    my @directors;
-#    my $ns2 = $sc->find( './/director' );
-
-#    foreach my $dir ($ns2->get_nodelist)
-#    {
-#      my $name = norm( $dir->findvalue('./@Name') );
-#      if( not defined( $directors{ $name } ) )
-#      {
-#        $directors{$name} = 1;
-#        push @directors, $name;
-#      }
-#    }
-    
-#    my %actors;
-#    my @actors;
-#    my $ns3 = $sc->find( './/actor' );
-  
-#    foreach my $act ($ns3->get_nodelist)
-#    {
-#      my $name = norm( $act->findvalue('./@Name') );
-#      if( not defined( $actors{ $name } ) )
-#      {
-#        $actors{$name} = 1;
-#        push @actors, $name;
-#      }
-#    }
+    # The director and actor info are children of 'credits'
+    my $directors = $sc->getElementsByTagName( 'director' );
+    my $actors = $sc->getElementsByTagName( 'actor' );
+    my $writers = $sc->getElementsByTagName( 'writer' );
+    my $producers = $sc->getElementsByTagName( 'producer' );
 
     my $ce = {
       channel_id   => $chd->{id},
@@ -147,12 +121,14 @@ sub ImportContent
       start_time   => $start->ymd("-") . " " . $start->hms(":"),
       end_time     => $end->ymd("-") . " " . $end->hms(":"),
       #aspect       => $sixteen_nine ? "16:9" : "4:3", 
+      directors    => norm($directors),
+      actors       => norm($actors),
     };
 
-    if( defined( $episode ) )
+    if( length( $episode ) )
     {
-      #$ce->{episode} = $episode;
-      #$ce->{program_type} = 'series';
+      $ce->{episode} = norm($episode);
+      $ce->{program_type} = 'series';
     }
 
     my($program_type, $category ) = $ds->LookupCat( "HRT", $genre );
@@ -163,16 +139,6 @@ sub ImportContent
     {
       $ce->{production_date} = "$1-01-01";
     }
-
-#    if( scalar( @directors ) > 0 )
-#    {
-#      $ce->{directors} = join ", ", @directors;
-#    }
-
-#    if( scalar( @actors ) > 0 )
-#    {
-#      $ce->{actors} = join ", ", @actors;
-#    }
 
     $ds->AddProgramme( $ce );
   }
