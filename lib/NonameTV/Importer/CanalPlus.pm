@@ -137,11 +137,18 @@ sub ImportContent
   
     foreach my $dir ($ns2->get_nodelist)
     {
-      my $name = norm( $dir->findvalue('./@Name') );
-      if( not defined( $directors{ $name } ) )
+      my $names = $dir->findvalue('./@Name');
+
+      # Sometimes they list several directors with newlines between
+      # the names.
+      foreach my $name (split "\n", $names)
       {
-        $directors{$name} = 1;
-        push @directors, $name;
+        $name = norm( $name );
+        if( not defined( $directors{ $name } ) )
+        {
+          $directors{$name} = 1;
+          push @directors, $name;
+        }
       }
     }
     
@@ -196,6 +203,8 @@ sub ImportContent
     {
       $ce->{actors} = join ", ", @actors;
     }
+    
+    $self->extract_extra_info( $ce );
 
     $ds->AddProgramme( $ce );
   }
@@ -258,4 +267,24 @@ sub FetchDataFromSite
   return( $content, $code );
 }
 
+sub extract_extra_info
+{
+  my $self = shift;
+  my( $ce ) = @_;
+  
+  my( $s1, $s2, $s3 );
+
+  if( ($s1,$s2,$s3) = ($ce->{title} =~ /(.*): Del (\d+), *(.*)/) )
+  {
+    $ce->{title} = $s1;
+    $ce->{subtitle} = $s3;
+    $ce->{episode} = " . " . ($s2-1) . " . ";
+  }
+  elsif( ($s1,$s2) = ($ce->{title} =~ /(.*): Del (\d+)$/) )
+  {
+    $ce->{title} = $s1;
+    $ce->{episode} = " . " . ($s2-1) . " . ";
+  }
+}
+    
 1;
