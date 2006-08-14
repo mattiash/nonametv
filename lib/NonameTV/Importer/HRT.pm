@@ -125,7 +125,7 @@ sub ImportContent
       actors       => norm($actors),
     };
 
-    if( length( $episode ) )
+    if( defined( $episode ) and ($episode =~ /\S/) )
     {
       $ce->{episode} = norm($episode);
       $ce->{program_type} = 'series';

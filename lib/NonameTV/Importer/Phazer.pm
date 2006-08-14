@@ -93,18 +93,19 @@ sub ImportContent
     #
     my $desc  = $sc->getElementsByTagName('desc');
 #print "DESC: $desc\n";
-    my $genre = $desc;
+    #my $genre = $desc;
     
     my $ce = {
       channel_id  => $chd->{id},
       title       => norm($title),
       start_time  => $start->ymd("-") . " " . $start->hms(":"),
       end_time    => $end->ymd("-") . " " . $end->hms(":"),
+      #description => norm($desc),
     };
 
-    my($program_type, $category ) = $ds->LookupCat( "Phazer", $genre );
+    #my($program_type, $category ) = $ds->LookupCat( "Phazer", $genre );
 
-    AddCategory( $ce, $program_type, $category );
+    #AddCategory( $ce, $program_type, $category );
 
     #if( defined( $production_year ) and ($production_year =~ /(\d\d\d\d)/) )
     #{

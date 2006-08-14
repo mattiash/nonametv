@@ -107,6 +107,7 @@ sub FetchDataFromSite
   });
 
   my( $content, $code ) = MyGet( $u->as_string );
+
   return( $content, $code );
 }
 
