@@ -155,8 +155,8 @@ sub guess_importer
 {
   my( $from, $subject ) = @_;
 
-  return "Expressen" if $from =~ /sportexpressen.se/;
-  return "Discovery" if $from =~ /text100.se/;
+  return "Expressen" if $from =~ /expressen.se/;
+  return "Discovery" if $from =~ /text100.(se)|(com)/;
 
   return undef;
 }
