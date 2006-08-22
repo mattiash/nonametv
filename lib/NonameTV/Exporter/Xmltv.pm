@@ -62,6 +62,11 @@ sub new {
     defined( $self->{DtdFile} ) or die "You must specify DtdFile.";
     defined( $self->{Root} ) or die "You must specify Root";
     $self->{MaxDays} = 365 unless defined $self->{MaxDays};
+    $self->{MinDays} = $self->{MaxDays} unless defined $self->{MinDays};
+
+    my $dt = DateTime->today;
+    $self->{LastRequiredDate} = 
+      $dt->add( days => $self->{MinDays}-1 )->ymd("-");
 
     LoadDtd( $self->{DtdFile} );
 
@@ -455,7 +460,7 @@ sub export_range
     if( $dates{$date} )
     {
       error( "Xmltv: No data for $chd->{xmltvid} $date." )
-        unless $chd->{empty_ok};
+        unless $chd->{empty_ok} or ($date gt $self->{LastRequiredDate});
 
       my $w = $self->create_writer( $chd->{xmltvid}, $date, $p );
       $self->close_writer( $w );
@@ -475,6 +480,11 @@ sub create_writer
 
   $self->{writer_filename} = $filename;
   $self->{writer_entries} = 0;
+
+  # Make sure that writer_entries is always true if we don't require data
+  # for this date.
+  $self->{writer_entries} = "0 but true" 
+    if( $date gt $self->{LastRequiredDate} );
 
   open( my $fh, '>:encoding(' . $self->{Encoding} . ')', "$path$filename.new")
     or logdie( "Xmltv: cannot write to $path$filename.new" );
@@ -506,7 +516,7 @@ sub close_writer
     {
       move( "$path$filename.new.gz", "$path$filename.gz" );
       progress( "Exported $filename.gz" );
-      if( $self->{writer_entries} == 0 )
+      if( not $self->{writer_entries} )
       {
         error( "Xmltv: $filename.gz is empty" );
       }
@@ -529,7 +539,7 @@ sub close_writer
   {
     move( "$path$filename.new.gz", "$path$filename.gz" );
     progress( "Xmltv: Exported $filename.gz" );
-    if( $self->{writer_entries} == 0 )
+    if( not $self->{writer_entries} )
     {
       error( "Xmltv: $filename.gz is empty" );
     }
