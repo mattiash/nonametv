@@ -85,7 +85,7 @@ sub ImportFile
   my $doc;
   if( $file =~  /\.doc$/ )
   {
-    $doc = Wordfile2Xml( $file );
+#    $doc = Wordfile2Xml( $file );
   }
 
   # It may be a html-file even though it is called .doc...
@@ -122,6 +122,8 @@ sub ImportFile
 
       next if( $time !~ /\S.*\S/ );
 
+      next if $time =~ /^\s*Vecka\s*\d+(\s*version\s*\d+)*\s*$/i;
+
       if( $time =~ /^mån|tis|ons|tor|fre|lör|sön|\d\d\d\d-\d\d-\d\d/i )
       {
         # Sometimes there is a weekday in the first column and a date in
@@ -151,12 +153,20 @@ sub ImportFile
       $time =~ tr/\.o/:0/;
       $time =~ tr/ \t//d;
 
+      # Replace strange character representing a minus.
+      $time =~ tr/\x{2013}/-/;
+
       my( $starttime, $endtime ) = split( "-", $time);
 
       if( $starttime !~ /^\d{1,2}:\d{1,2}$/ )
       {
         error( "$file: Ignoring starttime $starttime" );
+
         next;
+      }
+
+      if( defined( $endtime ) and $endtime =~ /^\s*$/ ) {
+        $endtime = undef;
       }
 
       if( defined( $endtime ) and $endtime !~ /^\d{1,2}:\d{1,2}$/ )
