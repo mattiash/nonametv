@@ -247,7 +247,7 @@ sub AddProgramme
       and ($data->{title} = $self->{last_title} ) )
   {
     error( $self->{currbatchname} . 
-           "Skipping duplicate entry for $data->{start_time}" )
+           ": Skipping duplicate entry for $data->{start_time}" )
       unless $self->{SILENCE_DUPLICATE_SKIP};
     return
   }
