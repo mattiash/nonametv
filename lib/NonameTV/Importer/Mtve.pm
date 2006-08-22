@@ -47,21 +47,6 @@ sub ImportContent
 
   my( $date ) = ($batch_id =~ /_(.*)$/);
 
-  # Add proper entity set references
-  # ISOlat1 contains &Aring; etc.
-  # ISOdia contains &acute;
-  $$cref =~ s(\?>)(?><!DOCTYPE MTV [
-<!ENTITY \% ISOlat1 PUBLIC "ISO 8879:1986//ENTITIES Added Latin 1//EN"
-    "http://www.w3.org/2003/entities/iso8879/isolat1.ent">
-\%ISOlat1; 
-<!ENTITY \% ISOdia PUBLIC "ISO 8879:1986//ENTITIES Diacritical Marks//EN"
-    "http://www.w3.org/2003/entities/iso8879/isodia.ent">
-\%ISOdia; 
-<!ENTITY \% HTMLlat1 PUBLIC "-//W3C//ENTITIES Latin 1 for XHTML//EN"
-    "http://www.w3.org/TR/xhtml1/DTD/xhtml-lat1.ent">
-%HTMLlat1;
-]>);
-
   my $xml = XML::LibXML->new;
   my $doc;
   eval { $doc = $xml->parse_string($$cref); };
