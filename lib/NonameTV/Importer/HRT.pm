@@ -98,6 +98,11 @@ sub ImportContent
     my $genre = norm($sc->getElementsByTagName( 'genre' ));
 
     #
+    # url
+    #
+    my $url = norm($sc->getElementsByTagName( 'url' ));
+
+    #
     # production year
     #
     my $production_year = $sc->getElementsByTagName( 'date' );
@@ -123,6 +128,7 @@ sub ImportContent
       #aspect       => $sixteen_nine ? "16:9" : "4:3", 
       directors    => norm($directors),
       actors       => norm($actors),
+      url          => norm($url),
     };
 
     if( defined( $episode ) and ($episode =~ /\S/) )
