@@ -44,6 +44,7 @@ CREATE TABLE `channels` (
   `def_cat` varchar(20) default '',
   `sched_lang` varchar(4) NOT NULL default '',
   `empty_ok` tinyint(1) NOT NULL default '0',
+  `url` varchar(100) default NULL,
   PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -67,6 +68,7 @@ CREATE TABLE `programs` (
   `aspect` enum('unknown','4:3','16:9') NOT NULL default 'unknown',
   `directors` text NOT NULL,
   `actors` text NOT NULL,
+  `url` varchar(100) default NULL,
   PRIMARY KEY  (`channel_id`,`start_time`),
   KEY `channel_id` (`channel_id`,`start_time`),
   KEY `batch` (`batch_id`,`start_time`)
