@@ -100,7 +100,7 @@ sub ImportContent
     #
     # url
     #
-    my $url = norm($sc->getElementsByTagName( 'url' ));
+    my $url = $sc->getElementsByTagName( 'url' );
 
     #
     # production year
@@ -116,7 +116,11 @@ sub ImportContent
     my $directors = $sc->getElementsByTagName( 'director' );
     my $actors = $sc->getElementsByTagName( 'actor' );
     my $writers = $sc->getElementsByTagName( 'writer' );
+    my $adapters = $sc->getElementsByTagName( 'adapter' );
     my $producers = $sc->getElementsByTagName( 'producer' );
+    my $presenters = $sc->getElementsByTagName( 'presenter' );
+    my $commentators = $sc->getElementsByTagName( 'commentator' );
+    my $guests = $sc->getElementsByTagName( 'guest' );
 
     my $ce = {
       channel_id   => $chd->{id},
@@ -128,6 +132,12 @@ sub ImportContent
       #aspect       => $sixteen_nine ? "16:9" : "4:3", 
       directors    => norm($directors),
       actors       => norm($actors),
+      writers      => norm($writers),
+      adapters     => norm($adapters),
+      producers    => norm($producers),
+      presenters   => norm($presenters),
+      commentators => norm($commentators),
+      guests       => norm($guests),
       url          => norm($url),
     };
 
