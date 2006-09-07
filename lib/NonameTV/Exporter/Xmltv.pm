@@ -639,6 +639,36 @@ sub write_entry
     $d->{credits}->{actor} = [split( ", ", $data->{actors})];
   }
 
+  if( $data->{writers} =~ /\S/ )
+  {
+    $d->{credits}->{writer} = [split( ", ", $data->{writers})];
+  }
+
+  if( $data->{adapters} =~ /\S/ )
+  {
+    $d->{credits}->{adapter} = [split( ", ", $data->{adapters})];
+  }
+
+  if( $data->{producers} =~ /\S/ )
+  {
+    $d->{credits}->{producer} = [split( ", ", $data->{producers})];
+  }
+
+  if( $data->{presenters} =~ /\S/ )
+  {
+    $d->{credits}->{presenter} = [split( ", ", $data->{presenters})];
+  }
+
+  if( $data->{commentators} =~ /\S/ )
+  {
+    $d->{credits}->{commentator} = [split( ", ", $data->{commentators})];
+  }
+
+  if( $data->{guests} =~ /\S/ )
+  {
+    $d->{credits}->{guest} = [split( ", ", $data->{guests})];
+  }
+
   $w->write_programme( $d );
 }
 
