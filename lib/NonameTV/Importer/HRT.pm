@@ -95,7 +95,7 @@ sub ImportContent
     #
     # genre
     #
-    my $genre = norm($sc->getElementsByTagName( 'genre' ));
+    my $genre = norm($sc->getElementsByTagName( 'category' ));
 
     #
     # url
