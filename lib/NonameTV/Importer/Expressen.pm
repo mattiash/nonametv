@@ -85,7 +85,7 @@ sub ImportFile
   my $doc;
   if( $file =~  /\.doc$/ )
   {
-#    $doc = Wordfile2Xml( $file );
+    $doc = Wordfile2Xml( $file );
   }
 
   # It may be a html-file even though it is called .doc...
