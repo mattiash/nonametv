@@ -520,7 +520,7 @@ sub close_writer
       {
         error( "Xmltv: $filename.gz is empty" );
       }
-      else
+      elsif( $self->{writer_entries} > 0 )
       {
         my @errors = ValidateFile( "$path$filename.gz" );
         if( scalar( @errors ) > 0 )
@@ -543,7 +543,7 @@ sub close_writer
     {
       error( "Xmltv: $filename.gz is empty" );
     }
-    else
+    elsif( $self->{writer_entries} > 0 )
     {
       my @errors = ValidateFile( "$path$filename.gz" );
       if( scalar( @errors ) > 0 )
