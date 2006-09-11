@@ -441,6 +441,12 @@ sub LookupCat
   $org = lc( $org );
   $org =~ tr/ÅÄÖ/åäö/;
 
+  # The field has room for 50 characters. Unicode may occupy
+  # several bytes with one character.
+  # Treat all categories with the same X character prefix
+  # as equal.
+  $org = substr( $org, 0, 44 );
+
   $self->LoadCategories()
     if not exists( $self->{categories} );
 
