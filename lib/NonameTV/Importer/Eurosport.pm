@@ -184,6 +184,9 @@ sub LoadSportId
     return 0;
   }
   
+  # This id is not present in the xml-file.
+  $id{265} = "Fia wtcc";
+
   foreach my $p ($ns->get_nodelist)
   {
     my $short_name = norm( $p->findvalue('@SPTR_SHORTNAME') );
