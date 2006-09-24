@@ -68,7 +68,6 @@ my $ua = LWP::UserAgent->new( agent => "Grabber from http://tv.swedb.se",
 sub MyGet
 {
   my( $url ) = @_;
-
   my $res = $ua->get( $url );
   
   if( $res->is_success )
