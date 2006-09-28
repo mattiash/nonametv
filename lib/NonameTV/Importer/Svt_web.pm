@@ -287,8 +287,6 @@ sub extract_extra_info
 
   my( $ds ) = $self->{datastore};
 
-  extract_episode( $ce );
-
   my( $program_type, $category );
 
   if( defined( $ce->{svt_cat} ) )
@@ -379,6 +377,8 @@ sub extract_extra_info
   
   $ce->{description} = join_text( @sentences );
 
+  extract_episode( $ce );
+
   # Remove temporary fields
   delete( $ce->{svt_cat} );
 }
@@ -432,7 +432,13 @@ sub extract_episode
   $episode = sprintf( " . %d/%d . ", $ep-1, $eps ) 
     if defined $eps;
   
-  $ce->{episode} = $episode if defined $episode;
+  if( defined $episode ) {
+    if( exists( $ce->{production_date} ) ) {
+      my( $year ) = ($ce->{production_date} =~ /(\d{4})-/ );
+      $episode = ($year-1) . $episode;
+    }
+    $ce->{episode} = $episode;
+  }
 }
 
 sub parse_other_showings
