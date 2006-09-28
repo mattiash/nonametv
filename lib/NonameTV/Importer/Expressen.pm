@@ -83,17 +83,18 @@ sub ImportFile
   my $dsh = $self->{datastorehelper};
   
   my $doc;
-  if( $file =~  /\.doc$/ )
+
+  # Only process .doc-files.
+  return if $file !~  /\.doc$/i;
+ 
+  # It may be a html-file even though it is called .doc...
+  $doc = Htmlfile2Xml( $file );
+  
+  if( not defined( $doc ) )
   {
     $doc = Wordfile2Xml( $file );
   }
-
-  # It may be a html-file even though it is called .doc...
-  if( not defined $doc )
-  {
-    $doc = Htmlfile2Xml( $file );
-  }
-
+  
   if( not defined( $doc ) )
   {
     error( "Expressen: $file failed to parse" );
