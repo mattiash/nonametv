@@ -156,8 +156,8 @@ sub ImportData
 
   my $state=ST_START;
 
-  my( $fromdate, $todate, $weekdays );
-  my( $periodstart, $periodend, $periodweekdays, $periodtext );
+  my( @dates );
+  my( @perioddates, $periodtext );
   my $entries = [];
   my $start;
   my $title;
@@ -182,7 +182,7 @@ sub ImportData
       ($start, $title) = ($text =~ /^(\d+[\.:]\d+)\s+(.*?)\s*$/ );
       $start =~ tr/\./:/;
     }
-    elsif( match_date_range( $text, \$fromdate, \$todate, \$weekdays ) )
+    elsif( match_date_range( $text, \@dates ) )
     {
       $type = T_DATE;
     }
@@ -193,9 +193,7 @@ sub ImportData
 #    print "$state $type\n";
     if( $state == ST_START ) {
       if( $type == T_DATE ) {
-        $periodstart = $fromdate;
-        $periodend = $todate;
-        $periodweekdays = $weekdays;
+        @perioddates = @dates; 
         $periodtext = $text;
         $state = ST_FDATE;
       }
@@ -216,12 +214,8 @@ sub ImportData
     }
     elsif( $state == ST_FHEAD ) {
       if( $type == T_DATE ) {
-        $self->process_entries( $periodstart, $periodend, $periodweekdays,
-                         $entries ) 
-          or error( "Nickelodeon: No matching days for $periodtext" );
-        $periodstart = $fromdate;
-        $periodend = $todate;
-        $periodweekdays = $weekdays;
+        $self->process_entries( \@perioddates, $entries );
+        @perioddates = @dates;
         $periodtext = $text;
         $entries = [];
         $state = ST_FDATE;
@@ -232,12 +226,8 @@ sub ImportData
       }
       elsif( $type == T_END ) {
         push @{$entries}, [$start, "end-of-transmission", ""];
-        $self->process_entries( $periodstart, $periodend, $periodweekdays,
-                         $entries ) 
-          or error( "Nickelodeon: No matching days for $periodtext" );
-        $periodstart = undef;
-        $periodend = undef;
-        $periodweekdays = undef;
+        $self->process_entries( \@perioddates, $entries ); 
+        @perioddates = ();
         $periodtext = undef;
         $entries = [];
         $state = ST_FEND;
@@ -252,9 +242,7 @@ sub ImportData
     }
     elsif( $state == ST_FEND ) {
       if( $type == T_DATE ) {
-        $periodstart = $fromdate;
-        $periodend = $todate;
-        $periodweekdays = $weekdays;
+        @perioddates = @dates;
         $periodtext = $text;
         $entries = [];
         $state = ST_FDATE;
@@ -265,8 +253,7 @@ sub ImportData
       }
     }
   }
-  $self->process_entries( $periodstart, $periodend, $periodweekdays,
-                   $entries )
+  $self->process_entries( \@perioddates, $entries )
     unless $state == ST_FEND;
 
   my $currdate = $self->{earliest_date}->clone();
@@ -282,51 +269,42 @@ sub ImportData
 
 sub process_entries {
   my $self = shift;
-  my( $startdate, $enddate, $weekdays, $entries ) = @_;
+  my( $dates, $entries ) = @_;
 
   my $dsh= $self->{datastorehelper};
   my $xmltvid= "nickelodeon.se";
   my $channel_id= $self->{channel_data}->{$xmltvid}->{id};
 
-  $self->{earliest_date} = $startdate->clone()
-    if( $self->{earliest_date} > $startdate );
-
-  $self->{latest_date} = $enddate->clone()
-    if( $self->{latest_date} < $enddate );
-  
-  my $currdate = $startdate->clone();
-  my $matches = 0;
-
-  while($currdate <= $enddate) 
+  foreach my $currdate (@{$dates}) 
   {
-    if( $currdate->wday() =~ m/$weekdays/ ) {
-#      print $currdate->ymd("-") . "\n";
+    error( "Nickelodeon: Duplicate data for " . $currdate->ymd('-') )
+      if( defined( $self->{seen_days}->{$currdate->ymd("-")} ) );
+    
+    $self->{seen_days}->{$currdate->ymd("-")} = 1;
+    
+    $self->{earliest_date} = $currdate->clone()
+      if( $self->{earliest_date} > $currdate );
 
-      error( "Nickelodeon: Duplicate data for " . $currdate->ymd('-') )
-        if( defined( $self->{seen_days}->{$currdate->ymd("-")} ) );
+    $self->{latest_date} = $currdate->clone()
+      if( $self->{latest_date} < $currdate );
 
-      $self->{seen_days}->{$currdate->ymd("-")} = 1;
-      $matches++;
-
-      $dsh->StartBatch($xmltvid.'_'.$currdate->ymd('-'), $channel_id);
-      $dsh->StartDate($currdate->ymd('-'));
-      foreach my $entry (@{$entries}) {
-        my( $start, $title, $desc ) = @{$entry};
-        my $ce = {
-          start_time  => $start,
-          title       => norm( $title ),
-        };
-
-        $ce->{description} = norm($desc) if $desc =~ /\S/;
-
-        $dsh->AddProgramme($ce);
-      }
-      $dsh->EndBatch(1);
+    $dsh->StartBatch($xmltvid.'_'.$currdate->ymd('-'), $channel_id);
+    $dsh->StartDate($currdate->ymd('-'));
+    foreach my $entry (@{$entries}) {
+      my( $start, $title, $desc ) = @{$entry};
+      my $ce = {
+        start_time  => $start,
+        title       => norm( $title ),
+      };
+      
+      $ce->{description} = norm($desc) if $desc =~ /\S/;
+      
+      $dsh->AddProgramme($ce);
     }
-    $currdate = $currdate->add( days => 1 );
+    $dsh->EndBatch(1);
   }
 
-  return $matches;
+  return;
 }
 
 my @weekdays_sv = qw/måndag tisdag onsdag torsdag fredag lördag söndag/;
@@ -344,21 +322,25 @@ for( my $i=0; $i < scalar( @weekdays_sv ); $i++ )
 }
 
 sub match_date_range {
-  my( $text, $fromdateref, $todateref, $weekdaysref ) = @_;
+  my( $text, $dates ) = @_;
 
   return 0 unless $text =~ s/^\s*($WD|$WD_SET)\s*//i;
+
+  $dates = [];
+
+#  $text =~ s/\s+och\s+/, /i;
 
   my $wd = $weekdayno{lc($1)};
 
   my( $fromspec, $tospec ) = split( /\s*-\s*/, $text, 2 );
 
-  my $fromdate = parse_date( $fromspec, DateTime->today );
-  my $todate;
-
+  my( $fromdate, $todate );
   if( defined( $tospec ) ) {
-    $todate = parse_date( $tospec, $fromdate );
+    $todate = parse_date( $tospec, DateTime->today );
+    $fromdate = parse_date( $fromspec, $todate );
   }
   else { 
+    $fromdate = parse_date( $fromspec, DateTime->today );
     $todate = $fromdate->clone();
   }
 
@@ -370,11 +352,19 @@ sub match_date_range {
     $todate = $todate->add( years => 1 );
   }
 
-  $$fromdateref = $fromdate;
-  $$todateref = $todate;
-  $$weekdaysref = $wd;
+  my $currdate = $fromdate->clone();
+  my $matches = 0;
 
-#  print "$wd " . $fromdate->ymd() . " " . $todate->ymd() . "\n";
+  while($currdate <= $todate) 
+  {
+    if( $currdate->wday() =~ m/$wd/ ) {
+      push @{$dates}, $currdate->clone;
+      $matches++;
+    }
+    $currdate->add( days => 1 );
+  }
+
+  die "No dates matched $text" unless $matches;
 
   return 1;
 }
