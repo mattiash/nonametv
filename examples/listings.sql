@@ -36,6 +36,7 @@ CREATE TABLE `channels` (
   `id` int(11) NOT NULL auto_increment,
   `display_name` varchar(100) NOT NULL default '',
   `xmltvid` varchar(100) NOT NULL default '',
+  `chgroup` varchar(100) NOT NULL,
   `grabber` varchar(20) NOT NULL default '',
   `export` tinyint(1) NOT NULL default '0',
   `grabber_info` varchar(100) NOT NULL default '',
