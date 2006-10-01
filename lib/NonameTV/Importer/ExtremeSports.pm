@@ -219,6 +219,8 @@ sub FetchDataFromSite
             strftime( '%Y%m', localtime ) . "01-" . strftime( '%Y%m', localtime ) . $mondays[$nowmonth] .
             ".xls";
 
+#  print "Fetching xls file from $url\n";
+
   my( $content, $code ) = MyGet( $url );
 
   #############################################
