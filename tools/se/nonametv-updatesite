@@ -12,7 +12,6 @@ fi
 perl -I lib/ tools/nonametv-export Xmltv $1 $2 $3
 
 tools/se/nonametv-xmltv-genhtml $NROOT/xmltv_staging
-perl -I lib tools/nonametv-batchlog > /var/local/nonametv/xmltv_compare/00status.html
 
 rsync -c --delete -r $NROOT/xmltv_staging/ $NROOT/xmltv/
 sitecopy --update $SC_OPT tv.swedb.se

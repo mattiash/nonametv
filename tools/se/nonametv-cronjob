@@ -46,3 +46,4 @@ $h perl -I lib tools/nonametv-import Combiner --short-grab
 tools/se/nonametv-updatesite
 
 $d tools/se/nonametv-xmltv-compare-run
+perl -I lib tools/nonametv-batchlog > /var/local/nonametv/xmltv_compare/00status.html
