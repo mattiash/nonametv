@@ -64,6 +64,7 @@ sub ImportContent
   my( $batch_id, $cref, $chd ) = @_;
 
   my $ds = $self->{datastore};
+  $ds->{SILENCE_END_START_OVERLAP}=1;
   my $dsh = $self->{datastorehelper};
   $self->{currxmltvid} = $chd->{xmltvid};
 
@@ -438,6 +439,9 @@ sub extract_episode
       $episode = ($year-1) . $episode;
     }
     $ce->{episode} = $episode;
+    # If this program has an episode-number, it is by definition
+    # a series (?). Svt often miscategorize series as movie.
+    $ce->{program_type} = 'series';
   }
 }
 
