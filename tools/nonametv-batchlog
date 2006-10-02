@@ -18,7 +18,7 @@ print '<html><body>';
 
 # Retrieve a list of all batches that have been aborted due to errors.
 my( $res, $sth ) = $ds->Sql( 
-        "select * from batches where abort_message!='' order by id" );
+        "select * from batches where abort_message!='' order by name" );
 
 print "<h1>Errors:</h1>";
 while( my $d = $sth->fetchrow_hashref() )
@@ -35,7 +35,7 @@ $sth->finish();
 
 # Retrieve a list of all batches that generated a warning.
 ( $res, $sth ) = $ds->Sql( 
-        "select * from batches where message!='' order by id" );
+        "select * from batches where message!='' order by name" );
 
 print "<h1>Warnings</h1>";
 while( my $d = $sth->fetchrow_hashref() )
