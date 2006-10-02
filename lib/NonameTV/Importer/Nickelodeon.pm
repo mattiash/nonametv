@@ -279,7 +279,7 @@ sub process_entries {
   {
     error( "Nickelodeon: Duplicate data for " . $currdate->ymd('-') )
       if( defined( $self->{seen_days}->{$currdate->ymd("-")} ) );
-    
+
     $self->{seen_days}->{$currdate->ymd("-")} = 1;
     
     $self->{earliest_date} = $currdate->clone()
@@ -326,45 +326,51 @@ sub match_date_range {
 
   return 0 unless $text =~ s/^\s*($WD|$WD_SET)\s*//i;
 
-  $dates = [];
-
-#  $text =~ s/\s+och\s+/, /i;
+  @{$dates} = ();
+  $text =~ s/\s+och\s+/, /i;
 
   my $wd = $weekdayno{lc($1)};
 
   my( $fromspec, $tospec ) = split( /\s*-\s*/, $text, 2 );
 
-  my( $fromdate, $todate );
-  if( defined( $tospec ) ) {
+  if( defined $tospec ) {
+    # This is a range.
+    my( $fromdate, $todate );
     $todate = parse_date( $tospec, DateTime->today );
     $fromdate = parse_date( $fromspec, $todate );
-  }
-  else { 
-    $fromdate = parse_date( $fromspec, DateTime->today );
-    $todate = $fromdate->clone();
-  }
 
-  if( DateTime->today->subtract( months => 2 ) > $fromdate ) {
-    $fromdate = $fromdate->add( years => 1 );
-  }
-
-  if( $fromdate > $todate ) {
-    $todate = $todate->add( years => 1 );
-  }
-
-  my $currdate = $fromdate->clone();
-  my $matches = 0;
-
-  while($currdate <= $todate) 
-  {
-    if( $currdate->wday() =~ m/$wd/ ) {
-      push @{$dates}, $currdate->clone;
-      $matches++;
+    if( DateTime->today->subtract( months => 2 ) > $fromdate ) {
+      $fromdate = $fromdate->add( years => 1 );
     }
-    $currdate->add( days => 1 );
-  }
 
-  die "No dates matched $text" unless $matches;
+    if( $fromdate > $todate ) {
+      $todate = $todate->add( years => 1 );
+    }
+
+    my $currdate = $fromdate->clone();
+    my $matches = 0;
+
+    while($currdate <= $todate) 
+    {
+      if( $currdate->wday() =~ m/$wd/ ) {
+        push @{$dates}, $currdate->clone;
+        $matches++;
+      }
+      $currdate->add( days => 1 );
+    }
+  }
+  else {
+    my @pdates = split( /\s*,\s*/, $text );
+
+    my $prevdate = DateTime->today;
+    for( my $i = scalar( @pdates ) - 1; $i >= 0; $i-- ) {
+      # Remove the weekday since the date is unambiguous.
+      $pdates[$i] =~ s/$WD//i;
+      my $date = parse_date( $pdates[$i], $prevdate );
+      push @{$dates}, $date->clone;
+      $prevdate = $date;
+    }
+  } 
 
   return 1;
 }
@@ -394,6 +400,9 @@ sub parse_date {
 
   # Avoid issues with days that don't exist in all months.
   $dt->set( day => 1 );
+
+  $str =~ s/^\s+//;
+  $str =~ s/\s+$//;
 
   my( $day, $month, $year ) = split( /\s+/, $str );
 
