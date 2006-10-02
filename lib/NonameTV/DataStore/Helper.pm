@@ -113,7 +113,7 @@ sub StartDate
                                       second => 0,
                                       time_zone => $self->{timezone} );
 
-  if( $self->{curr_date} < DateTime->today->subtract( days => 7 ) )
+  if( $self->{curr_date} < DateTime->today->subtract( days => 8 ) )
   {
     error( "$self->{batch_id}: StartDate called with old date, " .
            $self->{curr_date}->ymd("-") . "." );
@@ -159,17 +159,33 @@ sub AddProgramme
                                      $ce->{start_time} );
   if( defined( $self->{lasttime} ) and ($start_time < $self->{lasttime}) )
   {
-    $start_time->add( days => 1 );
-    my $dur =  $start_time - $self->{lasttime};
+    my $new_start_time = $start_time->clone();
+    $new_start_time->add( days => 1 );
+    my $dur =  $new_start_time - $self->{lasttime};
     my( $days, $hours ) = $dur->in_units( 'days', 'hours' );
     $hours += $days*24;
-    if( $hours > 20 )
+    if( $hours < 20 )
     {
-      error( "$self->{batch_id}: Improbable program start " . 
-             $start_time->ymd . " " . $start_time->hms . " skipped" );
-      return;
+      # By adding one day to the start_time, we ended up with a time
+      # that is less than 20 hours after the lasttime. We assume that
+      # this means that adding a day is the right thing to do.
+      $self->{curr_date}->add( days => 1 );
+      $start_time = $new_start_time;
     }
-    $self->{curr_date}->add( days => 1 );
+    else 
+    {
+      # By adding one day to the start_time, we ended up with a time
+      # that is more than 20 hours after the lasttime. This probably means
+      # that the start_time hasn't wrapped into a new day, but that 
+      # there is something wrong with the source-data and the time actually
+      # moves backwards in the schedule.
+      if( not $self->{ds}->{SILENCE_END_START_OVERLAP} ) 
+      {
+        error( "$self->{batch_id}: Improbable program start " . 
+               $start_time->ymd . " " . $start_time->hms . " skipped" );
+        return;
+      }
+    }
   }
   $ce->{start_time} = $start_time->clone();
 
