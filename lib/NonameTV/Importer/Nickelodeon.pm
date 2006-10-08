@@ -53,10 +53,8 @@ sub new
 
   while( my $data = $sth->fetchrow_hashref )
   {
-    $self->{channel_data}->{$data->{grabber_info}} = 
-                            { id => $data->{id},
-                              xmltvid => $data->{xmltvid} 
-                            };
+    $self->{channel_data}->{$data->{xmltvid}} = 
+                            { id => $data->{id} };
   }
 
   $sth->finish;
@@ -128,7 +126,7 @@ sub ImportData
   
   if( $ns->size() == 0 )
   {
-    error( "Discovery: No programme entries found in $filename" );
+    error( "Nickelodeon: No programme entries found in $filename" );
     return;
   }
   
@@ -265,6 +263,11 @@ sub ImportData
     }
     $currdate = $currdate->add( days => 1 );
   }
+
+  progress( "Nickelodeon: Imported data from " . 
+            $self->{earliest_date}->ymd() . " to " .
+            $self->{latest_date}->ymd() );
+  
 }
 
 sub process_entries {
