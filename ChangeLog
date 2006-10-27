@@ -1,3 +1,9 @@
+2006-10-27 20:04  tcrnek
+
+	* New sql tables added: lang_en, lang_hr and lang_se.
+	* Xmltv exporter modified to use language strings
+	  from database.
+
 2004-09-24 13:28  mattias
 
 	* lib/HTTP/Cache.pm: Remove unused cruft.
