@@ -7,6 +7,8 @@ use NonameTV::DataStore;
 
 use Getopt::Long;
 
+use NonameTV::Language qw/LoadLanguage/;
+
 # Read configuration
 my $conf = NonameTV::ReadConfig();
 
@@ -27,5 +29,8 @@ my $option_spec = eval "\$NonameTV::Exporter::${exp_type}::OptionSpec";
 
 my $res = GetOptions( \%opt, @{$option_spec} );
 
-# Run importer
-$exp->Export( $ds, \%opt );
+# Load language strings
+my $lngstr = LoadLanguage( $conf->{DefaultLanguage} , "exporter-$exp_type" , $ds );
+
+# Run exporter
+$exp->Export( $ds, \%opt , $lngstr );

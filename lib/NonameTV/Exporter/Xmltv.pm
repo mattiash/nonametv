@@ -75,7 +75,7 @@ sub new {
 
 sub Export
 {
-  my( $self, $ds, $p ) = @_;
+  my( $self, $ds, $p , $lngstr ) = @_;
 
   if( $p->{'help'} )
   {
@@ -114,7 +114,7 @@ EOH
     return;
   }
 
-  $self->ExportData( $ds, $p );
+  $self->ExportData( $ds, $p , $lngstr );
 }
 
 #
@@ -244,7 +244,7 @@ sub AddDate
 sub ExportData
 {
   my $self = shift;
-  my( $ds, $p ) = @_;
+  my( $ds, $p , $lngstr ) = @_;
 
   $self->{outf}=sub {
     my( $file, $line, $err ) = @_;
@@ -346,7 +346,7 @@ sub ExportData
     my $iter = $upd->{$channel}->iterator;
     while ( my $dt = $iter->next ) 
     {
-      $self->export_range( $ds, $dt, $channel, $chd, $p );
+      $self->export_range( $ds, $dt, $channel, $chd, $p, $lngstr );
     }
   }
 
@@ -359,7 +359,7 @@ sub ExportData
 sub export_range
 {
   my $self = shift;
-  my( $ds, $dt, $channelid, $chd, $p ) = @_;
+  my( $ds, $dt, $channelid, $chd, $p, $lngstr ) = @_;
 
   # $dt is a DateTime::Span
   my $startdate = $dt->start->ymd('-');
@@ -426,7 +426,7 @@ sub export_range
         # Make a note that a file has been created for this date.
         $dates{$date} = 0;
       }
-      $self->write_entry( $w, $d1, $chd )
+      $self->write_entry( $w, $d1, $chd, $lngstr )
         unless $d1->{title} eq "end-of-transmission";
       $d1 = $d2;
     }
@@ -440,7 +440,7 @@ sub export_range
       if( (defined( $d1->{end_time})) and
           ($d1->{end_time} ne "0000-00-00 00:00:00") )
       {
-        $self->write_entry( $w, $d1, $chd )
+        $self->write_entry( $w, $d1, $chd, $lngstr )
           unless $d1->{title} eq "end-of-transmission";
       }
       else
@@ -558,7 +558,7 @@ sub close_writer
 sub write_entry
 {
   my $self = shift;
-  my( $w, $data, $chd ) = @_;
+  my( $w, $data, $chd, $lngstr ) = @_;
 
   $self->{writer_entries}++;
 
@@ -583,18 +583,27 @@ sub write_entry
   
   if( defined( $data->{episode} ) and ($data->{episode} =~ /\S/) )
   {
-    my( $season, $ep, $part ) = split( /\s*\.\s*/, $data->{episode} );
-    if( $season =~ /\S/ )
+    my( $season, $ep, $part );
+
+    if( $data->{episode} =~ /\./ )
     {
-      $season++;
+      ( $season, $ep, $part ) = split( /\s*\.\s*/, $data->{episode} );
+      if( $season =~ /\S/ )
+      {
+        $season++;
+      }
+    }
+    else
+    {
+      $ep = $data->{episode};
     }
 
     my( $ep_nr, $ep_max ) = split( "/", $ep );
     $ep_nr++;
 
-    my $ep_text = "Del $ep_nr";
-    $ep_text .= " av $ep_max" if defined $ep_max;
-    $ep_text .= " säsong $season" if( $season );
+    my $ep_text = "$lngstr->{episode_number} $ep_nr";
+    $ep_text .= " $lngstr->{of} $ep_max" if defined $ep_max;
+    $ep_text .= " $lngstr->{episode_season} $season" if( $season );
 
     $d->{'episode-num'} = [[ $data->{episode}, 'xmltv_ns' ],
                            [ $ep_text, 'onscreen'] ];

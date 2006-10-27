@@ -13,6 +13,8 @@ Features:
 
 use utf8;
 
+require Unicode::Map8;
+
 use POSIX qw/strftime/;
 use DateTime;
 use Spreadsheet::ParseExcel;
@@ -128,7 +130,7 @@ sub ImportFile
       if( $c ne undef ){ # we are on the row with date
         $day = $a;
         $month = $b;
-        $year = $c;
+        $year = $c + 2000;
         $hour = undef;
         $min = undef;
       } elsif( $year ne undef ){
@@ -148,7 +150,9 @@ sub ImportFile
             channel_id   => $channel_id,
             start_time   => $lasttime->ymd("-") . " " . $lasttime->hms(":"), 
             end_time     => $newtime->ymd("-") . " " . $newtime->hms(":"),
-            title        => norm($title),
+            #title        => Utf8Conv( norm($title) ),
+            #title        => norm($title),
+            title        => Unicode::String::latin1( norm($title) ),
           };
   
           if( defined( $episode ) )
@@ -171,6 +175,10 @@ sub ImportFile
       # field "ime emisije" (column 1)
       $oWkC = $oWkS->{Cells}[$iR][1];
       $title = $oWkC->Value;
+#print "$title\n";
+#my $m = Unicode::Map8->new( "cp1250" )
+#$m->recode8("utf8", $title);
+print "$title\n";
 
       # field "vrsta emisije" (column 2)
       $oWkC = $oWkS->{Cells}[$iR][2];
