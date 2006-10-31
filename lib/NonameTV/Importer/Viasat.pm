@@ -81,7 +81,9 @@ sub ImportContent
     }
     
     my $start = $inrow->{'Start time'};
-    
+
+    my $title = norm( $inrow->{'name'} );
+
     my $description = $inrow->{'Synopsis this episode'}
     || $inrow->{'Synopsis'}; 
     
@@ -102,7 +104,7 @@ sub ImportContent
     }
 
     my $ce = {
-      title => norm( $inrow->{'name'} ),
+      title => $title,
       description => $description,
       start_time => $start,
       episode => $episode,
@@ -208,7 +210,8 @@ sub extract_extra_info
   if ( ($ltitle eq "slut") or
        ($ltitle eq "godnatt") or
        ($ltitle eq "end") or
-       ($ltitle eq "close") )               
+       ($ltitle eq "close") or
+       ($ltitle eq "pause") )               
   {
     $ce->{title} = "end-of-transmission";
   }
