@@ -57,6 +57,12 @@ sub ImportContent
   
   # Find all "Schedule"-entries.
   my $ns = $doc->find( "//Schedule" );
+
+  if( $ns->size() == 0 )
+  {
+    error( "$batch_id: No data found" );
+    return 0;
+  }
   
   foreach my $sc ($ns->get_nodelist)
   {
@@ -83,11 +89,12 @@ sub ImportContent
     }
 
     my $length  = $sc->findvalue( './Program/@Length ' );
-    die if $length < 0;
+    error( "$batch_id: $length is not numeric." ) 
+      if( $length !~ /^\d*$/ );
 
     my $end;
 
-    if( $length == 0 )
+    if( ($length eq "") or ($length == 0) )
     {
       $end = $next_start;
     }
@@ -98,13 +105,15 @@ sub ImportContent
       # Sometimes the claimed length of the movie makes the movie end
       # a few minutes after the next movie is supposed to start.
       # Assume that next_start is correct.
-      if( (defined $next_start ) and ($end > $next_start) )
+      if( (defined $next_start ) and ($end > $next_start) 
+          and ($next_start > $start) )
       {
         $end = $next_start;
       }
     }
 
     my $title = $sc->findvalue( './Program/@Title' );
+    my $series_title = $sc->findvalue( './Program/@SeriesTitle' );
     my $org_title = $sc->findvalue( './Program/@OriginalTitle' );
     my $desc  = $sc->findvalue( './Program/@LongSynopsis' );
     
@@ -168,7 +177,7 @@ sub ImportContent
 
     my $ce = {
       channel_id  => $chd->{id},
-      title       => norm($title) || norm($org_title),
+      title       => norm($title) || norm($series_title) || norm($org_title),
       description => norm($desc),
       start_time  => $start->ymd("-") . " " . $start->hms(":"),
       end_time    => $end->ymd("-") . " " . $end->hms(":"),
@@ -256,12 +265,16 @@ sub FetchDataFromSite
   # Find the first day in the given week.
   # Copied from
   # http://www.nntp.perl.org/group/perl.datetime/5417?show_headers=1 
-  my $dt = DateTime->new( year=>$year, day => 4 );
-  $dt->add( days => $week * 7 - $dt->day_of_week - 6 );
+  my $ds = DateTime->new( year=>$year, day => 4 );
+  $ds->add( days => $week * 7 - $ds->day_of_week - 6 );
 
+  my $de=$ds->clone->add( days => 6 );
 
+#http://grids.canalplus.se/Export.aspx?f=xml&c=0&ds=2006-09-25&de=2006-10-01&l=SE
   my $url = $self->{UrlRoot} .
-    "d=" . $dt->ymd("-") . "\&c=$data->{grabber_info}";
+    'ds=' . $ds->ymd("-") . '&' . 
+    'de=' . $de->ymd('-') . '&' . 
+    'c=' . $data->{grabber_info};
 
   my( $content, $code ) = MyGet( $url );
   return( $content, $code );
