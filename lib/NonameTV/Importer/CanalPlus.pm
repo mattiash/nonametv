@@ -177,22 +177,44 @@ sub ImportContent
 
     my $ce = {
       channel_id  => $chd->{id},
-      title       => norm($title) || norm($series_title) || norm($org_title),
       description => norm($desc),
       start_time  => $start->ymd("-") . " " . $start->hms(":"),
       end_time    => $end->ymd("-") . " " . $end->hms(":"),
       aspect      => $sixteen_nine ? "16:9" : "4:3", 
     };
 
-    if( $series )
+    if( $series_title =~ /\S/ )
     {
-      $ce->{program_type} = "series";
+      $ce->{title} = norm($series_title);
+      $title = norm( $title );
+
+      if( $title =~ /^Del\s+(\d+),\s+(.*)/ )
+      {
+        $ce->{subtitle} = $2;
+        $ce->{episode} = ". " . ($1-1) . " .";
+        if( defined( $production_year ) and 
+            ($production_year =~ /\d{4}/) )
+        {
+          $ce->{episode } = $production_year-1 . " " . $ce->{episode};
+        }
+      }
+      elsif( $title ne $ce->{title} ) 
+      {
+        $ce->{subtitle } = $title;
+      }
+    }
+    else
+    {
+      $ce->{title} = norm($title) || norm($org_title);
     }
 
     if( $sport )
     {
       $ce->{category} = 'Sports';
     }
+
+    $ce->{program_type} = "series"
+      if $series;
 
     my($program_type, $category ) = $ds->LookupCat( "CanalPlus", 
                                                     $genre );
@@ -285,19 +307,6 @@ sub extract_extra_info
   my $self = shift;
   my( $ce ) = @_;
   
-  my( $s1, $s2, $s3 );
-
-  if( ($s1,$s2,$s3) = ($ce->{title} =~ /(.*): Del (\d+), *(.*)/) )
-  {
-    $ce->{title} = $s1;
-    $ce->{subtitle} = $s3;
-    $ce->{episode} = " . " . ($s2-1) . " . ";
-  }
-  elsif( ($s1,$s2) = ($ce->{title} =~ /(.*): Del (\d+)$/) )
-  {
-    $ce->{title} = $s1;
-    $ce->{episode} = " . " . ($s2-1) . " . ";
-  }
 }
     
 1;
