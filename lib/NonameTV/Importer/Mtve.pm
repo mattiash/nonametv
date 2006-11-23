@@ -56,18 +56,8 @@ sub ImportContent
     return 0;
   }
   
-  # Verify the assumption that each file only contains data for
-  # one channel.
-  
-  my $channelname = $doc->findvalue( '//Channel/@name' );
-  if( $channelname ne $chd->{grabber_info} )
-  {
-    error( "$batch_id: Wrong channel found: $channelname" );
-#    return;
-  }
-  
-  # Find all "ShowItem"-entries.
-  my $ns = $doc->find( "//ShowItem" );
+  # Find all "Base"-entries.
+  my $ns = $doc->find( "//Base" );
   if( $ns->size() == 0 )
   {
     error( "$batch_id: No data found" );
@@ -76,12 +66,12 @@ sub ImportContent
   
   foreach my $pgm ($ns->get_nodelist)
   {
-    my $starttime = $pgm->findvalue( 'ShowDate' );
+    my $starttime = $pgm->findvalue( 'GridDate' );
     
     my $start_dt = $self->create_dt( $starttime );
     
-    my $title =$pgm->findvalue( 'ShowName' );
-    my $desc = $pgm->findvalue( 'ShowText' );
+    my $title =$pgm->findvalue( 'StoryTypeName' );
+#    my $desc = $pgm->findvalue( 'ShowText' );
     
 # Should we store url and image in the database?
 #          my $url = $pgm->findvalue( 'ShowUrl' );
@@ -96,7 +86,7 @@ sub ImportContent
     {
       channel_id  => $chd->{id},
       title       => norm($title),
-      description => norm($desc),
+#      description => norm($desc),
       start_time  => $start_dt->ymd('-') . " " . 
         $start_dt->hms(":"),
       };
@@ -125,10 +115,7 @@ sub create_dt
 {
   my( $self, $datetime ) = @_;
 
-  my( $date, $time, $timezone ) = split( /\s+/, $datetime );
-
-  die( "Mtve: Unknown timezone $timezone" ) 
-    unless $timezone eq "CET";
+  my( $date, $time ) = split( /\s+/, $datetime );
 
   my( $year, $month, $day ) = split( "-", $date );
   my( $hour, $minute ) = split( ":", $time );
