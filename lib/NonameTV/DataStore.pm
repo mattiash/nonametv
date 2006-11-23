@@ -150,6 +150,17 @@ sub SetBatch
   $self->{batcherror} = 0;
 }
 
+# Hidden method used internally and by DataStore::Updater.
+sub ClearBatch
+{
+  my $self = shift;
+
+  delete $self->{currbatch};
+  delete $self->{currbatchname};
+  delete $self->{batcherror};
+}
+
+
 =item EndBatch
 
 Called by an importer to signal the end of a batch of updates.
@@ -480,6 +491,24 @@ sub LookupCat
     return (undef,undef);
   }
         
+}
+
+=item Reset
+
+Reset the datastore-object to its initial state. This method can be called
+between imports to make sure that errors from one import does not affect
+the next import.
+
+=cut
+
+sub Reset
+{
+  my $self = shift;
+
+  if( defined( $self->{currbatch} ) ) 
+  {
+    $self->EndBatch( 0 );
+  }
 }
 
 sub LoadCategories

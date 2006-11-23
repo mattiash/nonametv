@@ -142,6 +142,7 @@ sub EndBatchUpdate
   }
 
   delete $self->{currbatch};
+  $ds->ClearBatch();
 }
 
 =item AddProgramme
