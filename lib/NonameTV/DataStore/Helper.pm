@@ -113,7 +113,7 @@ sub StartDate
                                       second => 0,
                                       time_zone => $self->{timezone} );
 
-  if( $self->{curr_date} < DateTime->today->subtract( days => 8 ) )
+  if( $self->{curr_date} < DateTime->today->subtract( days => 31 ) )
   {
     error( "$self->{batch_id}: StartDate called with old date, " .
            $self->{curr_date}->ymd("-") . "." );
