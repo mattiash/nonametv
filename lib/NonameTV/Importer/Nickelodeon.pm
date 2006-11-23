@@ -311,13 +311,34 @@ sub process_entries {
 }
 
 my @weekdays_sv = qw/måndag tisdag onsdag torsdag fredag lördag söndag/;
+my %monthno= ( januari => 1, januar => 1, january => 1, 
+               februari => 2, februar => 2, february => 2,
+               mars => 3, marts => 3, march => 3, 
+               april => 4, 
+               maj => 5, mai => 5, may => 5, 
+               juni => 6, june => 6, 
+               july => 7, juli => 7, 
+               augusti => 8 , august => 8, 
+               september => 9 , 
+               oktober => 10, october => 10, 
+               november => 11, november => 11, 
+               december => 12, desember => 12, );
 
 my $WD = join( "|", @weekdays_sv, map { $_ . "ar" } @weekdays_sv );
-my $WD_SET = join( "|", "vardagar", "helger" );
+my %holidays = ( 'nyårsafton' => '31 december',
+                 'julafton' => '24 december',
+                 );
 
 my %weekdayno = ( vardagar => "[12345]",
+                  vardager => "[12345]",
                   helger => "[67]",
+                  helgen => "[67]",
                   );
+my $WD_SET = join( "|", keys( %weekdayno ));
+my $range_re = '\s*(' . $WD . '|' . 
+                   join( "|", keys( %holidays ), keys( %weekdayno ), 
+                         keys( %monthno ) ) .
+               '|\d+|\s+|,|och|&|-)+';
 
 for( my $i=0; $i < scalar( @weekdays_sv ); $i++ ) 
 { 
@@ -327,12 +348,25 @@ for( my $i=0; $i < scalar( @weekdays_sv ); $i++ )
 sub match_date_range {
   my( $text, $dates ) = @_;
 
-  return 0 unless $text =~ s/^\s*($WD|$WD_SET)\s*//i;
+#  progress("Range?: $text" );
+
+  return 0 unless $text =~ /^$range_re$/i;
+  return 0 if $text =~ /^\s*\d*\s*$/;
 
   @{$dates} = ();
-  $text =~ s/\s+och\s+/, /i;
+  my $wd = "[1234567]";
+  progress("Range: $text");
 
-  my $wd = $weekdayno{lc($1)};
+  if( $text =~ s/^\s*($WD|$WD_SET)\s*//i ) {
+    $wd = $weekdayno{lc($1)};
+  }
+
+  $text =~ s/\s+och\s+/, /i;
+  $text =~ s/\s*&\s*/, /i;
+
+  foreach my $holiday (keys %holidays) {
+    $text  =~ s/\b$holiday\b/$holidays{$holiday}/i;
+  }
 
   my( $fromspec, $tospec ) = split( /\s*-\s*/, $text, 2 );
 
@@ -370,26 +404,17 @@ sub match_date_range {
       # Remove the weekday since the date is unambiguous.
       $pdates[$i] =~ s/$WD//i;
       my $date = parse_date( $pdates[$i], $prevdate );
-      push @{$dates}, $date->clone;
+      unshift @{$dates}, $date->clone;
       $prevdate = $date;
     }
   } 
 
+  foreach my $d (@{$dates}) {
+    progress( $d->ymd('-') );
+  }
+
   return 1;
 }
-
-my %monthno= ( januari => 1, januar => 1, january => 1, 
-               februari => 2, februar => 2, february => 2,
-               mars => 3, marts => 3, march => 3, 
-               april => 4, 
-               maj => 5, mai => 5, may => 5, 
-               juni => 6, june => 6, 
-               july => 7, juli => 7, 
-               augusti => 8 , august => 8, 
-               september => 9 , 
-               oktober => 10, october => 10, 
-               november => 11, november => 11, 
-               december => 12, desember => 12, );
 
 # Parse a (partial) date into a proper DateTime object.
 # Takes two parameters: A string containing a partial
@@ -419,11 +444,11 @@ sub parse_date {
   }
 
   if( defined( $month ) ) {
-    if( not exists( $monthno{ $month } ) ) {
+    if( not exists( $monthno{ lc $month } ) ) {
       error( "Nickelodeon: Unknown month $month\n" );
     }
     else {
-      $dt->set( month => $monthno{$month} );
+      $dt->set( month => $monthno{lc $month} );
     }
   }
 
