@@ -27,9 +27,8 @@ use NonameTV::DataStore::Updater;
 use NonameTV::Log qw/info progress error logdie 
                      log_to_string log_to_string_result/;
 
-use NonameTV::Importer;
-
-use base 'NonameTV::Importer';
+use NonameTV::Importer::BaseFile;
+use base 'NonameTV::Importer::BaseFile';
 
 # The lowest log-level to store in the batch entry.
 # DEBUG = 1
@@ -46,59 +45,32 @@ sub new
   my $self  = $class->SUPER::new( @_ );
   bless ($self, $class);
   
+  $self->{grabber_name} = "Discovery";
+
   my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore} );
   $self->{datastorehelper} = $dsh;
 
   my $dsu = NonameTV::DataStore::Updater->new( $self->{datastore} );
   $self->{datastoreupdater} = $dsu;
 
-  my $sth = $self->{datastore}->Iterate( 'channels', 
-                                         { grabber => 'discovery' },
-                                         qw/xmltvid id grabber_info/ )
-    or logdie "Failed to fetch grabber data";
-
-  while( my $data = $sth->fetchrow_hashref )
-  {
-    $self->{channel_data}->{$data->{grabber_info}} = 
-                            { id => $data->{id},
-                              xmltvid => $data->{xmltvid} 
-                            };
-  }
-
-  $sth->finish;
-
-  $self->{OptionSpec} = [ qw/force-update verbose/ ];
-  $self->{OptionDefaults} = { 
-    'force-update' => 0,
-    'verbose'      => 0,
-  };
-  
   return $self;
 }
 
-sub Import
+sub ImportContentFile
 {
   my $self = shift;
-  my( $p ) = @_;
+  my( $file, $chd ) = @_;
 
-  NonameTV::Log::verbose( $p->{verbose} );
-
-  foreach my $file (@ARGV)
+  if( $file =~ /\bhigh/i )
   {
-    progress(  "Discovery: Processing $file" );
-    $self->ImportFile( "", $file, $p );
-  } 
-}
-
-sub ImportFile
-{
-  my $self = shift;
-  my( $contentname, $file, $p ) = @_;
+    error( "Discovery: Skipping highlights file $file" );
+    return;
+  }
 
   my( $fnid, $fnlang, $fntype, $ext ) = 
     ( $file =~ /([A-Z]+[\. ]+[A-Z]+)[\. ]
                (\S+).*?
-               (\S+\s*[0-9]*)\.
+               (\S+\s*[ ()0-9]*)\.
                ([^\.]+)$/x );
 
   if( not defined( $ext ) )
@@ -115,20 +87,8 @@ sub ImportFile
 #    return;
 #  }
 
-  if( $fntype =~ /^high/i )
-  {
-    progress( "Discovery: Skipping highlights file $file" );
-    return;
-  }
-
-  if( not exists( $self->{channel_data}->{$fnid} ) )
-  {
-    error( "Discovery: Unknown channel $fnid in $file" );
-    return;
-  }
-
-  my $channel_id = $self->{channel_data}->{$fnid}->{id};
-  my $channel_xmltvid = $self->{channel_data}->{$fnid}->{xmltvid};
+  my $channel_id = $chd->{id};
+  my $channel_xmltvid = $chd->{xmltvid};
 
   my $doc;
   if( $ext =~  /doc/i )
@@ -263,6 +223,7 @@ sub ImportData
         progress( "${channel_xmltvid}_$date: Processing $filename" );
 	$dsh->StartBatch( "${channel_xmltvid}_$date", $channel_id );
 	$dsh->StartDate( $date );
+        $self->AddDate( $date );
 	$state = ST_FDATE;
 	next;
       }
@@ -312,6 +273,7 @@ sub ImportData
         progress( "${channel_xmltvid}_$date: Processing $filename" );
 	$dsh->StartBatch( "${channel_xmltvid}_$date", $channel_id );
 	$dsh->StartDate( $date );
+        $self->AddDate( $date );
 	$state = ST_FDATE;
       }
       elsif( $type == T_STOP )
@@ -400,7 +362,8 @@ sub ImportAmendments
 
       $self->{process_batch} = 
         $dsu->StartBatchUpdate( "${channel_xmltvid}_$date", $channel_id ) ;
-
+      
+      $self->AddDate( $date ) if $self->{process_batch};
       $self->start_date( $date );
     }
     elsif( ($command, $title) = 
@@ -497,7 +460,7 @@ sub parse_command
   }
   else
   {
-    die "Unknown command $command with time $time";
+    error( "Unknown command $command with time $time" );
   }
 
   return $e;
@@ -632,7 +595,7 @@ sub create_dt
   
   my( $hour, $minute ) = split( /[:\.]/, $time );
 
-  logdie( $self->{batch_id} . ": Unknown starttime $time" )
+  error( $self->{batch_id} . ": Unknown starttime $time" )
     if( not defined( $minute ) );
 
   # The schedule date doesn't wrap at midnight. This is what

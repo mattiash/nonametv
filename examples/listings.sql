@@ -2,7 +2,7 @@
 --
 -- Host: localhost    Database: listings
 -- ------------------------------------------------------
--- Server version	4.1.11-Debian_4sarge5
+-- Server version	4.1.11-Debian_4sarge7
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -36,7 +36,7 @@ CREATE TABLE `channels` (
   `id` int(11) NOT NULL auto_increment,
   `display_name` varchar(100) NOT NULL default '',
   `xmltvid` varchar(100) NOT NULL default '',
-  `chgroup` varchar(100) NOT NULL,
+  `chgroup` varchar(100) NOT NULL default '',
   `grabber` varchar(20) NOT NULL default '',
   `export` tinyint(1) NOT NULL default '0',
   `grabber_info` varchar(100) NOT NULL default '',
@@ -46,6 +46,23 @@ CREATE TABLE `channels` (
   `sched_lang` varchar(4) NOT NULL default '',
   `empty_ok` tinyint(1) NOT NULL default '0',
   `url` varchar(100) default NULL,
+  PRIMARY KEY  (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `files`
+--
+
+DROP TABLE IF EXISTS `files`;
+CREATE TABLE `files` (
+  `id` int(11) NOT NULL auto_increment,
+  `channelid` int(11) NOT NULL default '0',
+  `filename` varchar(80) NOT NULL default '',
+  `successful` tinyint(1) default NULL,
+  `message` text NOT NULL,
+  `earliestdate` datetime default NULL,
+  `latestdate` datetime default NULL,
+  `md5sum` varchar(33) NOT NULL default '',
   PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 

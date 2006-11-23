@@ -35,6 +35,10 @@ our @EXPORT_OK;
 my $wvhtml = '/usr/bin/wvHtml --charset=utf8';
 # my $wvhtml = '/usr/bin/wvHtml';
 
+# Global variable containing the configuration after ReadConfig
+# has been called.
+our $Conf;
+
 sub ReadConfig
 {
   my( $file ) = @_;
@@ -54,6 +58,7 @@ sub ReadConfig
 
   NonameTV::Log::init( $conf );
 
+  $Conf = $conf;
   return $conf;
 }
 

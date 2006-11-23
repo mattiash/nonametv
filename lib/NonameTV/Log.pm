@@ -78,6 +78,7 @@ my $string_level;
 
 my $logfile;
 my $logstring;
+my $logstring_highest;
 
 sub init
 {
@@ -120,6 +121,8 @@ sub log_to_string
 
   $string_level = $level;
   $logstring = "";
+  $logstring_highest = 0;
+
   return 123;
 }
 
@@ -128,7 +131,14 @@ sub log_to_string_result
   my( $h ) = @_;
 
   $string_level = NONE;
-  return $logstring;
+  if( wantarray ) 
+  {
+    return ($logstring, $logstring_highest);
+  }
+  else
+  {
+    return $logstring;
+  }
 }
 
 sub info
@@ -181,6 +191,10 @@ sub writelog
   if( $level >= $string_level )
   {
     $logstring .= "$levelstr: $message\n";
+    if( $level > $logstring_highest ) 
+    {
+      $logstring_highest = $level;
+    }
   }
 }
 

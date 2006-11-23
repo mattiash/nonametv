@@ -1,57 +1,60 @@
-1,"TV3","tv3.viasat.se","Viasat",1,"tv3_se_",1,"","","sv",0,\N
-2,"TV1000","tv1000.viasat.se","Viasat",1,"tv1000_se_",1,"","","sv",0,\N
-3,"Kanal 5","kanal5.se","Kanal5",1,"",1,"","","sv",0,\N
-5,"TV4","tv4.se","TV4",1,"1",1,"","","sv",0,\N
-6,"TV4 Plus","plus.tv4.se","TV4",1,"3",1,"","","sv",0,\N
-8,"TV4 Film","film.tv4.se","TV4",1,"5",1,"movie","Movies","sv",0,\N
-9,"TV1000 Nordic","nordic.tv1000.viasat.se","Viasat",1,"tv1000_nordic_se_",1,"movie","Movies","sv",0,\N
-10,"TV1000 Action","action.tv1000.viasat.se","Viasat",1,"tv1000_action_se_",1,"movie","Movies","sv",0,\N
-11,"TV1000 Family","family.tv1000.viasat.se","Viasat",1,"tv1000_family_se_",1,"movie","Movies","sv",0,\N
-12,"TV1000 Classic","classic.tv1000.viasat.se","Viasat",1,"tv1000_classic_se_",1,"movie","Movies","sv",0,\N
-13,"ZTV","ztv.se","Viasat",1,"ztv_se_",1,"","","sv",0,\N
-14,"Viasat Sport 1","sport1.viasat.se","Viasat",1,"viasat_sport_1_se_",1,"sports","Sports","sv",0,\N
-15,"Viasat Sport 2","sport2.viasat.se","Viasat",1,"viasat_sport_2_se_",1,"sports","Sports","sv",0,\N
-16,"Viasat Sport 3","sport3.viasat.se","Viasat",1,"viasat_sport_3_se_",1,"sports","Sports","sv",0,\N
-17,"Viasat Explorer","explorer.viasat.se","Viasat",1,"viasat_explorer_se_",1,"","","sv",0,\N
-18,"Viasat Nature/Crime","nature.viasat.se","Viasat",1,"viasat_nature_crime_se_",1,"","","sv",0,\N
-19,"Ticket 1","ticket1.viasat.se","Viasat",1,"ticket_1_-_premium_movies_se_",1,"movie","Movies","sv",0,\N
-20,"TV8","tv8.se","Viasat",1,"tv8_se_",1,"","","sv",0,\N
-21,"Viasat History","history.viasat.se","Viasat",1,"viasat_history_se_",1,"","","sv",0,\N
-22,"CANAL+ Sport 1","sport1.canalplus.se","CanalPlus",1,"1",0,"sports","Sports","sv",0,\N
-23,"CANAL+ Sport 2","sport2.canalplus.se","CanalPlus",1,"34",0,"sports","Sports","sv",0,\N
-24,"CANAL+ Film 1","film1.canalplus.se","CanalPlus",1,"6",0,"movie","Movies","sv",0,\N
-25,"CANAL+ Film 2","film2.canalplus.se","CanalPlus",1,"11",0,"movie","Movies","sv",0,\N
-26,"CANAL+ Film 3","film3.canalplus.se","CanalPlus",1,"5",0,"movie","Movies","sv",0,\N
-27,"Barnkanalen","barnkanalen.svt.se","Svt",1,"Barnkanalen",1,"","Children's","sv",0,\N
-28,"SVT1","svt1.svt.se","Svt",1,"SVT 1",1,"","","sv",0,\N
-29,"SVT2","svt2.svt.se","Svt",1,"SVT 2",1,"","","sv",0,\N
-30,"Eurosport","eurosport.com","Eurosport",1,"tv_schedule_10000_7.xml",1,"sports","Sports","sv",0,\N
-31,"TV400","tv400.tv4.se","TV4",1,"6",1,"","","sv",0,\N
-32,"Discovery Channel","nordic.discovery.com","Discovery",1,"DC.NO",1,"","","sv",0,\N
-33,"Animal Planet","nordic.animalplanet.discovery.com","Discovery",1,"AP.NO",1,"","","sv",0,\N
-34,"MTV Nordic","nordic.mtve.com","Mtve",1,"MTV Sweden",1,"","","en",0,\N
-35,"Kunskapskanalen","kunskapskanalen.svt.se","Svt",1,"Kunskapskanalen",1,"","","sv",0,\N
-36,"SVT24","svt24.svt.se","Svt",1,"24",1,"","","sv",0,\N
-37,"SVT Extra","extra.svt.se","Svt",1,"SVT Extra",1,"","","sv",1,\N
-38,"Disney Channel","disneychannel.se","Infomedia",1,"DSS",1,"","Children's","sv",0,\N
-40,"Discovery Civilisation","nordic.civilisation.discovery.com","Discovery",1,"CI.EU",1,"","","sv",0,\N
-41,"Discovery Travel & Living","nordic.travel.discovery.com","Discovery",1,"TL.EU",1,"","","sv",0,\N
-42,"Discovery Science","nordic.science.discovery.com","Discovery",1,"SC.EU",1,"","","sv",0,\N
-43,"Discovery Mix","nordic.mix.discovery.com","Combiner",1,"",0,"","","sv",0,\N
-44,"Kunskap/Barnkanalen","kunskapbarn.svt.se","Combiner",1,"",1,"","","sv",0,\N
-45,"Sport-Expressen","sport.expressen.se","Expressen",1,"",1,"sports","Sports","sv",0,\N
-46,"Eurosport 2","eurosport2.eurosport.com","Eurosport",1,"tv_schedule_15000_7.xml",1,"sports","Sports","sv",0,\N
-47,"Toon Disney","toon.disneychannel.se","Infomedia",1,"TOS",1,"","Children's","sv",0,\N
-48,"CANAL+ Mix","mix.canalplus.se","CanalPlus",1,"9",0,"","","sv",0,\N
-49,"CANAL+ HD","hd.canalplus.se","CanalPlus",1,"13",0,"","","sv",0,\N
-50,"CANAL+ Film 2 Sport Weekend","film2-sport-weekend.canalplus.se","CanalPlus",1,"14",0,"","","sv",0,\N
-51,"TV4 Fakta","fakta.tv4.se","TV4",1,"7",1,"","","sv",0,\N
-52,"Nickelodeon","nickelodeon.se","Nickelodeon",1,"",1,"","Children's","sv",0,\N
-53,"VH1","vh1.com","VH1",1,"",1,"","","en",0,\N
-54,"Nature/Crime/Nickelodeon","viasat-nature-nick.spa.se","Combiner",1,"",0,"","","sv",0,\N
-55,"TV6","tv6.viasat.se","Viasat",1,"tv6_se_",1,"","","sv",0,\N
-56,"P1","p1.sr.se","SR",0,"p1",0,"","","sv",0,\N
-57,"Playhouse Disney","playhouse.disneychannel.se","Infomedia",1,"PDW",0,"","Children's","sv",0,\N
-58,"SVT HD","hd.svt.se","Svt",1,"SVT HD",0,"","","sv",0,""
-59,"TV4 Komedi","komedi.tv4.se","TV4",1,"9",0,"","","sv",0,""
-60,"TV4 Guld","guld.tv4.se","TV4",1,"8",0,"","","sv",0,""
+1,"TV3","tv3.viasat.se","","Viasat",1,"tv3_se_",1,"","","sv",0,\N
+2,"TV1000","tv1000.viasat.se","","Viasat",1,"tv1000_se_",1,"","","sv",0,\N
+3,"Kanal 5","kanal5.se","","Kanal5",1,"",1,"","","sv",0,\N
+5,"TV4","tv4.se","","TV4",1,"1",1,"","","sv",0,\N
+6,"TV4 Plus","plus.tv4.se","","TV4",1,"3",1,"","","sv",0,\N
+8,"TV4 Film","film.tv4.se","","TV4",1,"5",1,"movie","Movies","sv",0,\N
+9,"TV1000 Nordic","nordic.tv1000.viasat.se","","Viasat",1,"tv1000_nordic_se_",1,"movie","Movies","sv",0,\N
+10,"TV1000 Action","action.tv1000.viasat.se","","Viasat",1,"tv1000_action_se_",1,"movie","Movies","sv",0,\N
+11,"TV1000 Family","family.tv1000.viasat.se","","Viasat",1,"tv1000_family_se_",1,"movie","Movies","sv",0,\N
+12,"TV1000 Classic","classic.tv1000.viasat.se","","Viasat",1,"tv1000_classic_se_",1,"movie","Movies","sv",0,\N
+13,"ZTV","ztv.se","","Viasat",1,"ztv_se_",1,"","","sv",0,\N
+14,"Viasat Sport 1","sport1.viasat.se","","Viasat",1,"viasat_sport_1_se_",1,"sports","Sports","sv",0,\N
+15,"Viasat Sport 2","sport2.viasat.se","","Viasat",1,"viasat_sport_2_se_",1,"sports","Sports","sv",0,\N
+16,"Viasat Sport 3","sport3.viasat.se","","Viasat",1,"viasat_sport_3_se_",1,"sports","Sports","sv",0,\N
+17,"Viasat Explorer","explorer.viasat.se","","Viasat",1,"viasat_explorer_se_",1,"","","sv",0,\N
+18,"Viasat Nature/Crime","nature.viasat.se","","Viasat",1,"viasat_nature_crime_se_",1,"","","sv",0,\N
+19,"Ticket 1","ticket1.viasat.se","","Viasat",1,"ticket_1_-_premium_movies_se_",1,"movie","Movies","sv",0,\N
+20,"TV8","tv8.se","","Viasat",1,"tv8_se_",1,"","","sv",0,\N
+21,"Viasat History","history.viasat.se","","Viasat",1,"viasat_history_se_",1,"","","sv",0,\N
+22,"CANAL+ Sport 1","sport1.canalplus.se","","CanalPlus",1,"1",0,"sports","Sports","sv",0,\N
+23,"CANAL+ Sport 2","sport2.canalplus.se","","CanalPlus",1,"34",0,"sports","Sports","sv",0,\N
+24,"CANAL+ Film 1","film1.canalplus.se","","CanalPlus",1,"6",1,"movie","Movies","sv",0,\N
+25,"CANAL+ Film 2","film2.canalplus.se","","CanalPlus",1,"11",1,"movie","Movies","sv",0,\N
+26,"CANAL+ Film 3","film3.canalplus.se","","CanalPlus",1,"5",1,"movie","Movies","sv",0,\N
+27,"Barnkanalen","barnkanalen.svt.se","","Svt",1,"Barnkanalen",1,"","Children's","sv",0,\N
+28,"SVT1","svt1.svt.se","","Svt",1,"SVT 1",1,"","","sv",0,\N
+29,"SVT2","svt2.svt.se","","Svt",1,"SVT 2",1,"","","sv",0,\N
+30,"Eurosport","eurosport.com","","Eurosport",1,"tv_schedule_10000_7.xml",1,"sports","Sports","sv",0,\N
+31,"TV400","tv400.tv4.se","","TV4",1,"6",1,"","","sv",0,\N
+32,"Discovery Channel","nordic.discovery.com","","Discovery",1,"DC.NO",1,"","","sv",0,\N
+33,"Animal Planet","nordic.animalplanet.discovery.com","","Discovery",1,"AP.NO",1,"","","sv",0,\N
+34,"MTV Nordic","nordic.mtve.com","","Mtve",1,"MTV Sweden",1,"","","en",0,\N
+35,"Kunskapskanalen","kunskapskanalen.svt.se","","Svt",1,"Kunskapskanalen",1,"","","sv",0,\N
+36,"SVT24","svt24.svt.se","","Svt",1,"24",1,"","","sv",0,\N
+37,"SVT Extra","extra.svt.se","","Svt",1,"SVT Extra",1,"","","sv",1,\N
+38,"Disney Channel","disneychannel.se","","Infomedia",1,"DSS",1,"","Children's","sv",0,\N
+40,"Discovery Civilisation","nordic.civilisation.discovery.com","","Discovery",1,"CI.EU",1,"","","sv",0,\N
+41,"Discovery Travel & Living","nordic.travel.discovery.com","","Discovery",1,"TL.EU",1,"","","sv",0,\N
+42,"Discovery Science","nordic.science.discovery.com","","Discovery",1,"SC.EU",1,"","","sv",0,\N
+43,"Discovery Mix","nordic.mix.discovery.com","","Combiner",1,"",0,"","","sv",0,\N
+44,"Kunskap/Barnkanalen","kunskapbarn.svt.se","","Combiner",1,"",1,"","","sv",0,\N
+45,"Sport-Expressen","sport.expressen.se","","Expressen",1,"/var/local/nonametv/channels/sport.expressen.se/",1,"sports","Sports","sv",0,\N
+46,"Eurosport 2","eurosport2.eurosport.com","","Eurosport",1,"tv_schedule_15000_7.xml",1,"sports","Sports","sv",0,\N
+47,"Toon Disney","toon.disneychannel.se","","Infomedia",1,"TOS",1,"","Children's","sv",0,\N
+48,"CANAL+ Mix","mix.canalplus.se","","CanalPlus",1,"9",0,"","","sv",0,\N
+49,"CANAL+ HD","hd.canalplus.se","","CanalPlus",1,"13",0,"","","sv",0,\N
+50,"CANAL+ Film 2 Sport Weekend","film2-sport-weekend.canalplus.se","","CanalPlus",1,"14",0,"","","sv",0,\N
+51,"TV4 Fakta","fakta.tv4.se","","TV4",1,"7",1,"","","sv",0,\N
+52,"Nickelodeon","nickelodeon.se","","Nickelodeon",1,"",1,"","Children's","sv",0,\N
+53,"VH1","vh1.com","","VH1",1,"",1,"","","en",0,\N
+54,"Nature/Crime/Nickelodeon","viasat-nature-nick.spa.se","","Combiner",1,"",0,"","","sv",0,\N
+55,"TV6","tv6.viasat.se","","Viasat",1,"tv6_se_",1,"","","sv",0,\N
+56,"P1","p1.sr.se","","SR",0,"p1",0,"","","sv",0,\N
+57,"Playhouse Disney","playhouse.disneychannel.se","","Infomedia",1,"PDW",0,"","Children's","sv",0,\N
+58,"SVT HD","hd.svt.se","","Svt",1,"SVT HD",0,"","","sv",0,""
+59,"TV4 Komedi","komedi.tv4.se","","TV4",1,"9",0,"","","sv",0,""
+60,"TV4 Guld","guld.tv4.se","","TV4",1,"8",0,"","","sv",0,""
+61,"Discovery HD","hd.discovery.com","","Discovery",1,"DC.HD",0,"","","sv",0,\N
+62,"Test","test.se","","BaseFileTest",0,"/tmp/data",0,"","","",0,\N
+63,"SVT Europa","europa.svt.se","","Svt",1,"SVT Europa",0,"","","sv",0,\N

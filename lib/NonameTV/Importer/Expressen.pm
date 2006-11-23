@@ -23,9 +23,9 @@ use NonameTV::DataStore::Helper;
 use NonameTV::Log qw/info progress error logdie 
                      log_to_string log_to_string_result/;
 
-use NonameTV::Importer;
+use NonameTV::Importer::BaseFile;
 
-use base 'NonameTV::Importer';
+use base 'NonameTV::Importer::BaseFile';
 
 sub new 
 {
@@ -33,62 +33,38 @@ sub new
   my $class = ref($proto) || $proto;
   my $self  = $class->SUPER::new( @_ );
   bless ($self, $class);
-  
+
+  $self->{grabber_name} = "Expressen";
+
   my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore} );
   $self->{datastorehelper} = $dsh;
-
-  my $sth = $self->{datastore}->Iterate( 'channels', 
-                                         { grabber => 'expressen' },
-                                         qw/xmltvid id grabber_info/ )
-    or logdie "Failed to fetch grabber data";
-
-  while( my $data = $sth->fetchrow_hashref )
-  {
-    $self->{channel_data}->{$data->{xmltvid}} = 
-                            { id => $data->{id}, };
-  }
-
-  $sth->finish;
-
-    $self->{OptionSpec} = [ qw/verbose/ ];
-    $self->{OptionDefaults} = { 
-      'verbose'      => 0,
-    };
 
   return $self;
 }
 
-sub Import
+sub ImportContentFile
 {
   my $self = shift;
-  my( $p ) = @_;
+  my( $file, $chd ) = @_;
 
-  foreach my $file (@ARGV)
-  {
-    progress( "Expressen: Processing $file" );
-    $self->ImportFile( "", $file, $p );
-  } 
-}
-
-sub ImportFile
-{
-  my $self = shift;
-  my( $contentname, $file, $p ) = @_;
+  progress( "Expressen: Processing $file" );
+  
+  $self->{fileerror} = 0;
 
   # We only support one channel for Expressen.
-  my $xmltvid="sport.expressen.se";
+  my $xmltvid=$chd->{xmltvid};
 
-  my $channel_id = $self->{channel_data}->{$xmltvid}->{id};
-  
+  my $channel_id = $chd->{id};
   my $dsh = $self->{datastorehelper};
   
-  my $doc;
-
   # Only process .doc-files.
-  return if $file !~  /\.doc$/i;
+  if( $file !~  /\.doc$/i ) {
+    error("SportExpressen: $file is not a word-file.");
+    return;
+  }
  
   # It may be a html-file even though it is called .doc...
-  $doc = Htmlfile2Xml( $file );
+  my $doc = Htmlfile2Xml( $file );
   
   if( not defined( $doc ) )
   {
@@ -135,15 +111,15 @@ sub ImportFile
 
         if( defined( $date ) )
         {
-          $dsh->EndBatch( 1, log_to_string_result( $loghandle ) );
+          $dsh->EndBatch( 1 );
         }
 
         ($date) = ($day =~ /(\d\d\d\d-\d\d-\d\d)/)
           or logdie "Invalid day $day";
 
-        $loghandle = log_to_string( 4 );
         $dsh->StartBatch( "${xmltvid}_$date", $channel_id );
         $dsh->StartDate( $date );
+        $self->AddDate( $date );
         progress( "${xmltvid}_$date: Processing $file." );
         next;
       }
@@ -162,7 +138,6 @@ sub ImportFile
       if( $starttime !~ /^\d{1,2}:\d{1,2}$/ )
       {
         error( "$file: Ignoring starttime $starttime" );
-
         next;
       }
 
@@ -196,9 +171,10 @@ sub ImportFile
  
   if( defined( $date ) )
   {
-    $dsh->EndBatch( 1, log_to_string_result( $loghandle ) );
+    $dsh->EndBatch( 1 );
   }
-  
+
+  return;
 }
 
 sub extract_extra_info
