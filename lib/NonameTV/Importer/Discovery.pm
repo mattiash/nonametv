@@ -24,8 +24,7 @@ use XML::LibXML;
 use NonameTV qw/MyGet Wordfile2Xml Htmlfile2Xml norm/;
 use NonameTV::DataStore::Helper;
 use NonameTV::DataStore::Updater;
-use NonameTV::Log qw/info progress error logdie 
-                     log_to_string log_to_string_result/;
+use NonameTV::Log qw/info progress error logdie/;
 
 use NonameTV::Importer::BaseFile;
 use base 'NonameTV::Importer::BaseFile';
@@ -138,8 +137,6 @@ sub ImportData
   
   my $dsh = $self->{datastorehelper};
 
-  my $loghandle;
-
   # Find all div-entries.
   my $ns = $doc->find( "//div" );
   
@@ -149,6 +146,8 @@ sub ImportData
     return;
   }
   
+  progress( "Discovery: Processing $filename" );
+
   # States
   use constant {
     ST_START  => 0,
@@ -219,8 +218,6 @@ sub ImportData
       }
       elsif( $type == T_DATE )
       {
-        $loghandle = log_to_string( $BATCH_LOG_LEVEL ); 
-        progress( "${channel_xmltvid}_$date: Processing $filename" );
 	$dsh->StartBatch( "${channel_xmltvid}_$date", $channel_id );
 	$dsh->StartDate( $date );
         $self->AddDate( $date );
@@ -267,10 +264,8 @@ sub ImportData
       }
       elsif( $type == T_DATE )
       {
-	$dsh->EndBatch( 1, log_to_string_result( $loghandle ) );
+	$dsh->EndBatch( 1 );
 
-        $loghandle = log_to_string( $BATCH_LOG_LEVEL ); 
-        progress( "${channel_xmltvid}_$date: Processing $filename" );
 	$dsh->StartBatch( "${channel_xmltvid}_$date", $channel_id );
 	$dsh->StartDate( $date );
         $self->AddDate( $date );
@@ -293,7 +288,7 @@ sub ImportData
       }
     }
   }
-  $dsh->EndBatch( 1, log_to_string_result( $loghandle ) );
+  $dsh->EndBatch( 1 );
 }
 
 #
@@ -350,15 +345,12 @@ sub ImportAmendments
         $self->process_command( $channel_id, $e )
           if( defined( $e ) );
         $e = undef;
-        $dsu->EndBatchUpdate( 1, log_to_string_result( $loghandle ) )
+        $dsu->EndBatchUpdate( 1 )
           if( $self->{process_batch} ); 
       }
 
       $date = parse_date( $text );
       $state = ST_FOUND_DATE;
-
-      $loghandle = log_to_string( $BATCH_LOG_LEVEL ); 
-      progress( "${channel_xmltvid}_$date: Processing $filename" );
 
       $self->{process_batch} = 
         $dsu->StartBatchUpdate( "${channel_xmltvid}_$date", $channel_id ) ;
@@ -423,7 +415,7 @@ sub ImportAmendments
   $self->process_command( $channel_id, $e )
     if( defined( $e ) );
 
-  $dsu->EndBatchUpdate( 1, log_to_string_result( $loghandle ) )
+  $dsu->EndBatchUpdate( 1 )
     if( $self->{process_batch} ); 
 }
 
