@@ -33,6 +33,9 @@ Options:
   --remove-old
     Remove any old xmltv files from the output directory.
 
+  --no-gzip
+    Don't gzip output xml files.
+
   --force-export
     Recreate all output files, not only the ones where data has
     changed.
@@ -41,11 +44,12 @@ Options:
 
 use constant LANG => 'sv';
 our $OptionSpec     = [ qw/export-channels remove-old force-export 
-                           verbose help/ ];
+                           no-gzip verbose help/ ];
 our %OptionDefaults = ( 
                         'export-channels' => 0,
                         'remove-old' => 0,
                         'force-export' => 0,
+                        'no-gzip' => 0,
                         'help' => 0,
                         'verbose' => 0,
                         );
@@ -90,6 +94,9 @@ Options:
 
   --remove-old
     Remove all data-files for dates that have already passed.
+
+  --no-gzip
+    Don't gzip output xml files.
 
   --force-export
     Export all data. Default is to only export data for batches that
@@ -599,7 +606,6 @@ sub write_entry
     }
 
     my( $ep_nr, $ep_max ) = split( "/", $ep );
-    $ep_nr++;
 
     my $ep_text = "$lngstr->{episode_number} $ep_nr";
     $ep_text .= " $lngstr->{of} $ep_max" if defined $ep_max;
