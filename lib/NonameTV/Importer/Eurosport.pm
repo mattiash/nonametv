@@ -96,7 +96,17 @@ sub ImportContent
   foreach my $p ($ns->get_nodelist)
   {
     my $sportid = $p->findvalue( 'sportid' );
-    my $sportname = $self->{sportidname}->{$sportid};
+    my $description = norm($p->findvalue( 'description/text()' ));
+
+    my $sportname;
+    if( ($sportid) == 0 and defined( $description ) )
+    {
+      ($sportname) = ($description =~ /^(.*?)\:/);
+    }
+    else
+    {
+      $sportname = $self->{sportidname}->{$sportid};
+    }
 
     if( not defined( $sportname ) )
     {
@@ -111,8 +121,6 @@ sub ImportContent
     my $starttime = $p->findvalue( 'startdate/text()' );
     my $endtime = $p->findvalue( 'enddate/text()' );
     
-    my $description = $p->findvalue( 'description/text()' );
-
     if( $currdate ne $emidate )
     {
       $dsh->StartDate( $emidate );
@@ -123,7 +131,7 @@ sub ImportContent
 
     my $data = {
       title       => $title,
-      description => norm( $description ),
+      description => $description,
       start_time  => $starttime,
       end_time    => $endtime,
     };
