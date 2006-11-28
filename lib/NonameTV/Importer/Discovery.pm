@@ -330,7 +330,8 @@ sub ImportAmendments
     my( $time, $command, $title );
 
     if( ($text =~ /^sida \d+ av \d+$/i) or
-        ($text =~ /tablån fortsätter som tidigare/i) )
+        ($text =~ /tablån fortsätter som tidigare/i) or
+        ($text =~ /slut på tablå/i) )
     {
       next;
     }
