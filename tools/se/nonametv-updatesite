@@ -15,5 +15,5 @@ tools/se/nonametv-xmltv-genhtml $NROOT/xmltv_staging
 
 rsync -c --delete -r $NROOT/xmltv_staging/ $NROOT/xmltv/
 sitecopy --update $SC_OPT tv.swedb.se
-rsync -a $NROOT/xmltv/ acheron.geijersson.com:public_html/xmltv/
-rsync -a $NROOT/xmltv/ fiorina161.geijersson.com:public_html/xmltv/
+rsync -a --delete $NROOT/xmltv/ acheron.geijersson.com:public_html/xmltv/
+rsync -a --delete $NROOT/xmltv/ fiorina161.geijersson.com:public_html/xmltv/
