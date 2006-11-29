@@ -12,6 +12,8 @@ use DateTime::SpanSet;
 use File::Copy;
 
 use NonameTV::Exporter;
+use NonameTV::Language qw/LoadLanguage/;
+
 use XMLTV::ValidateFile qw/LoadDtd ValidateFile/;
 
 use NonameTV::Log qw/info progress error logdie/;
@@ -65,6 +67,8 @@ sub new {
     defined( $self->{Encoding} ) or die "You must specify Encoding.";
     defined( $self->{DtdFile} ) or die "You must specify DtdFile.";
     defined( $self->{Root} ) or die "You must specify Root";
+    defined( $self->{Language} ) or die "You must specify Language";
+
     $self->{MaxDays} = 365 unless defined $self->{MaxDays};
     $self->{MinDays} = $self->{MaxDays} unless defined $self->{MinDays};
 
@@ -74,13 +78,21 @@ sub new {
 
     LoadDtd( $self->{DtdFile} );
 
+    my $ds = $self->{datastore};
+
+    # Load language strings
+    $self->{lngstr} = LoadLanguage( $self->{Language}, 
+                                   "exporter-xmltv", $ds );
+
     return $self;
 }
 
 sub Export
 {
-  my( $self, $ds, $p , $lngstr ) = @_;
+  my( $self, $p ) = @_;
 
+  my $ds = $self->{datastore};
+ 
   if( $p->{'help'} )
   {
     print << 'EOH';
@@ -96,7 +108,7 @@ Options:
     Remove all data-files for dates that have already passed.
 
   --no-gzip
-    Don't gzip output xml files.
+    Do not gzip output xml files.
 
   --force-export
     Export all data. Default is to only export data for batches that
@@ -121,7 +133,7 @@ EOH
     return;
   }
 
-  $self->ExportData( $ds, $p , $lngstr );
+  $self->ExportData( $ds, $p );
 }
 
 #
@@ -251,7 +263,7 @@ sub AddDate
 sub ExportData
 {
   my $self = shift;
-  my( $ds, $p , $lngstr ) = @_;
+  my( $ds, $p ) = @_;
 
   $self->{outf}=sub {
     my( $file, $line, $err ) = @_;
@@ -353,7 +365,7 @@ sub ExportData
     my $iter = $upd->{$channel}->iterator;
     while ( my $dt = $iter->next ) 
     {
-      $self->export_range( $ds, $dt, $channel, $chd, $p, $lngstr );
+      $self->export_range( $ds, $dt, $channel, $chd, $p );
     }
   }
 
@@ -366,7 +378,7 @@ sub ExportData
 sub export_range
 {
   my $self = shift;
-  my( $ds, $dt, $channelid, $chd, $p, $lngstr ) = @_;
+  my( $ds, $dt, $channelid, $chd, $p ) = @_;
 
   # $dt is a DateTime::Span
   my $startdate = $dt->start->ymd('-');
@@ -433,7 +445,7 @@ sub export_range
         # Make a note that a file has been created for this date.
         $dates{$date} = 0;
       }
-      $self->write_entry( $w, $d1, $chd, $lngstr )
+      $self->write_entry( $w, $d1, $chd )
         unless $d1->{title} eq "end-of-transmission";
       $d1 = $d2;
     }
@@ -447,7 +459,7 @@ sub export_range
       if( (defined( $d1->{end_time})) and
           ($d1->{end_time} ne "0000-00-00 00:00:00") )
       {
-        $self->write_entry( $w, $d1, $chd, $lngstr )
+        $self->write_entry( $w, $d1, $chd )
           unless $d1->{title} eq "end-of-transmission";
       }
       else
@@ -565,7 +577,7 @@ sub close_writer
 sub write_entry
 {
   my $self = shift;
-  my( $w, $data, $chd, $lngstr ) = @_;
+  my( $w, $data, $chd ) = @_;
 
   $self->{writer_entries}++;
 
@@ -608,9 +620,11 @@ sub write_entry
     my( $ep_nr, $ep_max ) = split( "/", $ep );
     $ep_nr++;
 
-    my $ep_text = "$lngstr->{episode_number} $ep_nr";
-    $ep_text .= " $lngstr->{of} $ep_max" if defined $ep_max;
-    $ep_text .= " $lngstr->{episode_season} $season" if( $season );
+    my $ep_text = $self->{lngstr}->{episode_number} . " $ep_nr";
+    $ep_text .= " " . $self->{lngstr}->{of} . " $ep_max" 
+      if defined $ep_max;
+    $ep_text .= " " . $self->{lngstr}->{episode_season} . " $season" 
+      if( $season );
 
     $d->{'episode-num'} = [[ $data->{episode}, 'xmltv_ns' ],
                            [ $ep_text, 'onscreen'] ];

@@ -27,9 +27,9 @@ parameters to the object in other keys.
 
 =item new
 
-The constructor for the object. Called with a hashref as the only parameter.
+The constructor for the object. Called with a hashref as the first parameter.
 This is a ref to the configuration for the object from the nonametv.conf-
-file.
+file. The second parameter is a NonameTV::DataStore object.
 
 =cut
 
@@ -46,21 +46,23 @@ sub new
       $self->{$key} = ($_[1])->{$key};
   }
 
+  $self->{datastore} = $_[2];
+
   return $self;
 }
 
 =item Export
 
-Export is called from the nonametv-export executable. It takes a reference
-to a NonameTV::Datasource-object and a hashref as a parameter. The hashref 
-points to a hash with the command-line parameters decoded by Getopt::Long 
-using the $NonameTV::Exporter::*::Options arrayref as format specification.
+Export is called from the nonametv-export executable. It takes a hashref 
+as a parameter. The hashref points to a hash with the command-line 
+parameters decoded by Getopt::Long  using the $NonameTV::Exporter::*::Options
+arrayref as format specification.
 
 =cut
 
 sub Export
 {
-  my( $self, $ds, $param ) = @_;
+  my( $self, $param ) = @_;
   
   die "You must override Export in your own class"
 }
