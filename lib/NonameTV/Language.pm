@@ -9,6 +9,7 @@ Languages module for NonameTV.
 use strict;
 use warnings;
 
+use NonameTV::Log qw/logdie/;
 BEGIN 
 {
   use Exporter   ();
@@ -27,12 +28,17 @@ sub LoadLanguage
 
   my $lng;
 
-  my( $res, $sth ) = $ds->Sql( "SELECT * from lang_$lang WHERE module='$module'" );
+  my $sth = $ds->Iterate( 'languagestrings', 
+                          { language => $lang, module => $module } );
+  if( not defined( $sth ) )
+  {
+     logdie( "No strings found in database for language $lang, " .
+             "module $module." );
+    return;
+  }
 
   while( my $data = $sth->fetchrow_hashref() )
   {
-    #print "$data->{strname} = $data->{strvalue}\n";
-
     $lng->{$data->{strname}} = $data->{strvalue};
   }
 

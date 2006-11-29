@@ -122,6 +122,18 @@ CREATE TABLE `trans_cat` (
   PRIMARY KEY  (`type`,`original`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+--
+-- Table structure for table `languagestrings`
+--
+
+DROP TABLE IF EXISTS `languagestrings`;
+CREATE TABLE `languagestrings` (
+  `module` varchar(32) NOT NULL default '',
+  `strname` varchar(32) NOT NULL default '',
+  `strvalue` text NOT NULL,
+  `language` varchar(4) NOT NULL default ''
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
 /*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
 /*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
