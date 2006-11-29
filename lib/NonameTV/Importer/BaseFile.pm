@@ -27,10 +27,11 @@ sub new {
     my $self  = $class->SUPER::new( @_ );
     bless ($self, $class);
 
-    $self->{OptionSpec} = [ qw/force-update verbose+/ ];
+    $self->{OptionSpec} = [ qw/force-update verbose+ remove-missing/ ];
     $self->{OptionDefaults} = { 
       'force-update' => 0,
       'verbose'      => 0,
+      'remove-missing' => 0,
     };
 
     return $self;
@@ -48,9 +49,14 @@ sub Import {
       or logdie( "$self->{grabber_name}: Failed to fetch grabber data" );
 
   while( my $data = $sth->fetchrow_hashref ) {
+    if( $p->{'remove-missing'} ) {
+      $self->RemoveMissing( $ds, $data );
+      next;
+    }
+    
     if( $p->{'force-update'} ) {
       # Delete all data for this channel.
-      my $deleted = $ds->Delete( 'programs', { channel_id => $data->{id} } );
+      my $deleted = $ds->Delete( 'programs', { channelid => $data->{id} } );
       progress( "Deleted $deleted records for $data->{xmltvid}" );
     }
 
@@ -154,6 +160,23 @@ sub AddDate {
   }
 }
 
+sub RemoveMissing {
+  my $self = shift;
+  my( $ds, $chd ) = @_;
+
+  my $sth = $ds->Iterate( 'files', { channelid => $chd->{id} } );
+
+  my $dir = $NonameTV::Conf->{FileStore} . "/" . $chd->{xmltvid};
+
+  while( my $data = $sth->fetchrow_hashref ) {
+
+    if( not -f( $dir . "/" . $data->{filename} ) ) {
+      progress( "Removing " . $dir . "/" . $data->{filename} );
+      $ds->Delete( 'files', { id => $data->{id} } );
+    }
+  }
+}
+  
 sub ImportContentFile {
   my $self = shift;
 
