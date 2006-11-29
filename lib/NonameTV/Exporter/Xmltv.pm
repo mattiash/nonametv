@@ -606,6 +606,7 @@ sub write_entry
     }
 
     my( $ep_nr, $ep_max ) = split( "/", $ep );
+    $ep_nr++;
 
     my $ep_text = "$lngstr->{episode_number} $ep_nr";
     $ep_text .= " $lngstr->{of} $ep_max" if defined $ep_max;
