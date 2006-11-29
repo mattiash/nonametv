@@ -17,8 +17,8 @@
 19,"Ticket 1","ticket1.viasat.se","","Viasat",1,"ticket_1_-_premium_movies_se_",1,"movie","Movies","sv",0,\N
 20,"TV8","tv8.se","","Viasat",1,"tv8_se_",1,"","","sv",0,\N
 21,"Viasat History","history.viasat.se","","Viasat",1,"viasat_history_se_",1,"","","sv",0,\N
-22,"CANAL+ Sport 1","sport1.canalplus.se","","CanalPlus",1,"1",0,"sports","Sports","sv",0,\N
-23,"CANAL+ Sport 2","sport2.canalplus.se","","CanalPlus",1,"34",0,"sports","Sports","sv",0,\N
+22,"CANAL+ Sport 1","sport1.canalplus.se","","CanalPlus",1,"1",1,"sports","Sports","sv",0,\N
+23,"CANAL+ Sport 2","sport2.canalplus.se","","CanalPlus",1,"34",1,"sports","Sports","sv",0,\N
 24,"CANAL+ Film 1","film1.canalplus.se","","CanalPlus",1,"6",1,"movie","Movies","sv",0,\N
 25,"CANAL+ Film 2","film2.canalplus.se","","CanalPlus",1,"11",1,"movie","Movies","sv",0,\N
 26,"CANAL+ Film 3","film3.canalplus.se","","CanalPlus",1,"5",1,"movie","Movies","sv",0,\N
@@ -42,9 +42,9 @@
 45,"Sport-Expressen","sport.expressen.se","","Expressen",1,"/var/local/nonametv/channels/sport.expressen.se/",1,"sports","Sports","sv",0,\N
 46,"Eurosport 2","eurosport2.eurosport.com","","Eurosport",1,"tv_schedule_15000_7.xml",1,"sports","Sports","sv",0,\N
 47,"Toon Disney","toon.disneychannel.se","","Infomedia",1,"TOS",1,"","Children's","sv",0,\N
-48,"CANAL+ Mix","mix.canalplus.se","","CanalPlus",1,"9",0,"","","sv",0,\N
-49,"CANAL+ HD","hd.canalplus.se","","CanalPlus",1,"13",0,"","","sv",0,\N
-50,"CANAL+ Film 2 Sport Weekend","film2-sport-weekend.canalplus.se","","CanalPlus",1,"14",0,"","","sv",0,\N
+48,"CANAL+ Mix","mix.canalplus.se","","CanalPlus",1,"9",1,"","","sv",0,\N
+49,"CANAL+ HD","hd.canalplus.se","","CanalPlus",1,"13",1,"","","sv",0,\N
+50,"CANAL+ Film 2 Sport Weekend","film2-sport-weekend.canalplus.se","","CanalPlus",1,"14",1,"","","sv",0,\N
 51,"TV4 Fakta","fakta.tv4.se","","TV4",1,"7",1,"","","sv",0,\N
 52,"Nickelodeon","nickelodeon.se","","Nickelodeon",1,"",1,"","Children's","sv",0,\N
 53,"VH1","vh1.com","","VH1",1,"",1,"","","en",0,\N
