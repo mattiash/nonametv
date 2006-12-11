@@ -71,7 +71,7 @@ sub ImportContent
     my $start_dt = $self->create_dt( $starttime );
     
     my $title =$pgm->findvalue( 'StoryTypeName' );
-#    my $desc = $pgm->findvalue( 'ShowText' );
+    my $desc = $pgm->findvalue( 'ShowSynopsis' );
     
 # Should we store url and image in the database?
 #          my $url = $pgm->findvalue( 'ShowUrl' );
@@ -86,7 +86,7 @@ sub ImportContent
     {
       channel_id  => $chd->{id},
       title       => norm($title),
-#      description => norm($desc),
+      description => norm($desc),
       start_time  => $start_dt->ymd('-') . " " . 
         $start_dt->hms(":"),
       };
