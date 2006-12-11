@@ -121,7 +121,7 @@ sub ImportContent
     my $type = T_TEXT;
     
     my( $date ) = ($text =~ 
-		   /^\s*\S+\s+
+		   /^.*?
 		   (\d+-\d+-\d+),\s+
 		   vecka\s+\d+,\s+
 		   Kanal\s+5\s*$/x )
