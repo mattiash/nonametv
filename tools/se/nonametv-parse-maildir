@@ -1,0 +1,264 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+use Mail::Box;
+use Mail::Box::Manager;
+
+use File::Temp qw/tempdir/;
+use File::Copy qw/move/;
+use File::Basename;
+
+use MIME::WordDecoder;
+use Getopt::Long;
+use Digest::MD5;
+
+use NonameTV;
+use NonameTV::DataStore;
+
+my %opt = ( manual => 0,
+            test => 0,
+            );
+
+my $res = GetOptions( \%opt, qw/manual test/ );
+
+if( not $res ) {
+  print << 'EOHELP';
+nonametv-process-maildir [--manual] [--test]
+
+Extract files from mails in a maildir and store them in one directory per
+channel for later import by Importers derived from 
+NonameTV::Importer:BaseFile.
+
+  --manual  Ask the user which Importer to use if the information
+            cannot be derived from the message. 
+
+  --test    Run the importer in test-mode.
+
+EOHELP
+
+  exit 1;
+}
+
+# Read configuration
+my $conf = NonameTV::ReadConfig();
+
+my $ds = NonameTV::DataStore->new( $conf->{DataStore} );
+my $filestore = $conf->{FileStore};
+
+my @folders = qw(/home/mattias/Maildir/.Projects.xmltv-data
+                 /home/mattias/Maildir/.Projects.NonameTV-Data.Discovery
+                 /home/mattias/Maildir/.Projects.NonameTV-Data.Expressen
+                 );
+
+# Flag messages AFTER they have been processed. Then I normally
+# only have to move the message to the correct folder.
+
+my $tmpdir = tempdir( CLEANUP => 1 );
+
+### Get a word-decoder which maps to ISO-8859-1 (Latin1):
+my $wd = supported MIME::WordDecoder "ISO-8859-1";
+
+my $mgr = Mail::Box::Manager->new;
+
+foreach my $dir (@folders) {
+  my $folder = $mgr->open( $dir, 
+                           access => 'rw',
+                           extract => 'ALWAYS' );
+
+  foreach my $message ($folder->messages) {
+    next if $message->isDeleted();
+    next if $message->label( 'flagged' );
+    next unless $message->isMultipart;
+
+    my $subject = $wd->decode( $message->get( 'Subject' ) ) || '';
+    my $from = $message->get( 'From' );
+
+    print "Processing $from - $subject\n";
+
+    if( process_parts( $message, $dir, $from, $subject ) ) {
+      $message->label( 'flagged' => 1 );
+      print "Processing succeeded.\n";
+    }
+    else {
+      print "Processing failed.\n";
+    }
+  }
+}
+
+$mgr->closeAllFolders;
+ 
+sub process_parts
+{
+  my( $part, $dir, $from, $subject ) = @_;
+
+  my $type = $part->get('Content-Type');
+  return 0 if $type eq "text/plain";
+
+  if($part->isMultipart)
+  {
+    my $count = 0;
+    foreach my $child ($part->parts)
+    {
+      $count += process_parts( $child, $dir, $from, $subject );
+    }
+    return $count;
+  }
+  else
+  {
+    my $disp = $part->body->disposition;
+    my $name = basename($disp->attribute('filename') 
+      || $disp->attribute('name') 
+      || 'noname' );
+
+    my $channel = guess_channel( $dir, $from, $subject, $name );
+
+    if( (not defined $channel) and $opt{manual} )
+    {
+      print "$name: ";
+      $channel = <STDIN>;
+      $channel =~ tr/\n\r //d;
+      return 0 if $channel eq "";
+
+      if( $channel eq "save" )
+      {
+        # a major security hole if you accept any path!
+        my $filename = "/tmp/" . $name;
+        
+        open(FH, "> $filename");
+        $part->decoded->print(\*FH);
+        close(FH);
+
+        print "Wrote $filename\n";
+        return 1;
+      }
+        
+    }
+
+    if( not defined $channel ) {
+      print "  $name skipped.\n";
+      return 0;
+    }
+
+    print "  $name $channel"; 
+
+    my $chd = $ds->Lookup( 'channels', {xmltvid => $channel} );
+
+    die "Unknown channel $channel" if not defined $chd;
+
+    my $dir = "$filestore/$channel";
+
+    if( not -d $dir ) {
+      print "\nNo such directory $dir\n";
+      return 0;
+    }
+
+#    print "  $importer $name $type " . $part->size . "\n";
+    
+    # a major security hole if you accept any path!
+    my $filename = "$tmpdir/" . $name;
+  
+    open(FH, "> $filename");
+    $part->decoded->print(\*FH);
+    close(FH);
+
+    my $md5 = md5sum( $filename );
+    my $oldmd5 = $ds->Lookup( 'files', { channelid => $chd->{id},
+                                         filename => $name }, 'md5sum' );
+
+    # Check if the file exists even though there was no record in the db.
+    # This is the case if the importer has not been run since the file
+    # was placed there.
+    if( not defined( $oldmd5 ) and -f "$dir/$name" ) {
+      $oldmd5 = md5sum( "$dir/$name" );
+    }
+
+    if( (not defined $oldmd5) or ($md5 ne $oldmd5) ) {
+      $ds->Delete( 'files', { channelid => $chd->{id},
+                              filename => $name } );
+      move( $filename, "$dir/$name" );
+      sleep(1); # File-times have a one-second resolution...
+      print "\n";
+    }
+    else {
+      print " (duplicate)\n";
+      unlink( $filename );
+    }
+  }
+
+  return $opt{test} ? 0 : 1;
+}
+
+sub guess_channel
+{
+  my( $dir, $from, $subject, $filename ) = @_;
+
+  if( $dir =~ /Expressen/ and $filename =~ /\.doc$/i ) {
+    return "sport.expressen.se";
+  }
+
+  if( $dir =~ /Discovery/ ) {
+    return guess_channel_discovery( $from, $subject, $filename );
+  }
+
+  return undef;
+}
+
+sub guess_channel_discovery
+{
+  my( $from, $subject, $filename ) = @_;
+
+  return undef if $filename eq "noname";
+
+  # Discovery
+
+  my( $fnid, $fnlang, $fntype, $ext ) = 
+    ( $filename =~ /([A-Z]+[\. ]+[A-Z]+)[\. ]
+      (\S+).*?
+      (\S+\s*[ ()0-9]*)\.
+      ([^\.]+)$/x );
+  
+  if( not defined( $ext ) )
+  {
+    error( "Unknown Discovery-filename $filename" );
+    return undef;
+  }
+  
+  $fnid =~ tr/ /./;
+  
+  if( $fntype =~ /^high/i )
+  {
+    # Ignore highlights-files.
+    return undef;
+  }
+  
+  my %channels = (
+                  "DC.NO" => "nordic.discovery.com",
+                  "AP.NO" => "nordic.animalplanet.discovery.com",
+                  "CI.EU" => "nordic.civilisation.discovery.com",
+                  "TL.EU" => "nordic.travel.discovery.com",
+                  "SC.EU" => "nordic.science.discovery.com",
+                  "DC.HD" => "hd.discovery.com",
+                  );
+  
+  if( exists( $channels{$fnid} ) ) {
+    return $channels{$fnid};
+  }
+  else {
+    error( "Unknown Discovery-channel $fnid" );
+    return undef;
+  }
+}
+
+
+sub md5sum {
+  my( $file ) = @_;
+  open(FILE, $file) or die "Can't open '$file': $!";
+  binmode(FILE);
+  
+  return Digest::MD5->new->addfile(*FILE)->hexdigest;
+}
+
+sub error {
+  print $_[0] . "\n";
+}
