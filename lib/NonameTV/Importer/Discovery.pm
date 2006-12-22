@@ -331,11 +331,14 @@ sub ImportAmendments
 
     if( ($text =~ /^sida \d+ av \d+$/i) or
         ($text =~ /tablån fortsätter som tidigare/i) or
-        ($text =~ /slut på tablå/i) )
+        ($text =~ /slut på tablå/i) or
+        ($text =~ /^page \d+ of \d+$/i) or
+        ($text =~ /schedule resumes as/i)
+        )
     {
       next;
     }
-    elsif( $text =~ /^SLUT$/ )
+    elsif( $text =~ /^SLUT|END$/ )
     {
       last;
     }
