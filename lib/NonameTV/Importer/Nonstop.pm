@@ -200,6 +200,9 @@ sub FetchTOC
     my( $week, $year ) = ($text =~ /week\s+(\d{1,2}),\s*(\d{4})/i);
     next unless defined $year;
 
+    # Change into integer to remove leading zeroes.
+    $week = 0+$week;
+
     my $uri = URI->new_abs( $href, $base_url );
     $toc{$year . "-" . $week} = $uri->canonical->as_string;;
   }
