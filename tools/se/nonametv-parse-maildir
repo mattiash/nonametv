@@ -49,6 +49,7 @@ my $filestore = $conf->{FileStore};
 my @folders = qw(/home/mattias/Maildir/.Projects.xmltv-data
                  /home/mattias/Maildir/.Projects.NonameTV-Data.Discovery
                  /home/mattias/Maildir/.Projects.NonameTV-Data.Expressen
+                 /home/mattias/Maildir/.Projects.NonameTV-Data.Aftonbladet
                  );
 
 # Flag messages AFTER they have been processed. Then I normally
@@ -111,7 +112,7 @@ sub process_parts
       || $disp->attribute('name') 
       || 'noname' );
 
-    my $channel = guess_channel( $dir, $from, $subject, $name );
+    my $channel = guess_channel( $dir, $from, $subject, $name, $type );
 
     if( (not defined $channel) and $opt{manual} )
     {
@@ -191,10 +192,14 @@ sub process_parts
 
 sub guess_channel
 {
-  my( $dir, $from, $subject, $filename ) = @_;
+  my( $dir, $from, $subject, $filename, $type ) = @_;
 
   if( $dir =~ /Expressen/ and $filename =~ /\.doc$/i ) {
     return "sport.expressen.se";
+  }
+
+  if( $dir =~ /Aftonbladet/ and $type eq "application/msword" ) {
+    return "tv7.aftonbladet.se";
   }
 
   if( $dir =~ /Discovery/ ) {

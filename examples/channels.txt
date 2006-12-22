@@ -39,7 +39,7 @@
 42,"Discovery Science","nordic.science.discovery.com","","Discovery",1,"SC.EU",1,"","","sv",0,\N
 43,"Discovery Mix","nordic.mix.discovery.com","","Combiner",1,"",0,"","","sv",0,\N
 44,"Kunskap/Barnkanalen","kunskapbarn.svt.se","","Combiner",1,"",1,"","","sv",0,\N
-45,"Sport-Expressen","sport.expressen.se","","Expressen",1,"/var/local/nonametv/channels/sport.expressen.se/",1,"sports","Sports","sv",0,\N
+45,"Sport-Expressen","sport.expressen.se","","Expressen",1,"",1,"sports","Sports","sv",0,\N
 46,"Eurosport 2","eurosport2.eurosport.com","","Eurosport",1,"tv_schedule_15000_7.xml",1,"sports","Sports","sv",0,\N
 47,"Toon Disney","toon.disneychannel.se","","Infomedia",1,"TOS",1,"","Children's","sv",0,\N
 48,"CANAL+ Mix","mix.canalplus.se","","CanalPlus",1,"9",1,"","","sv",0,\N
@@ -58,3 +58,7 @@
 61,"Discovery HD","hd.discovery.com","","Discovery",1,"DC.HD",0,"","","sv",0,\N
 62,"Test","test.se","","BaseFileTest",0,"/tmp/data",0,"","","",0,\N
 63,"SVT Europa","europa.svt.se","","Svt",1,"SVT Europa",0,"","","sv",0,\N
+64,"Showtime","showtime.nonstop.tv","","Nonstop",1,"scheduels_showtime.asp",0,"","","en",0,""
+65,"Silver","silver.nonstop.tv","","Nonstop",1,"scheduels_silver.asp",0,"","","en",0,\N
+66,"Star!","star.nonstop.tv","","Nonstop",1,"scheduels_star.asp",0,"","","en",0,\N
+67,"Aftonbladet TV7","tv7.aftonbladet.se","","Aftonbladet",1,"",0,"","","sv",0,\N
