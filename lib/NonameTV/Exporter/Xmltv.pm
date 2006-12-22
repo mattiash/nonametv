@@ -265,11 +265,6 @@ sub ExportData
   my $self = shift;
   my( $ds, $p ) = @_;
 
-  $self->{outf}=sub {
-    my( $file, $line, $err ) = @_;
-    info( "$file $line: $err" );
-  };
-  
   my $last_update = $ds->Lookup( 'state', { name => "xmltv_last_update" },
                                  'value' );
 
