@@ -56,7 +56,7 @@ sub Import {
     
     if( $p->{'force-update'} ) {
       # Delete all data for this channel.
-      my $deleted = $ds->Delete( 'programs', { channelid => $data->{id} } );
+      my $deleted = $ds->Delete( 'programs', { channel_id => $data->{id} } );
       progress( "Deleted $deleted records for $data->{xmltvid}" );
     }
 
