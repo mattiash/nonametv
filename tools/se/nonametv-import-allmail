@@ -7,6 +7,9 @@ cd $PROOT
 
 getmail -q -rexpressen.rc
 getmail -q -rdiscovery.rc
+getmail -q -raftonbladet.rc
 perl -I lib tools/se/nonametv-parse-maildir
 perl -I lib tools/nonametv-import Expressen
 perl -I lib tools/nonametv-import Discovery
+perl -I lib tools/nonametv-import Aftonbladet
+
