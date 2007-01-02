@@ -43,6 +43,8 @@ sub Import {
   
   NonameTV::Log::verbose( $p->{verbose} );
 
+  $self->UpdateFiles();
+
   my $ds = $self->{datastore};
 
   my $sth = $ds->Iterate( 'channels', { grabber => $self->{grabber_name} } )
@@ -183,6 +185,11 @@ sub ImportContentFile {
   my( $filename, $chd ) = @_;
 
   die "You must override ImportContentFile";
+}
+
+sub UpdateFiles {
+  my $self = shift;
+
 }
 
 sub md5sum {
