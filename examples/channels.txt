@@ -25,7 +25,7 @@
 27,"Barnkanalen","barnkanalen.svt.se","","Svt",1,"Barnkanalen",1,"","Children's","sv",0,\N
 28,"SVT1","svt1.svt.se","","Svt",1,"SVT 1",1,"","","sv",0,\N
 29,"SVT2","svt2.svt.se","","Svt",1,"SVT 2",1,"","","sv",0,\N
-30,"Eurosport","eurosport.com","","Eurosport",1,"tv_schedule_10000_7.xml",1,"sports","Sports","sv",0,\N
+30,"Eurosport","eurosport.com","","Eurosport",1,"EurosportInter",1,"sports","Sports","sv",0,\N
 31,"TV400","tv400.tv4.se","","TV4",1,"6",1,"","","sv",0,\N
 32,"Discovery Channel","nordic.discovery.com","","Discovery",1,"DC.NO",1,"","","sv",0,\N
 33,"Animal Planet","nordic.animalplanet.discovery.com","","Discovery",1,"AP.NO",1,"","","sv",0,\N
@@ -40,7 +40,7 @@
 43,"Discovery Mix","nordic.mix.discovery.com","","Combiner",1,"",0,"","","sv",0,\N
 44,"Kunskap/Barnkanalen","kunskapbarn.svt.se","","Combiner",1,"",1,"","","sv",0,\N
 45,"Sport-Expressen","sport.expressen.se","","Expressen",1,"",1,"sports","Sports","sv",0,\N
-46,"Eurosport 2","eurosport2.eurosport.com","","Eurosport",1,"tv_schedule_15000_7.xml",1,"sports","Sports","sv",0,\N
+46,"Eurosport 2","eurosport2.eurosport.com","","Eurosport",1,"Eurosport2",1,"sports","Sports","sv",0,\N
 47,"Toon Disney","toon.disneychannel.se","","Infomedia",1,"TOS",1,"","Children's","sv",0,\N
 48,"CANAL+ Mix","mix.canalplus.se","","CanalPlus",1,"9",1,"","","sv",0,\N
 49,"CANAL+ HD","hd.canalplus.se","","CanalPlus",1,"13",1,"","","sv",0,\N
@@ -52,7 +52,7 @@
 55,"TV6","tv6.viasat.se","","Viasat",1,"tv6_se_",1,"","","sv",0,\N
 56,"P1","p1.sr.se","","SR",0,"p1",0,"","","sv",0,\N
 57,"Playhouse Disney","playhouse.disneychannel.se","","Infomedia",1,"PDW",0,"","Children's","sv",0,\N
-58,"SVT HD","hd.svt.se","","Svt",1,"SVT HD",0,"","","sv",0,""
+58,"SVT HD","hd.svt.se","","Svt",1,"SVT HD",0,"","","sv",1,""
 59,"TV4 Komedi","komedi.tv4.se","","TV4",1,"9",0,"","","sv",0,""
 60,"TV4 Guld","guld.tv4.se","","TV4",1,"8",0,"","","sv",0,""
 61,"Discovery HD","hd.discovery.com","","Discovery",1,"DC.HD",0,"","","sv",0,\N
@@ -61,4 +61,4 @@
 64,"Showtime","showtime.nonstop.tv","","Nonstop",1,"scheduels_showtime.asp",0,"","","en",0,""
 65,"Silver","silver.nonstop.tv","","Nonstop",1,"scheduels_silver.asp",0,"","","en",0,\N
 66,"Star!","star.nonstop.tv","","Nonstop",1,"scheduels_star.asp",0,"","","en",0,\N
-67,"Aftonbladet TV7","tv7.aftonbladet.se","","Aftonbladet",1,"",0,"","","sv",0,\N
+67,"Aftonbladet TV7","tv7.aftonbladet.se","","Aftonbladet",1,"",1,"","","sv",0,\N
