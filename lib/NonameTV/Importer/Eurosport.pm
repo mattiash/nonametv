@@ -1,212 +1,166 @@
 package NonameTV::Importer::Eurosport;
 
-=pod
-
-Eurosport currently delivers data as a single big file per channel that 
-we fetch from their website. This is handled as a single batch by the 
-importer.
-
-The file is an xmlfile with content in entries:
-
-<programme>
-  <emi_id>2341753</emi_id>
-  <sportid>14</sportid>
-  <langueid>7</langueid>
-  <comp_id>31</comp_id>
-  <evt_id>939</evt_id>
-  <cat_id>82</cat_id>
-  <leg_id>948</leg_id>
-  <snc_id>16616</snc_id>
-  <sportname>Kanot</sportname>
-  <emidate>2005-06-26</emidate>
-  <startdate>14:00:00</startdate>
-  <enddate>15:30:00</enddate>
-  <duree>01:30:00</duree>
-  <description>EM i kanotslalom från Tacen, Slovenien
-  </description>
-  <retransid>1</retransid>
-  <retransname>DIREKT</retransname>
-  <features>
-  </features>
-  <desjournaliste>EM i kanotslalom från Tacen, Slovenien
-  </desjournaliste>
-</programme>
-
-=cut
-
 use strict;
 use warnings;
 
+=pod
+
+Import data from xml-files that we download via FTP. Use BaseFile as
+ancestor to avoid redownloading and reprocessing the files each time.
+
+=cut
+
+use utf8;
+
 use DateTime;
 use XML::LibXML;
-use IO::Wrap;
 
 use NonameTV qw/MyGet norm/;
-use NonameTV::Log qw/info progress error logdie/;
 use NonameTV::DataStore::Helper;
+use NonameTV::Log qw/info progress error logdie 
+                     log_to_string log_to_string_result/;
 
-use NonameTV::Importer::BaseOne;
+use NonameTV::Importer::BaseFile;
 
-use base 'NonameTV::Importer::BaseOne';
+use base 'NonameTV::Importer::BaseFile';
 
 sub new {
-    my $proto = shift;
-    my $class = ref($proto) || $proto;
-    my $self  = $class->SUPER::new( @_ );
-    bless ($self, $class);
-    
-    $self->{grabber_name} = "Eurosport";
+  my $proto = shift;
+  my $class = ref($proto) || $proto;
+  my $self  = $class->SUPER::new( @_ );
+  bless ($self, $class);
 
-    defined( $self->{UrlRoot} ) or die "You must specify UrlRoot";
+  $self->{grabber_name} = "Eurosport";
 
-    my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore} );
-    $self->{datastorehelper} = $dsh;
+  defined( $self->{FtpRoot} ) or die "You must specify FtpRoot";
+  defined( $self->{Filename} ) or die "You must specify Filename";
 
-    return $self;
+  return $self;
 }
 
-sub ImportContent
+sub ImportContentFile
 {
   my $self = shift;
-  my( $batch_id, $cref, $chd ) = @_;
+  my( $file, $chd ) = @_;
 
-  my $dsh = $self->{datastorehelper};
+  progress( "Eurosport: Processing $file" );
+  
+  $self->{fileerror} = 0;
+
+  my $xmltvid=$chd->{xmltvid};
+
+  my $channel_id = $chd->{id};
+  my $ds = $self->{datastore};
 
   my $xml = XML::LibXML->new;
   my $doc;
-  eval { $doc = $xml->parse_string($$cref); };
-  if( $@ ne "" )
-  {
-    error( "$batch_id: Failed to parse: $@" );
-    return 0;
-  }
-
-  $self->LoadSportId( $xml )
-    or return 0;
-
-  my $ns = $doc->find( "//programme" );
+  eval { $doc = $xml->parse_file($file); };
   
-  if( $ns->size() == 0 )
-  {
-    error( "$batch_id: No programme entries found" );
-    return 0;
+  if( not defined( $doc ) ) {
+    error( "Eurosport $file: Failed to parse" );
+    return;
+  }
+  
+  # Find all paragraphs.
+  my $ns = $doc->find( "//BroadcastDate_GMT" );
+  
+  if( $ns->size() == 0 ) {
+    error( "Eurosport $file: No BroadcastDates found." ) ;
+    return;
   }
 
-  my $currdate = "none";
-  foreach my $p ($ns->get_nodelist)
-  {
-    my $sportid = $p->findvalue( 'sportid' );
-    my $description = norm($p->findvalue( 'description/text()' ));
+  foreach my $sched_date ($ns->get_nodelist) {
+    my( $date ) = norm( $sched_date->findvalue( '@Day' ) );
+    my $dt = create_dt( $date );
 
-    my $sportname;
-    if( ($sportid) == 0 and defined( $description ) )
-    {
-      ($sportname) = ($description =~ /^(.*?)\:/);
-    }
-    else
-    {
-      $sportname = $self->{sportidname}->{$sportid};
-    }
-
-    if( not defined( $sportname ) )
-    {
-      print "Unknown sportid $sportid\n";
-      $sportname = $p->findvalue( 'sportname' );
-
-      $sportname = ucfirst( lc( $sportname ) );
-    }
-
-    my $emidate = $p->findvalue('emidate/text()');
-
-    my $starttime = $p->findvalue( 'startdate/text()' );
-    my $endtime = $p->findvalue( 'enddate/text()' );
+    my $batch_id = $xmltvid . "_" . $dt->ymd('-');
+    $ds->StartBatch( $batch_id );
     
-    if( $currdate ne $emidate )
-    {
-      $dsh->StartDate( $emidate );
-      $currdate = $emidate;
+    my $ns2 = $sched_date->find('Emission');
+    foreach my $emission ($ns2->get_nodelist) {
+      my $start_time = $emission->findvalue( 'StartTimeGMT' );
+      my $end_time = $emission->findvalue( 'EndTimeGMT' );
+
+      my $start_dt = create_time( $dt, $start_time );
+      my $end_dt = create_time( $dt, $end_time );
+
+      if( $end_dt < $start_dt ) {
+        $end_dt->add( days => 1 );
+      }
+
+      my $title = norm( $emission->findvalue( 'Title' ) );
+      my $desc = norm( $emission->findvalue( 'Feature' ) );
+
+      my $ce = {
+        channel_id => $channel_id,
+        start_time => $start_dt->ymd('-') . ' ' . $start_dt->hms(':'),
+        end_time   => $end_dt->ymd('-') . ' ' . $end_dt->hms(':'),
+        title => $title,
+        description => $desc,
+      };
+
+      $ds->AddProgramme( $ce );
+      
     }
+    $ds->EndBatch( 1 );
+  }
 
-    my $title = norm( $sportname );
+  return;
+}
 
-    my $data = {
-      title       => $title,
-      description => $description,
-      start_time  => $starttime,
-      end_time    => $endtime,
-    };
+sub UpdateFiles {
+  my( $self ) = @_;
+
+  my $sth = $self->{datastore}->Iterate( 'channels', 
+     { grabber => $self->{grabber_name} } )
+    or logdie( "$self->{grabber_name}: Failed to fetch grabber data" );
+
+  while( my $data = $sth->fetchrow_hashref ) {
     
-    $dsh->AddProgramme( $data );            
-  }
-  
-  # Success
-  return 1;
+    my $dir = $data->{grabber_info};
+    my $xmltvid = $data->{xmltvid};
+
+    ftp_get( $self->{FtpRoot} . $dir . '/' . $self->{Filename},
+             $NonameTV::Conf->{FileStore} . '/' . 
+             $xmltvid . '/' . $self->{Filename} );
+  }  
+
+  $sth->finish();
 }
 
-sub FetchDataFromSite
-{
-  my $self = shift;
-  my( $batch_id, $data ) = @_;
+sub ftp_get {
+  my( $url, $file ) = @_;
 
-  # All data for a channel is supplied in a single file
-  # with a static url.
-  my $url = $self->{UrlRoot} . $data->{grabber_info};
-
-  my( $content, $code ) = MyGet( $url );
-  return( $content, $code );
+  qx[curl -s -S -z $file -o $file $url];
 }
 
-sub LoadSportId
-{
-  my $self = shift;
-  my( $xml ) = @_;
+sub create_dt {
+  my( $text ) = @_;
 
-  return 1 if( defined( $self->{sportidname} ) );
+  my($day, $month, $year ) = split( "/", $text );
 
-  my( $content, $code ) = MyGet( $self->{SportIdUrl} );
-
-  if( not defined $content )
-  {
-    error( "Eurosport: Failed to fetch sport_id mappings" );
-    return 0;
-  }
-
-  # Some characters are encoded in CP1252 even though the 
-  # header says iso-8859-1
-  $content =~ tr/\x86\x84\x94/åäö/;
-
-  my $doc;
-  eval { $doc = $xml->parse_string($content); };
-  if( $@ ne "" )
-  {
-    error( "Eurosport: Failed to parse sport_id mappings" );
-    return 0;
-  }
-  
-  my %id;
-  my $ns = $doc->find( '//SPTR[@LAN_ID="7"]' );
-  
-  if( $ns->size() == 0 )
-  {
-    error( "Eurosport: No sport_id mappings found" );
-    return 0;
-  }
-  
-  # This id is not present in the xml-file.
-  $id{265} = "Fia wtcc";
-
-  foreach my $p ($ns->get_nodelist)
-  {
-    my $short_name = norm( $p->findvalue('@SPTR_SHORTNAME') );
-    my $sport_id = norm( $p->findvalue( '@SPO_ID' ) );
-
-    # TODO: This does not work correctly for changing the case of åäö.
-    # Luckily, all åäö's are already the correct case.
-    $id{$sport_id} = ucfirst(lc($short_name));
-  }
-
-  $self->{sportidname} = \%id;
-  return 1;
+  return DateTime->new( year => $year,
+                        month => $month,
+                        day => $day,
+                        time_zone => "GMT" );
 }
 
+sub create_time {
+  my( $dt, $time ) = @_;
+
+  my $result = $dt->clone();
+
+  my( $hour, $minute ) = split(':', $time );
+
+  $result->set( hour => $hour,
+                minute => $minute,
+                );
+
+  return $result;
+}
 1;
+
+### Setup coding system
+## Local Variables:
+## coding: utf-8
+## End:
