@@ -26,7 +26,7 @@ use NonameTV::Log qw/info progress error logdie
 
 use NonameTV::Importer;
 
-use base 'NonameTV::Importer';
+use base 'NonameTV::Importer::BaseFile';
 
 # The lowest log-level to store in the batch entry.
 # DEBUG = 1
@@ -46,46 +46,15 @@ sub new
   my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore} );
   $self->{datastorehelper} = $dsh;
 
-  my $sth = $self->{datastore}->Iterate( 'channels', 
-                                         { grabber => 'nickelodeon' },
-                                         qw/xmltvid id grabber_info/ )
-    or logdie "Failed to fetch grabber data";
+  $self->{grabber_name} = 'Nickelodeon';
 
-  while( my $data = $sth->fetchrow_hashref )
-  {
-    $self->{channel_data}->{$data->{xmltvid}} = 
-                            { id => $data->{id} };
-  }
-
-  $sth->finish;
-
-  $self->{OptionSpec} = [ qw/force-update verbose/ ];
-  $self->{OptionDefaults} = { 
-    'force-update' => 0,
-    'verbose'      => 0,
-  };
-  
   return $self;
 }
 
-sub Import
+sub ImportContentFile
 {
   my $self = shift;
-  my( $p ) = @_;
-
-  NonameTV::Log::verbose( $p->{verbose} );
-
-  foreach my $file (@ARGV)
-  {
-    progress(  "Nickelodeon: Processing $file" );
-    $self->ImportFile( "", $file, $p );
-  } 
-}
-
-sub ImportFile
-{
-  my $self = shift;
-  my( $contentname, $file, $p ) = @_;
+  my( $file, $chd ) = @_;
 
   my $doc;
   if( $file =~  /doc$/i )
@@ -108,7 +77,7 @@ sub ImportFile
     return;
   }
 
-  $self->ImportData( $file, $doc );
+  $self->ImportData( $file, $doc, $chd );
 }
 
 # Import files that contain full programming details,
@@ -117,7 +86,7 @@ sub ImportFile
 sub ImportData
 {
   my $self = shift;
-  my( $filename, $doc ) = @_;
+  my( $filename, $doc, $chd ) = @_;
   
   my $loghandle;
 
@@ -212,7 +181,7 @@ sub ImportData
     }
     elsif( $state == ST_FHEAD ) {
       if( $type == T_DATE ) {
-        $self->process_entries( \@perioddates, $entries );
+        $self->process_entries( \@perioddates, $entries, $chd );
         @perioddates = @dates;
         $periodtext = $text;
         $entries = [];
@@ -224,7 +193,7 @@ sub ImportData
       }
       elsif( $type == T_END ) {
         push @{$entries}, [$start, "end-of-transmission", ""];
-        $self->process_entries( \@perioddates, $entries ); 
+        $self->process_entries( \@perioddates, $entries, $chd ); 
         @perioddates = ();
         $periodtext = undef;
         $entries = [];
@@ -251,7 +220,7 @@ sub ImportData
       }
     }
   }
-  $self->process_entries( \@perioddates, $entries )
+  $self->process_entries( \@perioddates, $entries, $chd )
     unless $state == ST_FEND;
 
   my $currdate = $self->{earliest_date}->clone();
@@ -272,11 +241,11 @@ sub ImportData
 
 sub process_entries {
   my $self = shift;
-  my( $dates, $entries ) = @_;
+  my( $dates, $entries, $chd ) = @_;
 
   my $dsh= $self->{datastorehelper};
-  my $xmltvid= "nickelodeon.se";
-  my $channel_id= $self->{channel_data}->{$xmltvid}->{id};
+  my $xmltvid= $chd->{xmltvid};
+  my $channel_id= $chd->{id};
 
   foreach my $currdate (@{$dates}) 
   {
@@ -333,6 +302,7 @@ my %weekdayno = ( vardagar => "[12345]",
                   vardager => "[12345]",
                   helger => "[67]",
                   helgen => "[67]",
+                  helgor => "[67]",
                   );
 my $WD_SET = join( "|", keys( %weekdayno ));
 my $range_re = '\s*(' . $WD . '|' . 
