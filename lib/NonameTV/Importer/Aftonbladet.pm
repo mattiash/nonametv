@@ -99,6 +99,7 @@ sub ImportContentFile
       my $batch_id = "${xmltvid}_$date";
       $dsh->StartBatch( $batch_id, $channel_id );
       $dsh->StartDate( $date, "06:00" ); 
+      $self->AddDate( $date );
       $currdate = $date;
     }
     elsif( $text =~ /^\d{1,2}.\d\d / ) {
@@ -114,6 +115,10 @@ sub ImportContentFile
       $ce = ParseProgram( $text );
     }
     else {
+      if( not defined $ce ) {
+        error( "Aftonbladet $file: Ignoring text $text" );
+        next;
+      }
       $ce->{description} .= " " if defined $ce->{description};
       $ce->{description} .= $text;
       $ce->{description} .= "." unless $ce->{description} =~ /\.$/;
