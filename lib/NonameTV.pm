@@ -9,6 +9,7 @@ use utf8;
 use LWP::UserAgent;
 use File::Temp qw/tempfile tempdir/;
 use Unicode::String qw/utf8/;
+use File::Slurp;
 
 use NonameTV::StringMatcher;
 use NonameTV::Log qw/logdie/;
@@ -132,6 +133,7 @@ fails.
 
 sub Html2Xml
 {
+  my( $html ) = @_;
   my $xml = XML::LibXML->new;
   $xml->recover(1);
   
@@ -140,8 +142,11 @@ sub Html2Xml
   print SAVERR "Nothing\n" if 0;
   open(STDERR,"> /dev/null");
   
+  # Remove character that makes the parser stop.
+  $html =~ s/\x00//g;
+
   my $doc;
-  eval { $doc = $xml->parse_html_string($_[0]); };
+  eval { $doc = $xml->parse_html_string($html); };
   
   # Restore STDERR
   open( STDERR, ">&SAVERR" );
@@ -168,27 +173,9 @@ sub Htmlfile2Xml
 {
   my( $filename ) = @_;
 
-  my $xml = XML::LibXML->new;
-  $xml->recover(1);
-  
-  # Stupid XML::LibXML writes to STDERR. Redirect it temporarily.
-  open(SAVERR, ">&STDERR"); # save the stderr fhandle
-  print SAVERR "Nothing\n" if 0;
-  open(STDERR,"> /dev/null");
-  
-  my $doc;
-  eval { $doc = $xml->parse_html_file($filename); };
-  
-  # Restore STDERR
-  open( STDERR, ">&SAVERR" );
-  
-  if( $@ ne "" )
-  {
-    print "Failed to parse $filename: $@\n";
-    return undef;
-  }
+  my $html = read_file( $filename );
 
-  return $doc;
+  return Html2Xml( $html );
 }
 
 
