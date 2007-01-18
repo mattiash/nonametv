@@ -765,19 +765,18 @@ sub Lookup
   my $res = $sth->execute( @values ) 
       or die "Execute failed. $sql\nError: " . $dbh->errstr;
   
-  if( $res == 0 )
-  {
+  my $row = $sth->fetchrow_hashref;
+
+  if( not defined( $row ) ) {
     $sth->finish();
     return undef;
   }
 
-  die "More than one record returned by $sql (" . join( ", ", @values) . ")"
-      if( $res > 1 );
-
-  my $row = $sth->fetchrow_hashref;
-
-  
+  my $row2 = $sth->fetchrow_hashref;
   $sth->finish();
+
+  die "More than one record returned by $sql (" . join( ", ", @values) . ")"
+      if( defined $row2 );
 
   return $row->{$field} if defined $field;
   return $row;
