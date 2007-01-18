@@ -131,6 +131,10 @@ sub ImportContent
     my $sport = $sc->findvalue( './Program/@Sport' );
     my $series = $sc->findvalue( './Program/@Series' );
 
+    if( $series and ($series_title eq "") ) {
+      error( "$batch_id: Series without SeriesTitle: $title" );
+    }
+ 
     my $production_year = $sc->findvalue( './Program/@ProductionYear' );
 
     my $sixteen_nine = $sc->findvalue( './Program/@SixteenNine' );
