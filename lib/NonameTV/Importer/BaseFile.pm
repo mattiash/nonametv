@@ -13,6 +13,7 @@ processed in the order that they appear.
 
 use DateTime;
 use POSIX qw/floor/;
+use Encode;
 
 use NonameTV::Log qw/info progress error logdie 
   log_to_string log_to_string_result/;
@@ -63,9 +64,14 @@ sub Import {
     }
 
     my $dir = $NonameTV::Conf->{FileStore} . "/" . $data->{xmltvid};
-    my @files = split( "\n", qx/ls -t -r -1 $dir/ );
+    my $filelist_raw = qx/ls -t -r -1 $dir/;
+    my $filelist = decode( "utf-8", $filelist_raw );
+
+    my @files = split( "\n", $filelist );
     
     foreach my $file (@files) {
+      # Ignore emacs backup-files.
+      next if $file =~ /~$/;
       my $md5 = md5sum( "$dir/$file" );
       my $fdata = $ds->Lookup( "files", { channelid => $data->{id},
                                           filename => $file } );

@@ -9,9 +9,10 @@ use File::Temp qw/tempdir/;
 use File::Copy qw/move/;
 use File::Basename;
 
-use MIME::WordDecoder;
 use Getopt::Long;
 use Digest::MD5;
+
+use Encode qw/decode/;
 
 use NonameTV;
 use NonameTV::DataStore;
@@ -57,9 +58,6 @@ my @folders = qw(/home/mattias/Maildir/.Projects.xmltv-data
 
 my $tmpdir = tempdir( CLEANUP => 1 );
 
-### Get a word-decoder which maps to ISO-8859-1 (Latin1):
-my $wd = supported MIME::WordDecoder "ISO-8859-1";
-
 my $mgr = Mail::Box::Manager->new;
 
 foreach my $dir (@folders) {
@@ -72,7 +70,8 @@ foreach my $dir (@folders) {
     next if $message->label( 'flagged' );
     next unless $message->isMultipart;
 
-    my $subject = $wd->decode( $message->get( 'Subject' ) ) || '';
+    # Use Encode::MIME::Header
+    my $subject = decode( 'MIME-Header', $message->get( 'Subject' ) ) || '';
     my $from = $message->get( 'From' );
 
     print "Processing $from - $subject\n";
@@ -108,7 +107,8 @@ sub process_parts
   else
   {
     my $disp = $part->body->disposition;
-    my $name = $wd->decode( $part->body->dispositionFilename ) || 'noname';
+    my $name = decode( 'MIME-Header', 
+		       $part->body->dispositionFilename ) || 'noname';
     my $size = $part->body->size;
 
     my $channel = guess_channel( $dir, $from, $subject, $name, $type, $size );
