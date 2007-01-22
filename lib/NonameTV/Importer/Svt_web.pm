@@ -322,12 +322,6 @@ sub extract_extra_info
     AddCategory( $ce, $program_type, $category );
   }
 
-  # Find production year from description.
-  if( $sentences[0] =~ /\bfr.n (\d\d\d\d)\b/ )
-  {
-    $ce->{production_date} = "$1-01-01";
-  }
-
   $ce->{title} =~ s/^Seriestart:\s*//;
   $ce->{title} =~ s/^Novellfilm:\s*//;
 
@@ -336,6 +330,13 @@ sub extract_extra_info
 
   for( my $i=0; $i<scalar(@sentences); $i++ )
   {
+    # Find production year from description.
+    if( ($sentences[$i] =~ /film fr.n (\d\d\d\d)\b/i) or
+	($sentences[$i] =~ /^fr.n (\d\d\d\d)\.*$/i) )
+    {
+      $ce->{production_date} = "$1-01-01";
+    }
+
     if( $sentences[$i] eq "Bredbild." )
     {
       $ce->{aspect} = "16:9";
