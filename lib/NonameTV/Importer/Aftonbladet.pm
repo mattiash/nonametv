@@ -102,7 +102,7 @@ sub ImportContentFile
       $self->AddDate( $date );
       $currdate = $date;
     }
-    elsif( $text =~ /^\d{1,2}.\d\d / ) {
+    elsif( $text =~ /^\d{1,2}.\d\d(\s*-\s*\d{1,2}.\d\d){0,1} / ) {
       if( defined $ce ) {
         # Aftonbladet uses program-blocks that contain several
         # sub-programmes. Ignore the first sub-programme.
@@ -199,7 +199,7 @@ sub ParseProgram{
 
   if( defined $stop ) {
     $stop =~ tr/\./:/;
-    $ce->{stop_time} = $stop;
+    $ce->{end_time} = $stop;
   }
 
   return $ce;
