@@ -332,6 +332,7 @@ sub extract_extra_info
   {
     # Find production year from description.
     if( ($sentences[$i] =~ /film fr.n (\d\d\d\d)\b/i) or
+	($sentences[$i] =~ /serie fr.n (\d\d\d\d)\b/i) or
 	($sentences[$i] =~ /^fr.n (\d\d\d\d)\.*$/i) )
     {
       $ce->{production_date} = "$1-01-01";
@@ -554,8 +555,8 @@ sub add_showing
 
   $date = $dt->ymd("-");
 
-  error( "Unknown channel $channel" )
-    unless defined $chid;
+#  error( "Unknown channel $channel" )
+#    unless defined $chid;
 
 #  print STDERR "$type $date $chid\n";
 }
