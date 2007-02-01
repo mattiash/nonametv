@@ -347,7 +347,7 @@ $sm->AddRegexp( qr/science[-\s]*fiction[-\s]*serie/i,
 $sm->AddRegexp( qr/barnprogram/i,          [ undef, "Children's" ] );
 
 # Movies
-$sm->AddRegexp( qr/\b(familje|drama)*komedi\b/i,  [ 'movie', "Comedy" ] );
+$sm->AddRegexp( qr/\b(familje|drama|action)*komedi\b/i,  [ 'movie', "Comedy" ] );
 
 $sm->AddRegexp( qr/\b(krigs|kriminal)*drama\b/i,  [ 'movie', "Drama" ] );
 
