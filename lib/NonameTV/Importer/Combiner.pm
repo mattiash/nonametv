@@ -162,12 +162,14 @@ $channel_data{ "viasat-nature-nick.spa.se" } =
       [ 
         {
           day => 'all',
+	  time => '1800-0000',
         },
       ],
     "nickelodeon.se" =>
       [
         {
           day => 'all',
+	  time => '0600-1800',
         },
       ],
   };
