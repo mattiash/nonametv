@@ -342,7 +342,7 @@ sub ExportFile {
 
   my $d1 = $sth->fetchrow_hashref();
 
-  if( not defined $d1 ) {
+  if( (not defined $d1) or ($d1->{start_time} gt "$startdate 23:59:59") ) {
     error( "Xmltv: No data for $chd->{xmltvid}_$date" )
       unless $chd->{empty_ok};
 
