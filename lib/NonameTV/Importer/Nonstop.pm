@@ -100,7 +100,8 @@ sub ImportContent
     next if $text eq "";
     my $type;
 
-    if( $text =~ /^(mon|tues|wednes|thurs|fri|satur|sun)day$/i ) {
+    if( $text =~ /^(mon|tues|wednes|thurs|fri|satur|sun
+		    |m.n|tis|ons|tors|fre|l.r|s.n)da(y|g)$/xi ) {
       $type = T_DAY;
     }
     elsif( $text =~ /^\d{1,2} \D+ \d{4}$/ ) {
@@ -222,6 +223,19 @@ my %months = (
   august => 8,
   september => 9,
   october => 10,
+  november => 11,
+  december => 12,
+
+  januari=> 1,
+  februari => 2,
+  mars => 3,
+  april => 4,
+  maj => 5,
+  juni => 6,
+  juli => 7,
+  augusti => 8,
+  september => 9,
+  oktober => 10,
   november => 11,
   december => 12,
 );
