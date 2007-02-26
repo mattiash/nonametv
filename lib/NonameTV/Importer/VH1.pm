@@ -54,8 +54,15 @@ sub ImportContentFile
   my $channel_id = $chd->{id};
   my $dsh = $self->{datastorehelper};
 
-  my $doc = Wordfile2Xml( $file );
   
+  my $doc;
+  if( $file =~ /\.html$/ ) {
+    $doc = Htmlfile2Xml( $file );
+  }
+  else {
+    $doc = Wordfile2Xml( $file );
+  }
+
   if( not defined( $doc ) ) {
     error( "VH1 $file: Failed to parse" );
     return;
@@ -93,7 +100,7 @@ sub ImportContentFile
     }
     elsif( $text =~ /^\d{4} / ) {
       my( $start, $title, $description ) = ($text =~ 
-        /^(\d{4}) ([A-Z0-9\'\&s\/ \-:,]+) ([A-Z].*)/);
+        /^(\d{4}) ([A-Z0-9\'\&s\/ \-:,()]+) ([A-Z].*)/);
 
       $start =~ s/(\d\d)(\d\d)/$1:$2/;
       $title = capitalize_title( $title );
