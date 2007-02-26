@@ -43,7 +43,7 @@
 46,"Eurosport 2","eurosport2.eurosport.com","","Eurosport",1,"Eurosport2",1,"sports","Sports","sv",0,\N
 47,"Toon Disney","toon.disneychannel.se","","Infomedia",1,"TOS",1,"","Children's","sv",0,\N
 48,"CANAL+ Mix","mix.canalplus.se","","CanalPlus",1,"9",1,"","","sv",0,\N
-49,"CANAL+ HD","hd.canalplus.se","","CanalPlus",1,"13",1,"","","sv",0,\N
+49,"CANAL+ HD","hd.canalplus.se","","CanalPlus",1,"13&a=1",1,"","","sv",0,\N
 50,"CANAL+ Film 2 Sport Weekend","film2-sport-weekend.canalplus.se","","CanalPlus",1,"14",1,"","","sv",0,\N
 51,"TV4 Fakta","fakta.tv4.se","","TV4",1,"7",1,"","","sv",0,\N
 52,"Nickelodeon","nickelodeon.se","","Nickelodeon",1,"",1,"","Children's","sv",0,\N
@@ -53,8 +53,8 @@
 56,"P1","p1.sr.se","","SR",0,"p1",0,"","","sv",0,\N
 57,"Playhouse Disney","playhouse.disneychannel.se","","Infomedia",1,"PDW",0,"","Children's","sv",0,\N
 58,"SVT HD","hd.svt.se","","Svt",1,"SVT HD",0,"","","sv",1,""
-59,"TV4 Komedi","komedi.tv4.se","","TV4",1,"9",0,"","","sv",0,""
-60,"TV4 Guld","guld.tv4.se","","TV4",1,"8",0,"","","sv",0,""
+59,"TV4 Komedi","komedi.tv4.se","","TV4",1,"9",1,"","","sv",0,""
+60,"TV4 Guld","guld.tv4.se","","TV4",1,"8",1,"","","sv",0,""
 61,"Discovery HD","hd.discovery.com","","Discovery",1,"DC.HD",0,"","","sv",0,\N
 62,"Test","test.se","","BaseFileTest",0,"/tmp/data",0,"","","",0,\N
 63,"SVT Europa","europa.svt.se","","Svt",1,"SVT Europa",0,"","","sv",0,\N
@@ -62,3 +62,6 @@
 65,"Silver","silver.nonstop.tv","","Nonstop",1,"scheduels_silver.asp",0,"","","en",0,\N
 66,"Star!","star.nonstop.tv","","Nonstop",1,"scheduels_star.asp",0,"","","en",0,\N
 67,"Aftonbladet TV7","tv7.aftonbladet.se","","Aftonbladet",1,"",1,"","","sv",0,\N
+68,"CANAL+ Film HD","filmhd.canalplus.se","","CanalPlus",1,"13",1,"movie","Movies","sv",0,\N
+69,"CANAL+ Sport HD","sporthd.canalplus.se","","CanalPlus",1,"35",1,"sports","Sports","sv",0,\N
+70,"TV1000 +1","plus-1.tv1000.viasat.se","","TimeShifter",1,"tv1000.viasat.se,60",0,"","","sv",0,\N
