@@ -12,7 +12,8 @@ use Unicode::String qw/utf8/;
 use File::Slurp;
 
 use NonameTV::StringMatcher;
-use NonameTV::Log qw/logdie/;
+use NonameTV::Log qw/logdie error/;
+use XML::LibXML;
 
 BEGIN {
     use Exporter   ();
@@ -29,7 +30,8 @@ BEGIN {
                       Wordfile2HtmlTree Htmlfile2HtmlTree
                       Word2Xml Wordfile2Xml 
                       norm AddCategory
-                      ParseDescCatSwe FixProgrammeData/;
+                      ParseDescCatSwe FixProgrammeData
+		      ParseXmltv/;
 }
 our @EXPORT_OK;
 
@@ -392,6 +394,7 @@ sub FixProgrammeData
 
   $d->{title} =~ s/^s.songs*avslutning\s*:*\s*//gi;
   $d->{title} =~ s/^sista\s+delen\s*:*\s*//gi;
+  $d->{title} =~ s/^sista\s+avsnittet\s*:*\s*//gi;
 
   if( $d->{title} =~ s/^((matin.)|(fredagsbio))\s*:\s*//gi )
   {
@@ -406,6 +409,145 @@ sub FixProgrammeData
   {
     $d->{program_type} = "series";
   }
+}
+
+=pod
+
+Parse a reference to an xml-string in xmltv-format into a reference to an 
+array of hashes with programme-info.
+
+=cut
+
+my $xml;
+
+sub ParseXmltv {
+  my( $cref ) = @_;
+
+  if( not defined $xml ) {
+    $xml = XML::LibXML->new;
+  }
+  
+  my $doc;
+  eval { 
+    $doc = $xml->parse_string($$cref); 
+  };
+  if( $@ ne "" )   {
+    error( "???: Failed to parse: $@" );
+    return undef;
+  }
+
+  my @d;
+
+  # Find all "programme"-entries.
+  my $ns = $doc->find( "//programme" );
+  if( $ns->size() == 0 ) {
+    return;
+  }
+  
+  foreach my $pgm ($ns->get_nodelist) {
+    my $start = $pgm->findvalue( '@start' );
+    my $start_dt = create_dt( $start );
+
+    my $stop = $pgm->findvalue( '@stop' );
+    my $stop_dt = create_dt( $stop );
+
+    my $title = $pgm->findvalue( 'title' );
+    my $subtitle = $pgm->findvalue( 'sub-title' );
+    
+    my $desc = $pgm->findvalue( 'desc' );
+    my $cat1 = $pgm->findvalue( 'category[1]' );
+    my $cat2 = $pgm->findvalue( 'category[2]' );
+    my $episode = $pgm->findvalue( 'episode-num[@system="xmltv_ns"]' );
+    my $production_date = $pgm->findvalue( 'date' );
+
+    my $aspect = $pgm->findvalue( 'video/aspect' );
+
+    my @actors;
+    my $ns = $pgm->find( ".//actor" );
+
+    foreach my $act ($ns->get_nodelist) {
+      push @actors, $act->findvalue(".");
+    }
+
+    my @directors;
+    $ns = $pgm->find( ".//director" );
+
+    foreach my $dir ($ns->get_nodelist) {
+      push @directors, $dir->findvalue(".");
+    }
+    
+    my %e = (
+      start_dt => $start_dt,
+      stop_dt => $stop_dt,
+      title => $title,
+      description => $desc,
+    );
+
+    if( $subtitle =~ /\S/ ) {
+      $e{subtitle} = $subtitle;
+    }
+
+    if( $episode =~ /\S/ ) {
+      $e{episode} = $episode;
+    }
+
+    if( $cat1 =~ /^[a-z]/ ) {
+      $e{program_type} = $cat1;
+    }
+    elsif( $cat1 =~ /^[A-Z]/ ) {
+      $e{category} = $cat1;
+    }
+
+    if( $cat2 =~ /^[a-z]/ ) {
+      $e{program_type} = $cat2;
+    }
+    elsif( $cat2 =~ /^[A-Z]/ ) {
+      $e{category} = $cat2;
+    }
+
+    if( $production_date =~ /\S/ ) {
+      $e{production_date} = "$production_date-01-01";
+    }
+
+    if( $aspect =~ /\S/ ) {
+      $e{aspect} = $aspect;
+    }
+
+    if( scalar( @directors ) > 0 ) {
+      $e{directors} = join ", ", @directors;
+    }
+
+    if( scalar( @actors ) > 0 ) {
+      $e{actors} = join ", ", @actors;
+    }
+
+    
+    push @d, \%e;
+  }
+
+  return \@d;
+}
+
+sub create_dt
+{
+  my( $datetime ) = @_;
+
+  my( $year, $month, $day, $hour, $minute, $second, $tz ) = 
+    ($datetime =~ /(\d{4})(\d{2})(\d{2})
+                   (\d{2})(\d{2})(\d{2})\s+
+                   (\S+)$/x);
+  
+  my $dt = DateTime->new( 
+                          year => $year,
+                          month => $month, 
+                          day => $day,
+                          hour => $hour,
+                          minute => $minute,
+                          second => $second,
+                          time_zone => $tz 
+                          );
+  
+  return $dt;
 }
   
 1;

@@ -179,7 +179,7 @@ use XML::LibXML;
 use Compress::Zlib;
 use DateTime::Event::Recurrence;
 
-use NonameTV qw/MyGet/;
+use NonameTV qw/MyGet ParseXmltv/;
 
 use NonameTV::Importer::BaseDaily;
 
@@ -274,7 +274,7 @@ sub Import
         foreach my $ch (keys %ch_content)
         {
           my $xmldata = Compress::Zlib::memGunzip( \($ch_content{$ch}) );
-          $prog{$ch} = $self->ParseXmltv( \$xmldata );
+          $prog{$ch} = ParseXmltv( \$xmldata );
         }
 
         my $progs = $self->BuildDay( $batch_id, \%prog, 
@@ -355,106 +355,6 @@ sub BuildDay
   $ds->EndBatch( 1 );
 }
 
-sub ParseXmltv
-{
-  my $self = shift;
-  my( $cref ) = @_;
-
-  if( not defined $self->{xml} )
-  {
-    $self->{xml} = XML::LibXML->new;
-  }
-  
-  my $doc;
-  eval { 
-    $doc = $self->{xml}->parse_string($$cref); 
-  };
-  if( $@ ne "" )
-  {
-    error( "???: Failed to parse: $@" );
-    return;
-  }
-
-  my @d;
-
-  # Find all "programme"-entries.
-  my $ns = $doc->find( "//programme" );
-  if( $ns->size() == 0 )
-  {
-#    error( "???: No data found" );
-    return;
-  }
-  
-  foreach my $pgm ($ns->get_nodelist)
-  {
-    my $start = $pgm->findvalue( '@start' );
-    my $start_dt = create_dt( $start );
-
-    my $stop = $pgm->findvalue( '@stop' );
-    my $stop_dt = create_dt( $stop );
-
-    my $title = $pgm->findvalue( 'title' );
-    my $subtitle = $pgm->findvalue( 'sub-title' );
-    
-    my $desc = $pgm->findvalue( 'desc' );
-    my $cat1 = $pgm->findvalue( 'category[1]' );
-    my $cat2 = $pgm->findvalue( 'category[2]' );
-    my $episode = $pgm->findvalue( 'episode-num[@system="xmltv_ns"]' );
-    my $production_date = $pgm->findvalue( 'date' );
-
-    my $aspect = $pgm->findvalue( 'video/aspect' );
-
-    my %e = (
-      start_dt => $start_dt,
-      stop_dt => $stop_dt,
-      title => $title,
-      description => $desc,
-    );
-
-    if( $subtitle =~ /\S/ )
-    {
-      $e{subtitle} = $subtitle;
-    }
-
-    if( $episode =~ /\S/ )
-    {
-      $e{episode} = $episode;
-    }
-
-    if( $cat1 =~ /^[a-z]/ )
-    {
-      $e{program_type} = $cat1;
-    }
-    elsif( $cat1 =~ /^[A-Z]/ )
-    {
-      $e{category} = $cat1;
-    }
-
-    if( $cat2 =~ /^[a-z]/ )
-    {
-      $e{program_type} = $cat2;
-    }
-    elsif( $cat2 =~ /^[A-Z]/ )
-    {
-      $e{category} = $cat2;
-    }
-
-    if( $production_date =~ /\S/ )
-    {
-      $e{production_date} = $production_date;
-    }
-
-    if( $aspect =~ /\S/ )
-    {
-      $e{aspect} = $aspect;
-    }
-    
-    push @d, \%e;
-  }
-
-  return \@d;
-}
-
 sub ProcessSchedules
 {
   my $self = shift;
@@ -505,28 +405,6 @@ sub ProcessSchedules
       } 
     }
   }
-}
-
-sub create_dt
-{
-  my( $datetime ) = @_;
-
-  my( $year, $month, $day, $hour, $minute, $second, $tz ) = 
-    ($datetime =~ /(\d{4})(\d{2})(\d{2})
-                   (\d{2})(\d{2})(\d{2})\s+
-                   (\S+)$/x);
-  
-  my $dt = DateTime->new( 
-                          year => $year,
-                          month => $month, 
-                          day => $day,
-                          hour => $hour,
-                          minute => $minute,
-                          second => $second,
-                          time_zone => $tz 
-                          );
-  
-  return $dt;
 }
 
 sub FetchDataFromSite
