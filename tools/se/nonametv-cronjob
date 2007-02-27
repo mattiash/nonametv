@@ -44,6 +44,9 @@ $d perl -I lib tools/nonametv-export Xmltv --force-export --verbose 2>&1 | grep 
 $d perl -I lib tools/nonametv-import Combiner
 $h perl -I lib tools/nonametv-import Combiner --short-grab
 
+$d perl -I lib tools/nonametv-import Timeshifter
+$h perl -I lib tools/nonametv-import Timeshifter --short-grab
+
 tools/se/nonametv-updatesite
 
 $d tools/se/nonametv-xmltv-compare-run
