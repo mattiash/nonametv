@@ -105,7 +105,8 @@ sub FetchDataFromSite
 
   my( $date ) = ($batch_id =~ /_(.*)/);
 
-  my $url = $self->{UrlRoot} . $date;
+  my $url = $self->{UrlRoot} . '&siteid=' . $data->{grabber_info} . 
+     '&date=' . $date;
 
   my( $content, $code ) = MyGet( $url );
   return( $content, $code );
