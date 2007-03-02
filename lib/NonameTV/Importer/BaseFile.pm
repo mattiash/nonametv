@@ -52,6 +52,7 @@ sub Import {
       or logdie( "$self->{grabber_name}: Failed to fetch grabber data" );
 
   while( my $data = $sth->fetchrow_hashref ) {
+    progress( "Checking files for $data->{xmltvid}" );
     if( $p->{'remove-missing'} ) {
       $self->RemoveMissing( $ds, $data );
       next;

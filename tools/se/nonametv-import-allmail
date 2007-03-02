@@ -8,8 +8,10 @@ cd $PROOT
 getmail -q -rexpressen.rc
 getmail -q -rdiscovery.rc
 getmail -q -raftonbladet.rc
+getmail -q -rkanal9.rc
 perl -I lib tools/se/nonametv-parse-maildir
 perl -I lib tools/nonametv-import Expressen
 perl -I lib tools/nonametv-import Discovery
 perl -I lib tools/nonametv-import Aftonbladet
+perl -I lib tools/nonametv-import Kanal5_mail
 

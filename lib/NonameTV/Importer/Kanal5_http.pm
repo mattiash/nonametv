@@ -40,7 +40,7 @@ sub ImportContent
   my $cat = $self->FetchCategories( $batch_id, $chd );
   my $dsh = $self->{datastorehelper};
 
-  return ParseData( $batch_id, $cref, $chd, $cat, $dsh );
+  return ParseData( $batch_id, $cref, $chd, $cat, $dsh, 0 );
 }
 
 # Fetch the association between title and category/program_type for a
