@@ -50,7 +50,7 @@ our @EXPORT_OK;
 
 sub ParseData
 {
-  my( $batch_id, $cref, $chd, $cat, $dsh ) = @_;
+  my( $ctag, $cref, $chd, $cat, $dsh, $autobatch ) = @_;
 
   my $doc;
     
@@ -66,7 +66,7 @@ sub ParseData
 
   if( not defined( $doc ) )
   {
-    error( "$batch_id: Failed to parse" );
+    error( "$ctag: Failed to parse" );
     return 0;
   }
   
@@ -75,7 +75,7 @@ sub ParseData
   
   if( $ns->size() == 0 )
   {
-    error( "$batch_id: No programme entries found" );
+    error( "$ctag: No programme entries found" );
     return 0;
   }
   
@@ -97,6 +97,7 @@ sub ParseData
   
   my $state=ST_START;
   my $currdate;
+  my $batch_id;
   
   my $ce = {};
   
@@ -108,16 +109,23 @@ sub ParseData
     
     my $type = T_TEXT;
     
-    my( $date ) = ($text =~ 
-		   /^.*?
-		   (\d+-\d+-\d+),\s+
-		   vecka\s+\d+,\s+
-		   Kanal\s+5\s*$/x )
-	and $type = T_DATE;
-    
+    my( $date, $channel );
     my( $start, $stop, $text2 );
     
-    if( ($start, $stop) = ( $text =~ /^(\d+:\d+)\s*\-\s*(\d+:\d+)$/ ) )
+    if( ($date, $channel ) = ($text =~ 
+			      /^.*?
+			      (\d+-\d+-\d+),\s+
+			      vecka\s+\d+,\s+
+			      (.*)$/x ) ) {
+      if( $channel ne $chd->{display_name} ) {
+	error( "$ctag: Wrong channel found ($channel)" );
+	$dsh->EndBatch( 1 ) if defined( $batch_id );
+	return 0;
+      }
+
+      $type = T_DATE;
+    }
+    elsif( ($start, $stop) = ( $text =~ /^(\d+:\d+)\s*\-\s*(\d+:\d+)$/ ) )
     {
       $type = T_TIME;
     }
@@ -150,7 +158,7 @@ sub ParseData
       }
       else
       {
-	extract_extra_info( $dsh, $ce, $cat, $batch_id );
+	extract_extra_info( $dsh, $ce, $cat, $ctag );
 	$dsh->AddProgramme( $ce );
 	$ce = {};
 	$state = ST_FDATE;
@@ -161,12 +169,20 @@ sub ParseData
     {
       if( $type == T_DATE )
       {
+	if( $autobatch ) {
+	  if( defined( $batch_id ) ) {
+	    $dsh->EndBatch( 1 );
+	  }
+	  $batch_id = $chd->{xmltvid} . "_$date";
+	  $dsh->StartBatch( $batch_id, $chd->{id} );
+	}
+
 	$dsh->StartDate( $date );
 	$state = ST_FDATE;
       }
       else
       {
-	error( "$batch_id: Expected date, found: $text" );
+	error( "$ctag: Expected date, found: $text" );
       }
     }
     elsif( $state == ST_FDATE )
@@ -186,12 +202,20 @@ sub ParseData
       }
       elsif( $type == T_DATE )
       {
+	if( $autobatch ) {
+	  if( defined( $batch_id ) ) {
+	    $dsh->EndBatch( 1 );
+	  }
+	  $batch_id = $chd->{xmltvid} . "_$date";
+	  $dsh->StartBatch( $batch_id, $chd->{id} );
+	}
+
 	$dsh->StartDate( $date );
 	$state = ST_FDATE;
       }
       else
       {
-	error( "$batch_id: Expected time, found: $text" );
+	error( "$ctag: Expected time, found: $text" );
       }
     }
     elsif( $state == ST_FTIME )
@@ -203,24 +227,28 @@ sub ParseData
       }
       else
       {
-	error( "$batch_id: Expected title, found: $text" );
+	error( "$ctag: Expected title, found: $text" );
       }
     }
   }
   
   if( defined( $ce->{title} ) )
   {
-    extract_extra_info( $dsh, $ce, $cat, $batch_id );
+    extract_extra_info( $dsh, $ce, $cat, $ctag );
     $dsh->AddProgramme( $ce );
   }
-  
+
+  if( $autobatch ) {
+    $dsh->EndBatch( 1 );
+  }
+
   # Success
   return 1;
 }
 
 sub extract_extra_info
 {
-  my( $dsh, $ce, $cat, $batch_id ) = @_;
+  my( $dsh, $ce, $cat, $ctag ) = @_;
 
   my $ds = $dsh->{ds};
 
@@ -249,7 +277,7 @@ sub extract_extra_info
   }
   else
   {
-    info( "$batch_id: No category found for $ce->{title}" );
+    info( "$ctag: No category found for $ce->{title}" );
   }
 
   #
