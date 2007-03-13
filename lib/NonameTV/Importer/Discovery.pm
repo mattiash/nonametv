@@ -21,7 +21,7 @@ use utf8;
 use DateTime;
 use XML::LibXML;
 
-use NonameTV qw/MyGet Wordfile2Xml Htmlfile2Xml norm/;
+use NonameTV qw/MyGet File2Xml norm/;
 use NonameTV::DataStore::Helper;
 use NonameTV::DataStore::Updater;
 use NonameTV::Log qw/info progress error logdie/;
@@ -66,43 +66,10 @@ sub ImportContentFile
     return;
   }
 
-  my( $fnid, $fnlang, $fntype, $ext ) = 
-    ( $file =~ /([A-Z]+[\. ]+[A-Z]+)[\. ]
-               (\S+).*?
-               (\S+\s*[ ()0-9]*)\.
-               ([^\.]+)$/x );
-
-  if( not defined( $ext ) )
-  {
-    error( "Discovery: Unknown filename $file" );
-    return;
-  }
-
-  $fnid =~ tr/ /./;
-
-#  if( $fnlang ne "Swe" )
-#  {
-#    error( "Wrong language $fnlang" );
-#    return;
-#  }
-
   my $channel_id = $chd->{id};
   my $channel_xmltvid = $chd->{xmltvid};
 
-  my $doc;
-  if( $ext =~  /doc/i )
-  {
-    $doc = Wordfile2Xml( $file );
-  }
-  elsif( $ext eq 'html' )
-  {
-    $doc = Htmlfile2Xml( $file );
-  }
-  else
-  {
-    error( "Discovery: Unknown extension $ext in $file" );
-    return;
-  }
+  my $doc = File2Xml( $file );
 
   if( not defined( $doc ) )
   {
@@ -110,20 +77,13 @@ sub ImportContentFile
     return;
   }
 
-  if( $fntype =~ /^amend/i )
-  {
-    $self->ImportAmendments( $fnid, $file, $doc, 
+  if( $file =~ /amend/i ) {
+    $self->ImportAmendments( $file, $doc, 
                              $channel_xmltvid, $channel_id );
   }
-  elsif( $fntype =~ /^final|rei/i )
-  {
-    $self->ImportData( $fnid, $file, $doc, 
+  else {
+    $self->ImportData( $file, $doc, 
                        $channel_xmltvid, $channel_id );
-  }
-  else
-  {
-    error( "Discovery: Unknown filetype $fntype for $file" );
-    return;
   }
 }
 
@@ -133,7 +93,7 @@ sub ImportContentFile
 sub ImportData
 {
   my $self = shift;
-  my( $fnid, $filename, $doc, $channel_xmltvid, $channel_id ) = @_;
+  my( $filename, $doc, $channel_xmltvid, $channel_id ) = @_;
   
   my $dsh = $self->{datastorehelper};
 
@@ -176,6 +136,9 @@ sub ImportData
   
   foreach my $div ($ns->get_nodelist)
   {
+    # Ignore English titles in National Geographic.
+    next if $div->findvalue( '@name' ) =~ /title in english/i;
+
     my( $text ) = norm( $div->findvalue( './/text()' ) );
     next if $text eq "";
 
@@ -183,10 +146,14 @@ sub ImportData
 
     my $type;
     
-    if( $text =~ /^\D+\s*\d+\s*\D+\s*\d+$/  )
+    if( $text =~ /^(måndag|tisdag|onsdag|torsdag|fredag|lördag|söndag|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\s*\d+\s*\D+\s*\d+$/i )
     {
       $type = T_DATE;
       $date = parse_date( $text );
+      if( not defined $date ) {
+	error( "Discovery: $filename Invalid date $text" );
+      }
+
     }
     elsif( $text =~ /^\d\d\.\d\d\s+\S+/ )
     {
@@ -298,11 +265,13 @@ sub ImportData
 sub ImportAmendments
 {
   my $self = shift;
-  my( $fnid, $filename, $doc, $channel_xmltvid, $channel_id ) = @_;
+  my( $filename, $doc, $channel_xmltvid, $channel_id ) = @_;
 
   my $dsu = $self->{datastoreupdater};
 
   my $loghandle;
+
+  progress( "Discovery: Processing $filename" );
 
   # Find all div-entries.
   my $ns = $doc->find( "//div" );
@@ -354,6 +323,10 @@ sub ImportAmendments
       }
 
       $date = parse_date( $text );
+      if( not defined $date ) {
+	error( "Discovery: $filename Invalid date $text" );
+      }
+
       $state = ST_FOUND_DATE;
 
       $self->{process_batch} = 

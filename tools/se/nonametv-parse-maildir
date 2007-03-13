@@ -52,6 +52,7 @@ my @folders = qw(/home/mattias/Maildir/.Projects.xmltv-data
                  /home/mattias/Maildir/.Projects.NonameTV-Data.Expressen
                  /home/mattias/Maildir/.Projects.NonameTV-Data.Aftonbladet
                  /home/mattias/Maildir/.Projects.NonameTV-Data.Kanal9
+                 /home/mattias/Maildir/.Projects.NonameTV-Data.NationalGeographic
                  );
 
 # Flag messages AFTER they have been processed. Then I normally
@@ -210,6 +211,10 @@ sub guess_channel
 
   if( $dir =~ /Kanal9/ and $filename =~ /\.doc$/i ) {
     return "kanal9.se";
+  }
+
+  if( $dir =~ /NationalGeographic/ and $filename =~ /\.doc$/i ) {
+    return "ngcsverige.com";
   }
 
   return undef;

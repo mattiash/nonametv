@@ -29,6 +29,7 @@ BEGIN {
                       Html2Xml Htmlfile2Xml
                       Wordfile2HtmlTree Htmlfile2HtmlTree
                       Word2Xml Wordfile2Xml 
+		      File2Xml
                       norm AddCategory
                       ParseDescCatSwe FixProgrammeData
 		      ParseXmltv/;
@@ -219,6 +220,24 @@ sub Wordfile2Xml
   $html =~ s/\&hellip;/.../g;
   
   return Html2Xml( $html );
+}
+
+sub File2Xml {
+  my( $filename ) = @_;
+
+  my $data = read_file( $filename );
+  my $doc;
+  if( $data =~ /^\<\!DOCTYPE HTML/ )
+  {
+    # This is an override that has already been run through wvHtml
+    $doc = Html2Xml( $data );
+  }
+  else
+  {
+    $doc = Word2Xml( $data );
+  }
+
+  return $doc;
 }
 
 # Remove any strange quotation marks and other syntactic marks
