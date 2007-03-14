@@ -531,7 +531,7 @@ sub add_showing
     my( $day, $month ) = ($date =~ /(\d+)\s*\/\s*(\d+)/);
     if( not defined( $month ) )
     {
-      error( "Unknown date $date" );
+#      error( "Unknown date $date" );
       return;
     }
     $dt->set( month => $month,
