@@ -64,5 +64,7 @@
 67,"Aftonbladet TV7","tv7.aftonbladet.se","","Aftonbladet",1,"",1,"","","sv",0,\N
 68,"CANAL+ Film HD","filmhd.canalplus.se","","CanalPlus",1,"13",1,"movie","Movies","sv",0,\N
 69,"CANAL+ Sport HD","sporthd.canalplus.se","","CanalPlus",1,"35",1,"sports","Sports","sv",0,\N
-70,"TV1000 +1","plus-1.tv1000.viasat.se","","TimeShifter",1,"tv1000.viasat.se,60",0,"","","sv",0,\N
+70,"TV1000 +1","plus-1.tv1000.viasat.se","","TimeShifter",1,"tv1000.viasat.se,60",1,"","","sv",0,\N
 71,"Nickelodeon","nickelodeon.se","","Mtve",1,"4",1,"","Children's","sv",0,\N
+72,"Kanal 9","kanal9.se","","Kanal5_mail",1,"",0,"","","sv",0,\N
+73,"National Geographic Sverige","ngcsverige.com","","Discovery",1,"NGC",0,"","","sv",0,\N
