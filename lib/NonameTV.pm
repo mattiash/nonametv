@@ -30,6 +30,7 @@ BEGIN {
                       Wordfile2HtmlTree Htmlfile2HtmlTree
                       Word2Xml Wordfile2Xml 
 		      File2Xml
+		      FindParagraphs
                       norm AddCategory
                       ParseDescCatSwe FixProgrammeData
 		      ParseXmltv/;
@@ -239,6 +240,48 @@ sub File2Xml {
 
   return $doc;
 }
+
+=pod
+
+FindParagraphs( $doc, $expr )
+
+Finds all paragraphs in the part of an xml-tree that matches an 
+xpath-expression. Returns a reference to an array of strings.
+All paragraphs are normalized and empty strings are removed from the
+array.
+
+Both <div> and <br> are taken into account when splitting the document
+into paragraphs.
+
+Use the expression '//body//.' for html-documents when you want to see
+all paragraphs in the page.
+
+=cut 
+
+sub FindParagraphs {
+  my( $doc, $elements ) = @_;
+
+  my $ns = $doc->find( $elements );
+
+  my @paragraphs;
+  my $p = "";
+
+  foreach my $node ($ns->get_nodelist()) {
+    if( $node->nodeName eq "#text" ) {
+      $p .= $node->textContent();
+    }
+    elsif( $node->nodeName eq "p" or $node->nodeName eq "br" ) {
+      $p = norm( $p );
+      if( $p ne "" ) {
+	push @paragraphs, $p;
+	$p = "";
+      }
+    }
+  }
+
+  return \@paragraphs;
+}
+
 
 # Remove any strange quotation marks and other syntactic marks
 # that we don't want to have. Remove leading and trailing space as well
