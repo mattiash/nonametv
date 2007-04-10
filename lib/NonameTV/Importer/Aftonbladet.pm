@@ -79,7 +79,7 @@ sub ImportContentFile
 
     next if $text eq "";
 
-    if( $text =~ /^\S+dag \d{1,2} \S+$/ ) {
+    if( $text =~ /^\S+dag\s+\d{1,2}\s+\S+\s*$/i ) {
       my $date = ParseDate( $text, $file  );
       if( not defined $date ) {
         error( "Aftonbladet $file: Unknown date $text" );
@@ -151,8 +151,8 @@ my %months = (
 sub ParseDate {
   my( $text, $file ) = @_;
 
-  my( $wday, $day, $month ) = ($text =~ /^(.*?)\s+(\d+)\s+([a-z]+)\.*$/i);
-  my $monthnum = $months{$month};
+  my( $wday, $day, $month ) = ($text =~ /^(.*?)\s+(\d+)\s+([a-z]+)[\. ]*$/i);
+  my $monthnum = $months{lc $month};
 
   if( not defined $monthnum ) {
     error( "$file: Unknown month '$month' in '$text'" );
