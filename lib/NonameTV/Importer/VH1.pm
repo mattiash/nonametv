@@ -102,14 +102,19 @@ sub ImportContentFile
       my( $start, $title, $description ) = ($text =~ 
         /^(\d{4}) ([A-Z0-9\'\&s\/ \-:,()]+) ([A-Z].*)/);
 
-      $start =~ s/(\d\d)(\d\d)/$1:$2/;
-      $title = capitalize_title( $title );
-
-      $dsh->AddProgramme( {
-        start_time => $start,
-        title => $title,
-        description => $description,
-      });
+      if( not defined( $start ) ) {
+	error( "Match failed for '$text'" ); 
+      }
+      else {
+	$start =~ s/(\d\d)(\d\d)/$1:$2/;
+	$title = capitalize_title( $title );
+	
+	$dsh->AddProgramme( {
+	  start_time => $start,
+	  title => $title,
+	  description => $description,
+	});
+      }
     }
     else {
       error( "Ignoring $text" );
