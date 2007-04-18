@@ -20,7 +20,7 @@ Create a new mysql database called listings.
 Create tables in the database and populate them with tables by running the
 commands in examples/listings.sql. Then populate the channels and trans_cat
 tables with data from examples/channels.txt and trans_cat.txt. This can be
-done with the following (untested) MySQL command:
+done with the following MySQL commands:
 
 LOAD DATA INFILE 'channels.txt' INTO TABLE channels
 FIELDS TERMINATED BY ',' ENCLOSED BY '"';
@@ -33,6 +33,7 @@ Create a directory called /var/local/nonametv.
 Create the following directories under /var/local/nonametv:
 
 cache
+channels
 xmltv
 xmltv_staging
 xmltv_compare
@@ -48,19 +49,22 @@ Also create a directory /var/log/nonametv/
 Make sure that the user you intend to run the scripts as can read/write the
 directories above.
 
-Copy nonametv.conf to /etc/nonametv.conf.
+Copy examples/nonametv.conf to /etc/nonametv.conf
 
 Edit /etc/nonametv.conf to match your installation.
 
 Setup sitecopy to upload files from /var/local/nonametv/xmltv to your
 webserver. This is the data that is downloaded by tv_grab_se_swedb.
 
-Explore the commands in tools/. Start by looking at nonametv-cronjob.
-The only command that must be run manually is
+Explore the commands in tools/ and tools/se. Start by looking at 
+tools/se/nonametv-cronjob.
+
+The only command that isn't run from nonametv-cronjob is
 
 perl -I lib tools/nonametv-export Xmltv --export-channels
 
-(run from the nonametv-directory). It creates the channels.xml.gz file.
+(run from the nonametv-directory). It creates the channels.xml.gz file and
+should be run after you have added new channels or deleted old.
 
 Most of the commands take one or several --verbose parameters.
 
