@@ -1,0 +1,79 @@
+{
+  DataStore => 
+  { 
+    type => 'MySQL',
+    dbhost => 'sto.holmlund.se',
+    dbname => 'listings',
+    username => 'root',
+    password => '',
+  },
+
+  Cache =>
+  {
+    BasePath => '/var/local/nonametv/cache',  # Should be persistent between reboots.
+    MaxAge => 8*24, # Files are deleted from the cache after MaxAge hours.
+#    Verbose => 1,
+  },
+
+  LogFile => "/var/log/nonametv/nonametv.log",
+ 
+  Importers =>
+  {
+        
+    Discovery =>
+    {
+      Type => 'Discovery',
+    },
+
+    Infomedia => 
+    {
+      Type => 'Infomedia',
+#      UrlRoot => 'http://www.infomedia.lu/listings/schedule.asp',
+      UrlRoot => 'http://www.infomedia.lu/infomedia_demand/' . 
+                 'schedules_channels.asp',
+      MaxDays => 16,
+    },
+
+    Combiner => 
+    {
+      Type => 'Combiner',
+      UrlRoot => 'http://www.holmlund.se/xmltv/',
+      MaxDays => 15,
+    },
+
+    Timeshifter => 
+    {
+      Type => 'Timeshifter',
+      UrlRoot => 'http://www.holmlund.se/xmltv/',
+      MaxDays => 14,
+    },
+
+    Expressen =>
+    {
+       Type => 'Expressen',
+    },
+
+    VH1 =>
+    {
+       Type => 'VH1',
+    },
+  },
+
+  Exporters =>
+  {
+    Xmltv => 
+    {
+      Type => 'Xmltv',
+      Root => '/var/local/nonametv/xmltv_staging/',
+      RootUrl => 'http://xmltv.tvsajten.com/xmltv/',
+      IconRootUrl => 'http://xmltv.tvsajten.com/chanlogos/',
+      MinDays => 10,  # Warn if there is data for less than 
+                      # MinDays for a channel.
+      MaxDays => 15,
+      Encoding => "ISO-8859-1",
+      Language => 'sv',
+      DtdFile => '/usr/share/sgml/xmltv/dtd/0.5/xmltv.dtd',
+    },
+  },
+
+}

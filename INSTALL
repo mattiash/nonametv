@@ -49,7 +49,9 @@ Also create a directory /var/log/nonametv/
 Make sure that the user you intend to run the scripts as can read/write the
 directories above.
 
-Copy examples/nonametv.conf to /etc/nonametv.conf
+Copy examples/nonametv.conf.public to /etc/nonametv.conf. Note that this file
+only contains configuration for the Importers that can be run without passwords
+etc. from the TV-companies.
 
 Edit /etc/nonametv.conf to match your installation.
 
