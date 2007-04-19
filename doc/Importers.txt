@@ -1,0 +1,41 @@
+The NonameTV software contains a lot of different importers. This document tries
+to summarize the available grabbers to give an overview and help when writing
+new importers.
+
+Importer          Delivery  Organization  Format  Structured
+Aftonbladet_http   http      daily         html     no
+CanalPlus          http      weekly        xml      yes
+Combiner           http      daily         xml      yes
+Discovery          mail      split         word     no
+Eurosport          ftp       one file      xml      yes    
+Expressen          mail      split         word     no
+ExtremeSports
+HRT
+Infomedia          http      daily         html     yes
+Kanal5_http        http      weekly        word+xml no
+Kanal5_mail        mail      weekly        word     no
+Mtve               http      daily         xml      yes
+NetTV
+Nonstop            http      weekly        word     no
+Phazer
+Svt_web            http      daily         html     yes
+Timeshifter        http      daily         xml      yes
+TV4                http      daily         xml      yes
+VH1                http      split         word     no
+Viasat             http      weekly        csv      yes
+
+
+"Delivery" describes how the Importer gets the data.
+
+"Organization" describes how the data is mapped into batches. "daily" means that
+each file describes one day and it is mapped into a single batch per day. "weekly" 
+means that each file describes one week and it is mapped into a single batch per week.
+"split" means that each file contains a varying amount of days. Therefore the file
+is split into one batch per day.
+
+"Format" is self-explanatory.
+
+"Structured" yes means that starttime, title etc can ba found at specific locations
+in each data file. no means that the data is split into paragraphs and then the
+importer looks at each paragraph to decide if it is a starttime, a title or a
+description based on its content and the content of previous paragraphs.
