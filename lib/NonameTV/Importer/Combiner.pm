@@ -5,9 +5,10 @@ package NonameTV::Importer::Combiner;
 Combine several channels into one. Read data from xmltv-files downloaded
 via http.
 
-Replace Span-modules with custom routines. Treat times as strings.
-Remove Day-handling, I can always add it back in if any channel
-requires it.
+Limitations:
+
+ - No support for different schedules for different days.
+ - No support for schedule-periods that span midnight.
 
 =cut 
 
@@ -151,8 +152,6 @@ $channel_data{ "kunskapbarn.svt.se" } =
 =pod
 
 Viasat Nature/Crime och Nickelodeon samsänder hos SPA.
-Vad jag vet är det aldrig några överlapp, så jag
-inkluderar alla program på båda kanalerna.
 
 =cut
 
@@ -177,7 +176,6 @@ $channel_data{ "viasat-nature-nick.spa.se" } =
 use DateTime;
 use XML::LibXML;
 use Compress::Zlib;
-use DateTime::Event::Recurrence;
 
 use NonameTV qw/MyGet ParseXmltv/;
 
@@ -207,7 +205,6 @@ sub new {
 
     $self->{grabber_name} = "Combiner";
 
-    $self->ProcessSchedules();
     return $self;
 }
 
@@ -303,108 +300,75 @@ sub BuildDay
 
   $ds->StartBatch( $batch_id );
 
+  my $date_dt = date2dt( $date );
+
   foreach my $subch (keys %{$sched})
   {
-    my $ss = $self->{spanset}->{$channel}->{$subch};
+    foreach my $span (@{$sched->{$subch}}) {
+      my $sstart_dt;
+      my $sstop_dt;
 
-    foreach my $e (@{$prog->{$subch}})
-    {
-      my $span = DateTime::Span->from_datetimes( 
-        after => $e->{start_dt}, before => $e->{stop_dt} );
+      if( defined( $span->{time} ) ) {
+	my( $sstart, $sstop ) = split( /-/, $span->{time} );
+	
+	$sstart_dt = changetime( $date_dt, $sstart );
+	$sstop_dt = changetime( $date_dt, $sstop );
+	if( $sstop_dt lt $sstart_dt ) {
 
-      if( $ss->contains( $span ) )
-      {
-        # Include this program
-#        print "Full: $e->{title}\n";
+	  # BUG: The algorithm will discard any programs that start after
+	  # midnight and matches a span-entry that starts before midnight.
+	  # To fix this, we should generate two spans from this entry,
+	  # one that spans midnight on the night before this date
+	  # and one that spans midnight on the night after this date.
+
+	  $sstop_dt->add( days => 1 );
+	}
       }
-      elsif( $ss->intersects( $span ) )
-      {
-        # Include the part of this program that 
-        # is sent.
-#        print "Part: $e->{title}\n";
-        my $isect = $ss->intersection( $span );
-        my @spans = $isect->as_list();
-        if( scalar(@spans) != 1 )
-        {
-          error( "$batch_id: Multiple spans" );
-        }
-        $e->{start_dt} = $spans[0]->start;
-        $e->{stop_dt} = $spans[0]->end;
-        $e->{title} = "(P) " . $e->{title};
-      }
-      else
-      {
-#        print "Skip: $e->{title}\n";
-        next;
+      else { 
+	$sstart_dt = date2dt( "1970-01-01" );
+	$sstop_dt = date2dt( "2030-01-01" );
       }
 
-      $e->{start_dt}->set_time_zone( "UTC" );
-      $e->{stop_dt}->set_time_zone( "UTC" );
-  
-      $e->{start_time} = $e->{start_dt}->ymd('-') . " " . 
-        $e->{start_dt}->hms(':');
-      delete $e->{start_dt};
-      $e->{end_time} = $e->{stop_dt}->ymd('-') . " " . 
-        $e->{stop_dt}->hms(':');
-      delete $e->{stop_dt};
-      $e->{channel_id} = $chd->{id};
-      
-      $ds->AddProgrammeRaw( $e );
+      foreach my $e (@{$prog->{$subch}}) {
+	my $pstart_dt = $e->{start_dt}->clone();
+	my $pstop_dt = $e->{stop_dt}->clone();
+	
+	my $partial = 0;
+	
+	if( $pstart_dt lt $sstart_dt ) {
+	  $pstart_dt = $sstart_dt->clone();
+	  $partial = 1;
+	}
+	
+	if( $pstop_dt gt $sstop_dt ) {
+	  $pstop_dt = $sstop_dt->clone();
+	  $partial = 1;
+	}
+	
+	next if $pstart_dt ge $pstop_dt;
+	
+	my %e2 = %{$e};
+
+	$pstart_dt->set_time_zone( "UTC" );
+	$pstop_dt->set_time_zone( "UTC" );
+
+	$e2{start_time} = $pstart_dt->ymd('-') . " " . $pstart_dt->hms(':');
+	$e2{end_time} = $pstop_dt->ymd('-') . " " . $pstop_dt->hms(':');
+	
+	delete( $e2{start_dt} );
+	delete( $e2{stop_dt} );
+
+	if( $partial ) {
+	  $e2{title} = "(P) " . $e2{title};
+	}
+	
+	$e2{channel_id} = $chd->{id};
+	
+	$ds->AddProgrammeRaw( \%e2 );
+      }
     }
   }
   $ds->EndBatch( 1 );
-}
-
-sub ProcessSchedules
-{
-  my $self = shift;
-
-  foreach my $channel (keys %channel_data)
-  {
-    foreach my $subch (keys %{$channel_data{$channel}})
-    {
-      $self->{spanset}->{$channel}->{$subch} 
-        = DateTime::SpanSet->empty_set();
-
-      foreach my $e (@{$channel_data{$channel}->{$subch}})
-      {
-        my $spanset;
-
-        if( $e->{day} eq "all" )
-        {
-          if( defined( $e->{time} ) )
-          {
-            my($fromhour, $frommin, $tohour, $tomin) =
-              ($e->{time} =~ /^(\d\d)(\d\d)-(\d\d)(\d\d)$/ );
-            
-            my $start = DateTime::Event::Recurrence->daily
-              ( hours => [$fromhour], minutes => [$frommin] );
-            
-            my $end   = DateTime::Event::Recurrence->daily
-              ( hours => [$tohour], minutes => [$tomin] );
-            
-            # Build a spanset from the set of starting points and ending points
-            $spanset = DateTime::SpanSet->from_sets
-              ( start_set => $start,
-                end_set   => $end );
-          }
-          else
-          {
-            $spanset = DateTime::Span->from_datetime_and_duration( 
-                start => DateTime->today->subtract( days => 10 ), 
-                duration => DateTime::Duration->new( months => 4 ) );
-          }
-        }
-        else
-        {
-          die "Unknown day $e->{day}";
-        }
-
-        $self->{spanset}->{$channel}->{$subch} = 
-          $self->{spanset}->{$channel}->{$subch}->union( $spanset );
-      } 
-    }
-  }
 }
 
 sub FetchDataFromSite
@@ -425,4 +389,29 @@ sub FetchDataFromSite
   return( $content, $code );
 }
     
+sub date2dt {
+  my( $date ) = @_;
+
+  my( $year, $month, $day ) = split( '-', $date );
+  
+  my $dt = DateTime->new( year   => $year,
+                          month  => $month,
+                          day    => $day,
+                          time_zone => 'Europe/Stockholm',
+                          );
+}
+
+sub changetime {
+  my( $dt, $time ) = @_;
+
+  my( $hour, $minute ) = ($time =~ m/(\d+)(\d\d)/);
+
+  my $dt2 = $dt->clone();
+
+  $dt2->set( hour => $hour,
+	    minute => $minute );
+
+  return $dt2;
+}
+
 1;
