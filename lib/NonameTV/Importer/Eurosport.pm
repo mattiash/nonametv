@@ -111,12 +111,8 @@ sub ImportContentFile
 sub UpdateFiles {
   my( $self ) = @_;
 
-  my $sth = $self->{datastore}->Iterate( 'channels', 
-     { grabber => $self->{grabber_name} } )
-    or logdie( "$self->{grabber_name}: Failed to fetch grabber data" );
-
-  while( my $data = $sth->fetchrow_hashref ) {
-    
+  foreach my $data ( $self->{datastore}->FindGrabberChannels( 
+	$self->{grabber_name} ) ) { 
     my $dir = $data->{grabber_info};
     my $xmltvid = $data->{xmltvid};
 
@@ -124,8 +120,6 @@ sub UpdateFiles {
              $NonameTV::Conf->{FileStore} . '/' . 
              $xmltvid . '/' . $self->{Filename} );
   }  
-
-  $sth->finish();
 }
 
 sub ftp_get {

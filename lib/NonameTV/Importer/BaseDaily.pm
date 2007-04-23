@@ -49,15 +49,11 @@ sub Import
 
   my $ds = $self->{datastore};
 
-  my $sth = $ds->Iterate( 'channels', { grabber => $self->{grabber_name} } )
-      or logdie( "$self->{grabber_name}: Failed to fetch grabber data" );
-
-  while( my $data = $sth->fetchrow_hashref )
-  {
+  foreach my $data ($ds->FindGrabberChannels( $self->{grabber_name} ) ) {
     if( $p->{'force-update'} and not $p->{'short-grab'} )
     {
       # Delete all data for this channel.
-      my $deleted = $ds->Delete( 'programs', { channel_id => $data->{id} } );
+      my $deleted = $ds->ClearChannel( $data->{id} );
       progress( "Deleted $deleted records for $data->{xmltvid}" );
     }
 
@@ -74,8 +70,6 @@ sub Import
       $self->ImportBatch( $batch_id, $data, $p->{'force-update'} );
     }
   }
-
-  $sth->finish();
 }
 
 sub ImportContent

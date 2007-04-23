@@ -376,7 +376,7 @@ sub AddProgrammeRaw
 
   if( $self->Add( 'programs', $data, 0 ) == -1 )
   {
-    my $err = $self->{dbh_errstr};
+    my $err = $self->{dbh}->errstr;
 
     # Check for common error-conditions
     my $data_org = $self->Lookup( "programs", 
@@ -428,6 +428,53 @@ sub AddProgrammeRaw
   }
 }
 
+=item ClearChannel
+
+Delete all programs for a channel. Takes one parameter, the channel id
+for the channel in question.
+
+Returns the number of programs that were deleted.
+
+=cut
+
+sub ClearChannel {
+  my $self = shift;
+  my( $chid ) = @_;
+
+  my $deleted = $self->Delete( 'programs', 
+			       { channel_id => $chid } );
+
+  return $deleted;
+}
+
+=item FindGrabberChannels 
+
+Returns an array with all channels associated with a specific channel.
+Each channel is described by a hashref with keys matching the database.
+
+Takes one parameter: the name of the grabber.
+
+=cut
+
+sub FindGrabberChannels {
+  my $self = shift;
+  my( $grabber ) = @_;
+
+  my @result;
+
+  my $sth = $self->Iterate( 'channels', { grabber => $grabber } )
+      or logdie( "$grabber: Failed to fetch grabber data" );
+
+  while( my $data = $sth->fetchrow_hashref ) {
+    push @result, $data;
+  }
+
+  $sth->finish();
+
+  return @result;
+}
+  
+  
 =item LookupCat
 
 Lookup a category found in an infile and translate it to
@@ -510,6 +557,45 @@ sub Reset
     $self->EndBatch( 0 );
   }
 }
+
+=item StartTransaction
+
+Start a new datastore transaction. Can be used to wrap a set of datastore
+operations into a single transaction that can either be committed or
+reverted.
+
+    $ds->StartTransaction();
+    # Do stuff to the datastore
+    $ds->EndTransaction(1); # Commit the changes.
+
+=cut
+
+sub StartTransaction {
+  my $self = shift;
+
+
+  $self->DoSql( "START TRANSACTION" );
+}
+
+=item EndTransaction
+
+End a datastore transaction. Takes a boolean parameter that decides if
+the transaction shall be committed (true) or reverted (false).
+
+=cut
+
+sub EndTransaction {
+  my $self = shift;
+  my( $commit ) = @_;
+
+  if( $commit ) {
+    $self->DoSql( "COMMIT" );
+  }
+  else {
+    $self->DoSql( "ROLLBACK" );
+  }
+}
+
 
 sub LoadCategories
 {
@@ -854,7 +940,7 @@ sub DoSql
 
 =head1 COPYRIGHT
 
-Copyright (C) 2004 Mattias Holmlund.
+Copyright (C) 2006 Mattias Holmlund.
 
 =cut
 

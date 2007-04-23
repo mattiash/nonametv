@@ -48,10 +48,7 @@ sub Import {
 
   my $ds = $self->{datastore};
 
-  my $sth = $ds->Iterate( 'channels', { grabber => $self->{grabber_name} } )
-      or logdie( "$self->{grabber_name}: Failed to fetch grabber data" );
-
-  while( my $data = $sth->fetchrow_hashref ) {
+  foreach my $data ($ds->FindGrabberChannels( $self->{grabber_name} ) ) {
     progress( "Checking files for $data->{xmltvid}" );
     if( $p->{'remove-missing'} ) {
       $self->RemoveMissing( $ds, $data );
@@ -60,7 +57,7 @@ sub Import {
     
     if( $p->{'force-update'} ) {
       # Delete all data for this channel.
-      my $deleted = $ds->Delete( 'programs', { channel_id => $data->{id} } );
+      my $deleted = $ds->ClearChannel( $data->{id} );
       progress( "Deleted $deleted records for $data->{xmltvid}" );
     }
 
@@ -101,10 +98,7 @@ sub Import {
       
       $self->DoImportContentFile( "$file", $data );
     }
-
   }
-
-  $sth->finish();
 }
 
 sub DoImportContentFile {
@@ -116,9 +110,9 @@ sub DoImportContentFile {
   # Log ERROR and FATAL
   my $h = log_to_string( 4 );
 
-  $ds->DoSql( "START TRANSACTION" );
+  $ds->StartTransaction();
   
-  $self->{earliestdate} = "2100-01Ã-01";
+  $self->{earliestdate} = "2100-01-01";
   $self->{latestdate} = "1970-01-01";
 
   # Import file
@@ -132,7 +126,7 @@ sub DoImportContentFile {
   }
 
   if( $highest > 3 ) {
-    $ds->DoSql("Rollback");
+    $ds->EndTransaction( 0 );
 
     $ds->Update( "files", 
                  { channelid => $data->{id},
@@ -142,7 +136,7 @@ sub DoImportContentFile {
     
   }
   else { 
-    $ds->DoSql("Commit");
+    $ds->EndTransaction( 1 );
   
     $ds->Update( "files", 
                  { channelid => $data->{id},
