@@ -17,15 +17,18 @@ use Encode qw/decode/;
 use NonameTV;
 use NonameTV::DataStore;
 
-my %opt = ( manual => 0,
+my $opt = { manual => 0,
             test => 0,
-            );
+	    verbose => 0,
+            };
 
-my $res = GetOptions( \%opt, qw/manual test/ );
+my $res = GetOptions( $opt, qw/manual test verbose/ );
+
+$opt->{verbose} = 1 if $opt->{manual};
 
 if( not $res ) {
   print << 'EOHELP';
-nonametv-process-maildir [--manual] [--test]
+nonametv-process-maildir [--manual] [--test] [--verbose]
 
 Extract files from mails in a maildir and store them in one directory per
 channel for later import by Importers derived from 
@@ -76,14 +79,14 @@ foreach my $dir (@folders) {
     my $subject = decode( 'MIME-Header', $message->get( 'Subject' ) ) || '';
     my $from = $message->get( 'From' );
 
-    print "Processing $from - $subject\n";
+    verbose( "Processing $from - $subject" );
 
     if( process_parts( $message, $dir, $from, $subject ) ) {
       $message->label( 'flagged' => 1 );
-      print "Processing succeeded.\n";
+      verbose( "Processing succeeded." );
     }
     else {
-      print "Processing failed.\n";
+      verbose( "Processing failed." );
     }
   }
 }
@@ -115,7 +118,7 @@ sub process_parts
 
     my $channel = guess_channel( $dir, $from, $subject, $name, $type, $size );
 
-    if( (not defined $channel) and $opt{manual} )
+    if( (not defined $channel) and $opt->{manual} )
     {
       print "$name ($size bytes): ";
       $channel = <STDIN>;
@@ -138,11 +141,9 @@ sub process_parts
     }
 
     if( not defined $channel ) {
-      print "  $name skipped.\n";
+      verbose( "  $name skipped." );
       return 0;
     }
-
-    print "  $name $channel"; 
 
     my $chd = $ds->Lookup( 'channels', {xmltvid => $channel} );
 
@@ -180,15 +181,15 @@ sub process_parts
                               filename => $name } );
       move( $filename, "$dir/$name" );
       sleep(1); # File-times have a one-second resolution...
-      print "\n";
+      verbose( "  $name $channel" ); 
     }
     else {
-      print " (duplicate)\n";
+      verbose( "  $name $channel (duplicate)" );
       unlink( $filename );
     }
   }
 
-  return $opt{test} ? 0 : 1;
+  return $opt->{test} ? 0 : 1;
 }
 
 sub guess_channel
@@ -277,4 +278,8 @@ sub md5sum {
 
 sub error {
   print $_[0] . "\n";
+}
+
+sub verbose {
+  print $_[0] . "\n" if $opt->{verbose};
 }
