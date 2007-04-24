@@ -241,7 +241,7 @@ about the programme.
     category   => [ "sport" ],        # Optional
   } );
 
-The times must be in UTC. The strings must be encoded in iso-8859-1.
+The times must be in UTC. The strings must be properly encoded perl-strings.
 
 =cut
 
