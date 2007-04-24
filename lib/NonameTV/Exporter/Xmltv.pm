@@ -12,6 +12,7 @@ use File::Copy;
 
 use NonameTV::Exporter;
 use NonameTV::Language qw/LoadLanguage/;
+use NonameTV qw/norm/;
 
 use XMLTV::ValidateFile qw/LoadDtd ValidateFile/;
 
@@ -542,7 +543,7 @@ sub WriteEntry
     $ep_text .= " " . $self->{lngstr}->{episode_season} . " $season" 
       if( $season );
 
-    $d->{'episode-num'} = [[ $data->{episode}, 'xmltv_ns' ],
+    $d->{'episode-num'} = [[ norm($data->{episode}), 'xmltv_ns' ],
                            [ $ep_text, 'onscreen'] ];
   }
   
