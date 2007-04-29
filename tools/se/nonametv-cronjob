@@ -27,6 +27,8 @@ then
   h=
 fi
 
+tools/se/nonametv-update-mark > $NROOT/xmltv_staging/last_updated
+
 $d tools/se/nonametv-import-allhttp
 $h tools/se/nonametv-import-allhttp --short-grab
 $d perl -I lib tools/nonametv-import Eurosport
