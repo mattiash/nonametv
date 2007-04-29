@@ -17,6 +17,7 @@ foreach my $url (@ARGV) {
   next unless defined $time;
   if( $time > $latest_time ) {
     $latest_host = $hostname;
+    $latest_time = $time;
   }
 }
 
