@@ -1,0 +1,21 @@
+#!/bin/sh
+
+NROOT=/var/local/nonametv
+SC_OPT=-qq
+VALIDATE_OPT=
+
+if [ $1z = '--verbosez' ]
+then
+  SC_OPT=
+fi
+
+perl -I lib/ tools/nonametv-export Xmltv $1 $2 $3
+
+tools/no/nonametv-xmltv-genhtml $NROOT/xmltv_staging
+
+rsync -c --delete -r $NROOT/xmltv_staging/ $NROOT/xmltv/
+#sitecopy --update $SC_OPT tv.swedb.se
+#rsync -a --delete $NROOT/xmltv/ acheron.geijersson.com:public_html/xmltv/
+#rsync -a --delete $NROOT/xmltv/ fiorina161.geijersson.com:public_html/xmltv/
+rsync -a --delete $NROOT/xmltv/ /var/www/xmltv/
+

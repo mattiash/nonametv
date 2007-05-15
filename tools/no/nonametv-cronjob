@@ -1,0 +1,53 @@
+#!/bin/bash
+
+NROOT=/var/local/nonametv
+PROOT=/home/chriswa/nonametv
+
+h=true
+d=true
+
+cd $PROOT
+
+if [ $1x = --weeklyx ]
+then
+  # Run weekly commands.
+  perl -I lib tools/nonametv-remove-old
+  exit
+fi
+
+if [ $1x = --dailyx ]
+then
+  # Run daily commands
+  d=
+fi
+
+if [ $1x = --hourlyx ]
+then
+  # Run hourly commands
+  h=
+fi
+
+$d tools/no/nonametv-import-allhttp
+$h tools/no/nonametv-import-allhttp --short-grab
+#$d perl -I lib tools/nonametv-import Eurosport
+#tools/se/nonametv-import-allmail
+
+$d perl -I lib/ tools/nonametv-export Xmltv --remove-old
+
+tools/no/nonametv-updatesite
+
+# This shouldn't produce any output, but there seems to be a bug
+# somewhere.
+$d perl -I lib tools/nonametv-export Xmltv --force-export --verbose 2>&1 | grep -v INFO
+
+# Update the Combiner-channels as well.
+#$d perl -I lib tools/nonametv-import Combiner
+#$h perl -I lib tools/nonametv-import Combiner --short-grab
+
+#$d perl -I lib tools/nonametv-import Timeshifter
+#$h perl -I lib tools/nonametv-import Timeshifter --short-grab
+
+#tools/se/nonametv-updatesite
+
+$d tools/no/nonametv-xmltv-compare-run
+perl -I lib tools/nonametv-batchlog > /var/local/nonametv/xmltv_compare/00status.html

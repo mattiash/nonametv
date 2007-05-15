@@ -1,0 +1,11 @@
+#!/bin/bash
+
+NROOT=/var/local/nonametv
+PROOT=/home/chriswa/nonametv
+
+rm $NROOT/xmltv_compare/*
+cd $NROOT/xmltv_compare
+$PROOT/tools/nonametv-xmltv-compare $NROOT/xmltv_staging $NROOT/xmltv_old
+
+rm $NROOT/xmltv_old/*
+cp -a $NROOT/xmltv_staging/* $NROOT/xmltv_old/
