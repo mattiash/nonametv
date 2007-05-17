@@ -531,20 +531,28 @@ sub WriteEntry
     }
     else
     {
+      print "Simple episode '$data->{episode}'\n";
       $ep = $data->{episode};
     }
 
-    my( $ep_nr, $ep_max ) = split( "/", $ep );
-    $ep_nr++;
-
-    my $ep_text = $self->{lngstr}->{episode_number} . " $ep_nr";
-    $ep_text .= " " . $self->{lngstr}->{of} . " $ep_max" 
-      if defined $ep_max;
-    $ep_text .= " " . $self->{lngstr}->{episode_season} . " $season" 
-      if( $season );
-
-    $d->{'episode-num'} = [[ norm($data->{episode}), 'xmltv_ns' ],
-                           [ $ep_text, 'onscreen'] ];
+    if( $ep =~ /\S/ ) {
+      my( $ep_nr, $ep_max ) = split( "/", $ep );
+      $ep_nr++;
+      
+      my $ep_text = $self->{lngstr}->{episode_number} . " $ep_nr";
+      $ep_text .= " " . $self->{lngstr}->{of} . " $ep_max" 
+	  if defined $ep_max;
+      $ep_text .= " " . $self->{lngstr}->{episode_season} . " $season" 
+	  if( $season );
+      
+      $d->{'episode-num'} = [[ norm($data->{episode}), 'xmltv_ns' ],
+			     [ $ep_text, 'onscreen'] ];
+    }
+    else {
+      # This episode is only a segment and not a real episode.
+      # I.e. " . . 0/2".
+      $d->{'episode-num'} = [[ norm($data->{episode}), 'xmltv_ns' ]];
+    }
   }
   
   if( defined( $data->{program_type} ) and ($data->{program_type} =~ /\S/) )

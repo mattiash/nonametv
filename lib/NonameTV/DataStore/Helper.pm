@@ -27,6 +27,17 @@ The constructor for the object. Called with a NonameTV::DataStore object
 and a timezone-string as parameters. If the timezone is omitted, 
 "Europe/Stockholm" is used.
 
+After creating the object, you can set DETECT_SEGMENTS:
+
+    $dsh->{DETECT_SEGMENTS} = 1;
+
+This means that the Datastore::Helper will look for programs that seem
+to belong together, i.e. they have been split into two with another
+program in between. The algorithm looks for two identical (same title,
+description and episode) programs with another program between them.
+If such programs are found, they will be marked with the last part
+of the episode number as 0/2 and 1/2.
+
 =cut
 
 sub new
@@ -38,7 +49,9 @@ sub new
   
   $self->{ds} = $_[1];
   $self->{timezone} = $_[2] || "Europe/Stockholm";
-  
+
+  $self->{DETECT_SEGMENTS} = 0;
+
   return $self;
 }
 
@@ -70,6 +83,7 @@ sub StartBatch
   $self->{save_ce} = undef;
   $self->{curr_date} = undef;
 
+  $self->{programs} = [];
   $self->{ds}->StartBatch( $batch_id );
 }
 
@@ -94,6 +108,10 @@ sub EndBatch
 {
   my( $self, $success, $log ) = @_;
 
+  if( scalar( @{$self->{programs}} ) > 0 ) {
+    $self->CommitPrograms();
+  }
+
   $self->{ds}->EndBatch( $success, $log );
 }
 
@@ -102,6 +120,10 @@ sub StartDate
   my $self = shift;
   my( $date, $time ) = @_;
   
+  if( scalar( @{$self->{programs}} ) > 0 ) {
+    $self->CommitPrograms();
+  }
+
 #  print "StartDate: $date\n";
   my( $year, $month, $day ) = split( '-', $date );
   $self->{curr_date} = DateTime->new( 
@@ -126,7 +148,8 @@ sub StartDate
   {
     $self->{lasttime} = undef;
   }
-    
+
+  $self->{programs} = [];
 }
 
 =item AddProgramme
@@ -225,7 +248,35 @@ sub AddCE
 
   $ce->{channel_id} = $self->{channel_id};
 
-  $self->{ds}->AddProgramme( $ce );
+  push @{$self->{programs}}, $ce;
+}
+
+sub CommitPrograms {
+  my $self = shift;
+
+  # Max Programs Between
+  my $MPB = 1;
+
+  if( $self->{DETECT_SEGMENTS} ) {
+    my $p = $self->{programs};
+    for( my $i=0; $i < scalar(@{$p}) - 2; $i++ ) {
+      for( my $j=$i+2; $j<$i+2+$MPB && $j < scalar( @{$p} ); $j++ ) {
+	if( programs_equal( $p->[$i], $p->[$j] ) ) {
+#	  print "Segments found: $p->[$i]->{title}\n";
+	  $p->[$i]->{episode} = defined( $p->[$i]->{episode} ) ?
+	      $p->[$i]->{episode} . " 0/2" : ". . 0/2";
+	  $p->[$j]->{episode} = defined( $p->[$j]->{episode} ) ?
+	      $p->[$j]->{episode} . " 1/2" : ". . 1/2";
+	}
+      }
+    }
+  }
+
+  foreach my $ce (@{$self->{programs}}) {
+    $self->{ds}->AddProgramme( $ce );
+  }
+  
+  $self->{programs} = [];
 }
 
 sub create_dt
@@ -257,6 +308,25 @@ sub create_dt
   }    
   
   return $dt;
+}
+
+sub str_eq {
+  my( $s1, $s2 ) = @_;
+
+  return 1 if (not defined($s1)) and (not defined($s2));
+  return 0 if not defined( $s1 );
+  return 0 if not defined( $s2 );
+  return $s1 eq $s2;
+}
+
+sub programs_equal {
+  my( $ce1, $ce2 ) = @_;
+
+  return 0 unless str_eq($ce1->{title}, $ce2->{title});
+  return 0 unless str_eq($ce1->{description}, $ce2->{description});
+  return 0 unless str_eq($ce1->{episode}, $ce2->{episode});
+
+  return 1;
 }
 
 1;

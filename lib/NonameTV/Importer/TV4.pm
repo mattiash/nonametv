@@ -88,6 +88,7 @@ sub new {
     defined( $self->{UrlRoot} ) or die "You must specify UrlRoot";
 
     my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore} );
+    $dsh->{DETECT_SEGMENTS} = 1;
     $self->{datastorehelper} = $dsh;
 
     return $self;

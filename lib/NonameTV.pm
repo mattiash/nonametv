@@ -465,8 +465,10 @@ sub FixProgrammeData
   }
 
   # Set program_type to series if the entry has an episode-number
+  # with a defined episode (i.e. second part),
   # but doesn't have a program_type.
   if( exists( $d->{episode} ) and defined( $d->{episode} ) and
+      ($d->{episode} !~ /^\s*\.\s*\./) and 
       ( (not defined($d->{program_type})) or ($d->{program_type} =~ /^\s*$/) ) )
   {
     $d->{program_type} = "series";
