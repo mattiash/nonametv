@@ -243,6 +243,16 @@ about the programme.
 
 The times must be in UTC. The strings must be properly encoded perl-strings.
 
+To specify a period of no programmes, either set the end_time of the last
+programme explicitly, or add a special program like this: 
+
+  $ds->AddProgramme( {
+    channel_id => 1,
+    start_time => "2004-12-24 23:00:00",
+    title      => "end-of-transmission",
+  } );
+
+
 =cut
 
 sub AddProgramme
