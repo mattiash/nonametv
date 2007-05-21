@@ -386,7 +386,7 @@ sub AddProgrammeRaw
 
   if( $self->Add( 'programs', $data, 0 ) == -1 )
   {
-    my $err = $self->{dbh}->errstr;
+    my $err = $self->{dbh_errstr};
 
     # Check for common error-conditions
     my $data_org = $self->Lookup( "programs", 
@@ -412,7 +412,7 @@ sub AddProgrammeRaw
 
         if( $self->Add( 'programs', $data, 0 ) == -1 )
         {
-          error( $self->{currbatchname} . ": " . $self->{dbh}->errstr );
+          error( $self->{currbatchname} . ": " . $self->{dbh_errstr} );
           $self->{batcherror} = 1;
         }
       }
