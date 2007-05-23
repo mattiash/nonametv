@@ -262,6 +262,9 @@ sub AddProgramme
   logdie( "You must call StartBatch before AddProgramme" ) 
     unless exists $self->{currbatch};
 
+  logdie( "Required item channel_id missing in call to NonameTV::DataStore::AddProgramme" ) 
+      if not defined( $data->{channel_id} );
+
   return if $self->{batcherror};
   
   if( ( $data->{start_time} eq $self->{last_start} )
