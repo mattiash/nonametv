@@ -15,19 +15,6 @@ sitecopy from http://www.lyra.org/sitecopy/
 
 INSTALLATION
 
-Create a new mysql database called listings.
-
-Create tables in the database and populate them with tables by running the
-commands in examples/listings.sql. Then populate the channels and trans_cat
-tables with data from examples/channels.txt and trans_cat.txt. This can be
-done with the following MySQL commands:
-
-LOAD DATA INFILE 'channels.txt' INTO TABLE channels
-FIELDS TERMINATED BY ',' ENCLOSED BY '"';
-
-LOAD DATA INFILE 'trans_cat.txt' INTO TABLE trans_cat
-FIELDS TERMINATED BY ',' ENCLOSED BY '"';
-
 Create a directory called /var/local/nonametv.
 
 Create the following directories under /var/local/nonametv:
@@ -54,6 +41,16 @@ only contains configuration for the Importers that can be run without passwords
 etc. from the TV-companies.
 
 Edit /etc/nonametv.conf to match your installation.
+
+Create a new mysql database called listings (or whatever you wrote in
+nonametv.conf).
+
+Run 
+
+perl -I lib tools/nonametv-populatedb --rebuild database se
+
+to populate the database with sample data from the Swedish version of
+NonameTV.
 
 Setup sitecopy to upload files from /var/local/nonametv/xmltv to your
 webserver. This is the data that is downloaded by tv_grab_se_swedb.

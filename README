@@ -47,11 +47,12 @@ perl -I lib tools/nonametv-import Infomedia --verbose
 
 DATABASE
 
-All data is stored in a MySQL-database in a consistent format. All strings
-are encoded in iso-8859-1 and all times are stored in UTC-timezone. The
-channels and trans_cat tables are updated manually (using the mysql frontend
-of your choice.) The programs and batches tables are updated by the Importers
-and cannot be updated manually.
+All data is stored in a MySQL-database in a consistent format. All
+strings are encoded in utf-8 in the database and all times are stored
+in UTC-timezone.  The channels and trans_cat tables are updated
+manually (using the mysql frontend of your choice.) The programs and
+batches tables are updated by the Importers and cannot be updated
+manually.
 
 EXPORTERS
 

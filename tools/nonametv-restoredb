@@ -1,6 +1,0 @@
-#!/bin/sh
-
-
-mysql -uroot listings < $1/listings.sql
-mysqlimport -uroot --fields-terminated-by=, --fields-optionally-enclosed-by=\" listings $1/channels.txt $1/trans_cat.txt $1/languagestrings.txt
-
