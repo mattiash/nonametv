@@ -46,11 +46,6 @@ if( $opt->{rebuild} ) {
   my $commands = read_file( "$datadir/listings.sql" )
       or die "Failed to read $datadir/listings.sql";
   
-  # Remove comments
-  $commands =~ s(/\*.*?\*/;)()g;
-  $commands =~ s(^--.*)()gm;
-  $commands =~ s(^\s*)();
-
   my @commands = split( /\s*;\s*/, $commands );
   foreach my $command (@commands) {
     $ds->Sql( $command );
