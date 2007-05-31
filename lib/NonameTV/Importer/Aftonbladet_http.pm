@@ -158,8 +158,7 @@ sub ParseDate {
   }
   
   my $dt = DateTime->today();
-  $dt->set( month => $monthnum );
-  $dt->set( day => $day );
+  $dt->set( month => $monthnum, day => $day );
  
   if( $dt < DateTime->today()->add( days => -180 ) ) {
     $dt->add( years => 1 );
