@@ -57,9 +57,9 @@
 61,"Discovery HD",hd.discovery.com,,Discovery,1,DC.HD,1,,,sv,0,\N
 62,Test,test.se,,BaseFileTest,0,/tmp/data,0,,,,0,\N
 63,"SVT Europa",europa.svt.se,,Svt,1,"SVT Europa",0,,,sv,0,\N
-64,Showtime,showtime.nonstop.tv,,Nonstop,1,scheduels_showtime.asp,0,,,en,0,
+64,Showtime,showtime.nonstop.tv,,Nonstop,1,scheduels_showtime.asp,1,,,en,0,
 65,Silver,silver.nonstop.tv,,Nonstop,1,scheduels_silver.asp,1,,,en,0,\N
-66,Star!,star.nonstop.tv,,Nonstop,1,scheduels_star.asp,0,,,en,0,\N
+66,Star!,star.nonstop.tv,,Nonstop,1,scheduels_star.asp,1,,,en,0,\N
 68,"CANAL+ Film HD",filmhd.canalplus.se,,CanalPlus,1,13,1,movie,Movies,sv,0,\N
 69,"CANAL+ Sport HD",sporthd.canalplus.se,,CanalPlus,1,35,1,sports,Sports,sv,0,\N
 70,"TV1000 +1",plus-1.tv1000.viasat.se,,TimeShifter,1,"tv1000.viasat.se,60",1,,,sv,0,\N
