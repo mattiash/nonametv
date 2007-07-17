@@ -61,7 +61,7 @@ sub Import
 
     my $start_dt = DateTime->today(time_zone => 'local' );
 
-    for( my $week=0; $week < $maxweeks; $week++ )
+    for( my $week=0; $week <= $maxweeks; $week++ )
     {
       my $dt = $start_dt->clone->add( days => $week*7 );
 
