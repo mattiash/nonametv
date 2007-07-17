@@ -38,16 +38,14 @@ file. The second parameter is a NonameTV::DataStore object.
 
 =cut
 
-sub new
-{
+sub new {
   my $class = ref( $_[0] ) || $_[0];
 
   my $self = { }; 
   bless $self, $class;
 
   # Copy the parameters supplied in the constructor.
-  foreach my $key (keys(%{$_[1]}))
-  {
+  foreach my $key (keys(%{$_[1]})) {
       $self->{$key} = ($_[1])->{$key};
   }
 
@@ -65,8 +63,7 @@ using the $NonameTV::Importer::*::Options arrayref as format specification.
 
 =cut
 
-sub Import
-{
+sub Import {
   my( $self, $param ) = @_;
   
   die "You must override Import in your own class"
@@ -78,8 +75,7 @@ Import the content from a single file.
 
 =cut
 
-sub ImportFile
-{
+sub ImportFile {
   my $self = shift;
   my( $contentname, $filename, $p ) = @_;
 
@@ -105,8 +101,7 @@ batch-entry in the database.
 
 =cut
 
-sub ImportBatch
-{
+sub ImportBatch {
   my $self = shift;
 
   my( $batch_id, $chd, $force_update ) = @_;
@@ -118,12 +113,10 @@ sub ImportBatch
 
   info( "$batch_id: Fetching data" );
   
-  if( exists( $self->{datastorehelper} ) )
-  {
+  if( exists( $self->{datastorehelper} ) ) {
     $ds = $self->{datastorehelper};
   }
-  else
-  {
+  else {
     $ds = $self->{datastore};
   }
 
@@ -131,15 +124,13 @@ sub ImportBatch
 
   my( $content, $code ) = $self->FetchData( $batch_id, $chd );
   
-  if( not defined( $content ) )
-  {
+  if( not defined( $content ) ) {
     error( "$batch_id: Failed to fetch data ($code)" );
     my $message = log_to_string_result( $h );
     $ds->EndBatch( 0, $message );
     return;
   }
-  elsif( (not ($force_update) and ( not $code ) ) )
-  {
+  elsif( (not ($force_update) and ( not $code ) ) ) {
     # No changes.
     $ds->EndBatch( -1 );
     return;
@@ -151,21 +142,18 @@ sub ImportBatch
 
   my $message = log_to_string_result( $h );
 
-  if( $res )
-  {
+  if( $res ) {
     # success
     $ds->EndBatch( 1, $message );
   }
-  else
-  {
+  else {
     # failure
     $ds->EndBatch( 0, $message );
   }
 }
 
 
-sub FetchData
-{
+sub FetchData {
   my $self = shift;
   my( $batch_id, $data ) = @_;
 
@@ -173,14 +161,12 @@ sub FetchData
   my $code = 0;
   my $content;
 
-  if( -f( "$root/new/$batch_id" ) )
-  {
+  if( -f( "$root/new/$batch_id" ) ) {
     move( "$root/new/$batch_id", "$root/data/$batch_id" );
     $code = 1;
   }
 
-  if( -f( "$root/data/$batch_id" ) )
-  {
+  if( -f( "$root/data/$batch_id" ) ) {
     # Check if the data on site has changed
     my( $site_content, $site_code ) = 
       $self->FetchDataFromSite( $batch_id, $data );
@@ -198,11 +184,9 @@ sub FetchData
       $content = <$fh>;
     }
   }
-  else
-  {
+  else {
     ( $content, $code ) = $self->FetchDataFromSite( $batch_id, $data );
-    if( -f( "$root/delete/$batch_id" ) )
-    {
+    if( -f( "$root/delete/$batch_id" ) ) {
       # Delete the old override and force update from site.
       unlink( "$root/delete/$batch_id" );
       $code = 1;
