@@ -40,8 +40,7 @@ sub new {
     return $self;
 }
 
-sub ImportContent
-{
+sub ImportContent {
   my $self = shift;
   my( $batch_id, $cref, $chd ) = @_;
 
@@ -49,18 +48,15 @@ sub ImportContent
 
   my $doc;
     
-  if( $$cref =~ /^\<\!DOCTYPE HTML/ )
-  {
+  if( $$cref =~ /^\<\!DOCTYPE HTML/ ) {
     # This is an override that has already been run through wvHtml
     $doc = Html2Xml( $$cref );
   }
-  else
-  {
+  else {
     $doc = Word2Xml( $$cref );
   }
 
-  if( not defined( $doc ) )
-  {
+  if( not defined( $doc ) ) {
     error( "$batch_id: Failed to parse" );
     return 0;
   }
@@ -68,8 +64,7 @@ sub ImportContent
   # Find all div-entries.
   my $ns = $doc->find( "//div" );
   
-  if( $ns->size() == 0 )
-  {
+  if( $ns->size() == 0 ) {
     error( "$batch_id: No programme entries found" );
     return 0;
   }
@@ -93,8 +88,7 @@ sub ImportContent
   
   my $ce;
   
-  foreach my $div ($ns->get_nodelist)
-  {
+  foreach my $div ($ns->get_nodelist) {
     my( $text ) = norm( $div->findvalue( '.' ) );
 
     next if $text eq "";
@@ -142,8 +136,7 @@ sub ImportContent
   return 1;
 }
 
-sub FetchDataFromSite
-{
+sub FetchDataFromSite {
   my $self = shift;
   my( $batch_id, $data ) = @_;
 
@@ -162,8 +155,7 @@ sub FetchDataFromSite
   return( $content, $code );
 }
 
-sub FetchTOC
-{
+sub FetchTOC {
   my $self = shift;
   my( $data ) = @_;
 
@@ -176,22 +168,19 @@ sub FetchTOC
 
   my $doc = Html2Xml( $content );
 
-  if( not defined( $doc ) )
-  {
+  if( not defined( $doc ) ) {
     error( "$data->{xmltvid}: Failed to parse TOC" );
     return 0;
   }
   
   my $ns = $doc->find( "//a" );
   
-  if( $ns->size() == 0 )
-  {
+  if( $ns->size() == 0 ) {
     error( "$data->{xmltvid}: No entries found in TOC" );
     return 0;
   }
 
-  foreach my $a ($ns->get_nodelist)
-  {
+  foreach my $a ($ns->get_nodelist) {
     my $text = norm( $a->findvalue( '.' ) );
     my $href = $a->findvalue( '@href' );
 
