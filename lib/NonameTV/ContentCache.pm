@@ -102,12 +102,12 @@ sub GetContent {
 
   my $res = $self->{ua}->get( $url );
 
-  $self->TouchState( $objectname );
-  my $state = $self->GetState( $objectname );
-
-  my $currstate = {};
-
   if( $res->is_success ) {
+    $self->TouchState( $objectname );
+    my $state = $self->GetState( $objectname );
+    
+    my $currstate = {};
+
     if( $force ) {
       $state->{contentmd5} = "xx";
       $state->{filteredmd5} = "xx";
@@ -142,27 +142,36 @@ sub GetContent {
     return $filtered_ref;
   }
   else {
-    if( $state->{firstfail} == 0 ) {
-      # This is the first time this object failed.
-      my $currstate;
-      $currstate->{firstfail} = time;
-      $self->SetState( $objectname, $currstate );
-    }
-    elsif( time - $state->{firstfail} < 23*60*60 ) {
-      # This object first failed less than 23 hours ago.
-    }
-    elsif( $state->{warnfailed} ) {
-      # We have already warned that this object failed.
-    }
-    else {
-      print STDERR "$objectname failed.\n";
-      my $currstate;
-      $currstate->{firstfail} = $state->{firstfail};
-      $currstate->{warnfailed} = 1;
-      $self->SetState( $objectname, $currstate );      
-    }
-
+    $self->ReportError( $objectname, $res->status_line() );
     return undef;
+  }
+}
+
+sub ReportError {
+  my $self = shift;
+  my( $objectname, $errormessage ) = @_;
+
+  $self->TouchState( $objectname );
+  my $state = $self->GetState( $objectname );
+
+  if( $state->{firstfail} == 0 ) {
+    # This is the first time this object failed.
+    my $currstate;
+    $currstate->{firstfail} = time;
+    $self->SetState( $objectname, $currstate );
+  }
+  elsif( time - $state->{firstfail} < 23*60*60 ) {
+    # This object first failed less than 23 hours ago.
+  }
+  elsif( $state->{warnfailed} ) {
+    # We have already warned that this object failed.
+  }
+  else {
+    print STDERR "$objectname failed: $errormessage\n";
+    my $currstate;
+    $currstate->{firstfail} = $state->{firstfail};
+    $currstate->{warnfailed} = 1;
+    $self->SetState( $objectname, $currstate );      
   }
 }
 
@@ -200,6 +209,7 @@ sub GetState {
   open( IN, "< $statefile" ) or return $state;
 
   while( my $line = <IN> ) {
+    next if $line =~ /^\s+$/;
     my( $key, $data ) = ($line =~ /^(.*?) (.*?)$/);
     $state->{$key} = $data;
   }
