@@ -1,0 +1,37 @@
+#!/usr/bin/perl -w 
+
+use strict;
+
+use NonameTV::ContentCache;
+
+my $cc = NonameTV::ContentCache->new( { basedir => "/tmp/test" } );
+
+sub filter {
+  my( $dataref ) = @_;
+
+  return \($$dataref . "asdf");
+}
+
+my( $dataref, $error ) = $cc->GetUrl( "http://www.holmlund.se/cc/1" );
+
+if( defined( $dataref ) ) {
+  print "Data: $$dataref\n";
+}
+else {
+  print "Error: $error\n";
+}
+
+my( $dataref2 ) = $cc->GetContent( "test1", "http://www.holmlund.se/cc/1", 
+				   \&filter );
+
+if( defined( $dataref2 ) ) {
+  print "Data2: $$dataref2\n";
+}
+
+my( $dataref3 ) = $cc->GetContent( "test2", "http://www.holmlund.se/cc/2", 
+				   \&filter );
+
+if( defined( $dataref3 ) ) {
+  print "Data3: $$dataref3\n";
+}
+
