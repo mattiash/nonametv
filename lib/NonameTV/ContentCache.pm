@@ -205,7 +205,7 @@ sub GetState {
     warnfailed => 0,
   };
 
-  my $statefile = $self->StateFile( $objectname );
+  my $statefile = $self->Filename( $objectname, "state" );
   open( IN, "< $statefile" ) or return $state;
 
   while( my $line = <IN> ) {
@@ -222,7 +222,7 @@ sub SetState {
   my $self = shift;
   my( $objectname, $state ) = @_;
 
-  my $statefile = $self->StateFile( $objectname );
+  my $statefile = $self->Filename( $objectname, "state" );
 
   open( OUT, "> $statefile" )
       or die "Failed to write to $statefile";
@@ -241,11 +241,20 @@ sub CalculateMD5 {
   return md5_hex(encode_utf8($$strref));
 }
 
-sub StateFile {
+sub Filename {
   my $self = shift;
-  my( $objectname ) = @_;
-
-  return "$self->{basedir}/$objectname.state";
+  my( $objectname, $type ) = @_;
+  
+  if( $type eq "state" ) {
+    return "$self->{basedir}/state/$objectname.state";
+  }
+  elsif( $type eq "content" ) {
+    return "$self->{basedir}/state/$objectname.content";
+  }
+  elsif( $type eq "filtered" ) {
+    return "$self->{basedir}/state/$objectname.filtered";
+  }
+  die "Unknown type $type";
 }
 
 sub TouchState {
@@ -253,7 +262,7 @@ sub TouchState {
   my( $objectname ) = @_;
 
   my $now = time;
-  utime( $now, $now, $self->StateFile( $objectname ) );
+  utime( $now, $now, $self->Filename( $objectname, "state" ) );
 }
 
 1;
