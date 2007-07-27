@@ -95,11 +95,12 @@ sub ImportContent
 
     my $title = norm( $inrow->{'NORSKTITTEL'} );
     $title = fq($title);
-    my $description = $inrow->{'EPISODESYNOPSIS'}
-        || $inrow->{'GENERELL_SYNOPSIS'};
-    
-    $description = norm( $description );
-    $description = fq( $description );
+    my $description = fq( norm( $inrow->{'EPISODESYNOPSIS'} ));
+    if ($description eq "") {
+        $description = fq( norm( $inrow->{'GENERELL_SYNOPSIS'} ));
+    }
+    #$description = norm( $description );
+    #$description = fq( $description );
     
     # Episode info in xmltv-format
     #my $ep_nr = norm(fq($inrow->{'EPISODENUMMER'})) || 0;
@@ -116,6 +117,7 @@ sub ImportContent
     #}
 
     my $ce = {
+      channel_id => $chd->{id},
       title => $title,
       description => $description,
       
