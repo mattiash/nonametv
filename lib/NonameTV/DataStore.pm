@@ -196,8 +196,7 @@ sub EndBatch
 
     if( defined( $log ) )
     {
-      $self->Update( 'batches', { id => $self->{currbatch} },
-                     { abort_message => $log } );
+      $self->SetBatchAbortMessage( $self->{currbatch}, $log );
     }
   }
   elsif( $success==1 )
@@ -220,6 +219,14 @@ sub EndBatch
   }
 
   delete $self->{currbatch};
+}
+
+sub SetBatchAbortMessage {
+  my $self = shift;
+  my( $batch, $message ) = @_;
+
+  $self->Update( 'batches', { id => $batch },
+		 { abort_message => $message } );
 }
 
 
