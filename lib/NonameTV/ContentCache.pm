@@ -8,25 +8,29 @@ use Encode qw(encode_utf8);
 use LWP::UserAgent;
 
 =pod
-    
-    my $cc = new NonameTV::ContentCache( { basedir => "/tmp/test" } );
 
-    my( $dataref, $error ) = $cc->GetUrl( $url );
+Utility class for NonameTV.
 
-    my $dataref = $cc->GetContent( $objectname, $url, $filtersub, $force );
+Downloads data via http. 
 
-Keeps a cache indexed by namespace and objectname. Returns a reference to
-the data returned by filtersub or undef if the data was unchanged or
-retrieval failed. force=1 means always return data even if it is unchanged.
+ 1. Intermittent errors on a server that occur when fetching content.
+ 2. Intermittent and persistent error that occur before the content
+    is fetched. E.g. login to the site fails.
+ 3. Files change even though the interesting content hasn't changed.
+    E.g. html-files with advertisements.
+ 4. Downloaded files contain errors and need to be overridden.
+ 5. The url for a specific object may change, which means that a 
+    normal http-cache is not useful.
+ 
+The NonameTV::ContentCache class solves all these problems. It does this
+by implementing a cache with stored responses and keeps track of when
+an error first occured and if we have told the user about it. The key into
+the cache is the objectname and not the url.
 
-  1. Fetch the url.
-  2. Run the returned data through filtersub if it exists.
-  3. Compare the output of filtersub with the stored md5sum associated
-     with (namespace, objectname).
+
+TODO:
 
 Implement some way of purging old data.
-
-Warn if download for an object fails for more than 24 hours.
 
 Implement overrides using
 
@@ -35,6 +39,38 @@ Implement overrides using
   nonametv-contentcache <namespace> remove <objname>
 
 =cut 
+
+=pod
+
+=head1 Constructor
+
+  my $cc = NonameTV::ContentCache->new( {
+    basedir => "/tmp/test",
+    callbackobject => $obj,
+    useragent => "Mozilla 1.0",
+    warnafter => 23*60*60, # Warn after an error has persisted
+                           # for this many seconds
+  } );
+
+The callbackobject must implement the following methods:
+
+  my( $urlstr, $error ) = $co->Object2Url( $objectname, $callbackdata );
+
+  Convert an objectname into a url. The callbackdata is taken from
+  the call to GetConvert.
+
+  my( $filtered_ref, $error ) = $co->FilterContent( $content_ref, 
+                                                    $callbackdata )
+
+  Filter the content to remove any unnecessary data. The resulting data
+  is compared to the previous filtered data to see if the filtered data
+  has changed before it is returned by GetContent.
+
+  Both these methods ran return (undef, "errorstring") if an error 
+  occured for some reason. The error will be handled in the same way as
+  errors from the http-server.
+
+=cut
 
 sub new {
   my $class = ref( $_[0] ) || $_[0];
@@ -47,12 +83,114 @@ sub new {
       $self->{$key} = ($_[1])->{$key};
   }
 
-  my $ua = LWP::UserAgent->new( agent => "Grabber from http://tv.swedb.se", 
+  my $ua = LWP::UserAgent->new( agent => $self->{useragent}, 
 				cookie_jar => {} );
 
   $self->{ua} = $ua;
 
   return $self;
+}
+
+=pod
+
+    my( $dataref, $errormsg ) = $cc->GetContent( $objectname, 
+                                                 $callbackdata, 
+                                                 $force );
+
+Fetch a an object from a url. Returns undef if the object was unchanged
+since the last time it was fetched or if the fetch failed. $errormsg
+contains an errormessage returned from the server. Three different answers
+are possible:
+  (dataref, undef) - Data was downloaded and needs to be processed.
+  (undef, errormsg) - Download failed and the caller should notify the user
+                      of the error.
+  (undef, undef) - Can be returned for three different reasons:
+     1. The content or filtered content was the same as the last time 
+        it was downloaded.
+     2. The download failed, but it hasn't failed for long enough to 
+        notify the user.
+     3. The download failed, but we have previously notified the user of this
+        and don't need to do it again.
+
+     If $force is true, the content is returned in (1) and the errormessage
+     in (2) and (3).
+
+=cut
+ 
+sub GetContent {
+  my $self = shift;
+  my( $objectname, $data, $force ) = @_;
+
+  $force = 0 if not defined $force;
+
+  my( $url, $error ) = $self->{callbackobject}->Object2Url( 
+    $objectname, $data );
+  if( not defined( $url ) ) {
+    return( undef, 
+	    $self->ReportError( $objectname, $error, $force ) );
+   }
+
+  my $res = $self->{ua}->get( $url );
+
+  if( $res->is_success ) {
+    $self->TouchState( $objectname );
+    my $state = $self->GetState( $objectname );
+    
+    my $currstate = {};
+
+    if( $force ) {
+      $state->{contentmd5} = "xx";
+      $state->{filteredmd5} = "xx";
+    }
+
+    # Filter content
+    # We need to do this before comparing md5sums, since otherwise errors
+    # from the filter would never be reported if the content filter fails
+    # and the content never changes after that.
+    my( $filtered_ref, $filter_error ) = 
+	$self->{callbackobject}->FilterContent( $res->content_ref, $data );
+
+    if( not defined $filtered_ref ) {
+      return (undef,
+	      $self->ReportError( $objectname, $filter_error, $force ) );
+    }
+
+    # Calculate md5sum of content
+    my $contentmd5 = $self->CalculateMD5( $res->content_ref );
+
+    # Compare md5sum with stored md5sum
+    if( $contentmd5 eq $state->{contentmd5} ) {
+      # Same as last time
+      return (undef, undef);
+    }
+
+    $self->WriteReference( $self->Filename( $objectname, "content" ), 
+			   $res->content_ref );
+
+    $currstate->{contentmd5} = $contentmd5;
+
+    # Calculate md5sum of filtered content
+    my $filteredmd5 = $self->CalculateMD5( $filtered_ref );
+    $currstate->{filteredmd5} = $filteredmd5;
+
+    $self->SetState( $objectname, $currstate );
+
+    # Compare md5sum with stored md5sum
+    if( $filteredmd5 eq $state->{filteredmd5} ) {
+      # Same as last time
+      return (undef, undef);
+    }
+
+    $self->WriteReference( $self->Filename( $objectname, "filtered" ), 
+			   $filtered_ref );
+    
+
+    return ($filtered_ref, undef);
+  }
+  else {
+    return (undef, 
+	    $self->ReportError( $objectname, $res->status_line(), $force ) );
+  }
 }
 
 =pod
@@ -79,99 +217,50 @@ sub GetUrl {
 
 =pod
 
-    my $dataref = $cc->GetContent( $objectname, $url, $filtersub, $force );
-
-Fetch a an object from a url. Returns undef if the object was unchanged
-since the last time it was fetched or if the fetch failed. The caller
-does not need to print an error-message if undef is returned, this is
-handled by GetContent.
-
-If $filtersub is defined, the downloaded content is run through filtersub
-before it is compared to the data downloaded previously and returned.
-
-If $force is true, data is always returned if it can be downloaded. 
+Returns the errormessage if it needs to be shown to the user and undef
+otherwise.
 
 =cut
- 
-sub GetContent {
-  my $self = shift;
-  my( $objectname, $url, $filtersub, $force ) = @_;
-
-  $filtersub = sub { return $_[0] } if not defined $filtersub;
-  $force = 0 if not defined $force;
-
-  my $res = $self->{ua}->get( $url );
-
-  if( $res->is_success ) {
-    $self->TouchState( $objectname );
-    my $state = $self->GetState( $objectname );
-    
-    my $currstate = {};
-
-    if( $force ) {
-      $state->{contentmd5} = "xx";
-      $state->{filteredmd5} = "xx";
-    }
-
-    # Calculate md5sum of content
-    my $contentmd5 = $self->CalculateMD5( $res->content_ref );
-
-    # Compare md5sum with stored md5sum
-    if( $contentmd5 eq $state->{contentmd5} ) {
-      # Same as last time
-      return undef;
-    }
-
-    $currstate->{contentmd5} = $contentmd5;
-
-    # Filter content
-    my $filtered_ref = &{$filtersub}( $res->content_ref );
-
-    # Calculate md5sum of filtered content
-    my $filteredmd5 = $self->CalculateMD5( $filtered_ref );
-    $currstate->{filteredmd5} = $filteredmd5;
-
-    $self->SetState( $objectname, $currstate );
-
-    # Compare md5sum with stored md5sum
-    if( $filteredmd5 eq $state->{filteredmd5} ) {
-      # Same as last time
-      return undef;
-    }
-
-    return $filtered_ref;
-  }
-  else {
-    $self->ReportError( $objectname, $res->status_line() );
-    return undef;
-  }
-}
 
 sub ReportError {
   my $self = shift;
-  my( $objectname, $errormessage ) = @_;
+  my( $objectname, $errormessage, $force ) = @_;
+
+  $force = 0 if not defined $force;
 
   $self->TouchState( $objectname );
   my $state = $self->GetState( $objectname );
 
-  if( $state->{firstfail} == 0 ) {
+  if( $force ) {
+    my $currstate;
+    $currstate->{firstfail} = $state->{firstfail} == 0 ? 
+	time : $state->{firstfail};
+
+    $currstate->{warnfailed} = 1;
+    $self->SetState( $objectname, $currstate );
+    return $errormessage;
+  }    
+  elsif( $state->{firstfail} == 0 ) {
     # This is the first time this object failed.
     my $currstate;
     $currstate->{firstfail} = time;
     $self->SetState( $objectname, $currstate );
+    return undef;
   }
-  elsif( time - $state->{firstfail} < 23*60*60 ) {
+  elsif( time - $state->{firstfail} < $self->{warnafter} ) {
     # This object first failed less than 23 hours ago.
+    return undef;
   }
   elsif( $state->{warnfailed} ) {
     # We have already warned that this object failed.
+    return undef;
   }
   else {
-    print STDERR "$objectname failed: $errormessage\n";
     my $currstate;
     $currstate->{firstfail} = $state->{firstfail};
     $currstate->{warnfailed} = 1;
     $self->SetState( $objectname, $currstate );      
+    return $errormessage;
   }
 }
 
@@ -263,6 +352,33 @@ sub TouchState {
 
   my $now = time;
   utime( $now, $now, $self->Filename( $objectname, "state" ) );
+}
+
+sub WriteReference {
+  my $self = shift;
+
+  my( $filename, $ref ) = @_;
+
+  open OUT, "> $filename" or die "Failed to write to $filename";
+  print OUT $$ref;
+  close( OUT );
+}
+
+sub RemoveOld {
+  my $self = shift;
+
+  my $g = $self->Filename( "*", "state" );
+
+  my @statefiles = glob( $g );
+
+  foreach my $statefile (@statefiles) {
+    if( -M( $statefile ) > 7*24*60*60 ) {
+      my( $base ) = ($statefile =~ /(.*)\.state$/);
+      unlink( $statefile );
+      unlink( "$base.content" );
+      unlink( "$base.filtered" );
+    }
+  }
 }
 
 1;
