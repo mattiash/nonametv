@@ -39,6 +39,24 @@ sub new {
   return $self;
 }
 
+sub FilterContent {
+  my $self = shift;
+  my( $cref, $chd ) = @_;
+
+  my $doc = Html2Xml( $$cref );
+  
+  if( not defined $doc ) {
+    return (undef, "Html2Xml failed" );
+  } 
+
+  my $paragraphs = FindParagraphs( $doc, 
+      "//div[\@id='AB_artikelytaContainer']//table//." );
+
+  my $str = join( "\n", @{$paragraphs} );
+  
+  return( \$str, undef );
+}
+
 sub ImportContent {
   my $self = shift;
   my( $batch_id, $cref, $chd ) = @_;
@@ -50,17 +68,9 @@ sub ImportContent {
 
   my $dsh = $self->{datastorehelper};
 
-  my $doc = Html2Xml( $$cref );
-  
-  if( not defined( $doc ) ) {
-    error( "$batch_id: Failed to parse" );
-    return;
-  }
+  my @paragraphs = split( /\n/, $$cref );
 
-  my $paragraphs = FindParagraphs( $doc, 
-      "//div[\@id='AB_artikelytaContainer']//table//." );
-
-  if( scalar(@{$paragraphs}) == 0 ) {
+  if( scalar(@paragraphs) == 0 ) {
     error( "$batch_id: No paragraphs found." ) ;
     return;
   }
@@ -69,7 +79,7 @@ sub ImportContent {
   my $ce = undef;
   my $prev_start ="x";
 
-  foreach my $text (@{$paragraphs}) {
+  foreach my $text (@paragraphs) {
     next if $text =~/^Releaser.*Bilder.*Kontakt$/i;
     next if $text =~/^TV7-TABL. VECKA \d+/i;
 
@@ -205,16 +215,15 @@ sub ParseProgram {
   return $ce;
 }
 
-sub FetchDataFromSite {
+sub Object2Url {
   my $self = shift;
-  my( $batch_id, $data ) = @_;
+  my( $objectname, $chd ) = @_;
 
-  my( $year, $week ) = ( $batch_id =~ /(\d+)-(\d+)$/ );
+  my( $year, $week ) = ( $objectname =~ /(\d+)-(\d+)$/ );
  
   my $url = sprintf( "%s/%02d.html", $self->{UrlRoot}, $week );
   
-  my( $content, $code ) = MyGet( $url );
-  return( $content, $code );
+  return( $url, undef );
 }
 
 1;

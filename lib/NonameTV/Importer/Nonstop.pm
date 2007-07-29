@@ -3,12 +3,10 @@ package NonameTV::Importer::Nonstop;
 use strict;
 use warnings;
 
+use Carp qw/confess/;
 =pod
 
 Importer for Nonstop TV, http://www.nonstop.tv/
-
-FIXME:
-Cannot use FindParagraphs since ParseProgram looks for bold text.
 
 =cut
 
@@ -17,12 +15,10 @@ use XML::LibXML;
 use POSIX qw/floor/;
 use URI;
 
-use NonameTV qw/MyGet Word2Xml Html2Xml norm/;
+use NonameTV qw/Word2Xml Html2Xml norm/;
 use NonameTV::DataStore::Helper;
 use NonameTV::Log qw/info progress error logdie 
                      log_to_string log_to_string_result/;
-
-use NonameTV::ContentCache;
 
 use NonameTV::Importer::BaseWeekly;
 
@@ -41,19 +37,9 @@ sub new {
     my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore} );
     $self->{datastorehelper} = $dsh;
 
-    $self->{cc} = NonameTV::ContentCache->new( { basedir => "/tmp/test" } );
-
     $self->{toc} = {};
 
     return $self;
-}
-
-sub FilterContent {
-  my( $cref ) = @_;
-
-  my $doc = Word2Xml( $$cref );
-  my $str = $doc->toString();
-  return \$str;
 }
 
 sub ImportContent {
@@ -144,31 +130,11 @@ sub ImportContent {
   return 1;
 }
 
-sub FetchContent {
-  my $self = shift;
-  my( $batch_id, $data, $force_update ) = @_;
-
-  $self->FetchTOC( $data ) or return undef; 
-
-  my( $year, $week ) = ($batch_id =~ /_(\d+)-(\d+)/);
-
-  my $url = $self->{toc}->{$data->{xmltvid}}->{"$year-$week"};
-  
-  if( not defined $url ) {
-    # Let NonameTV::ContentCache handle error-messages.
-    $self->{cc}->ReportError( $batch_id, "No such object in TOC." );
-    return undef;
-  }
-
-  return $self->{cc}->GetContent( $batch_id, $url, \&FilterContent, 
-				  $force_update );
-}
-
 sub FetchTOC {
   my $self = shift;
   my( $data ) = @_;
 
-  return 1 if defined $self->{toc}->{$data->{xmltvid}};
+  return undef if defined $self->{toc}->{$data->{xmltvid}};
 
   my %toc;
 
@@ -178,18 +144,20 @@ sub FetchTOC {
   my $doc = Html2Xml( $$content );
 
   if( not defined( $doc ) ) {
-    error( "$data->{xmltvid}: Failed to parse TOC" );
-    return 0;
+    return "Failed to parse TOC";
   }
   
   my $ns = $doc->find( "//a" );
   
   if( $ns->size() == 0 ) {
-    error( "$data->{xmltvid}: No entries found in TOC" );
-    return 0;
+    return "No entries found in TOC";
   }
 
   foreach my $a ($ns->get_nodelist) {
+    # For some channels, Nonstop provides listings in both Swedish and 
+    # English. The Swedish entry is currently always last, so the code
+    # below works but is fragile.
+
     my $text = norm( $a->findvalue( '.' ) );
     my $href = $a->findvalue( '@href' );
 
@@ -206,53 +174,9 @@ sub FetchTOC {
     $toc{$year . "-" . $week} = $uri->canonical->as_string;;
   }
 
+
   $self->{toc}->{$data->{xmltvid}} = \%toc;
-  return 1;
-}
-
-sub ImportBatch {
-  my $self = shift;
-  my( $batch_id, $chd, $force_update ) = @_;
-
-  # Log ERROR and FATAL
-  my $h = log_to_string( 4 );
-
-  info( "$batch_id: Fetching data" );
-
-  my $ds;
-  
-  if( exists( $self->{datastorehelper} ) ) {
-    $ds = $self->{datastorehelper};
-  }
-  else {
-    $ds = $self->{datastore};
-  }
-
-  $ds->StartBatch( $batch_id, $chd->{id} );
-
-  my $content_ref = $self->FetchContent( $batch_id, $chd, $force_update );
-  
-  if( defined( $content_ref ) ) {
-    progress( "$batch_id: Processing data" );
-    
-    my $res = $self->ImportContent( $batch_id, $content_ref, $chd ); 
-    
-    my $message = log_to_string_result( $h );
-    
-    if( $res ) {
-      # success
-      $ds->EndBatch( 1, $message );
-    }
-    else {
-      # failure
-      $ds->EndBatch( 0, $message );
-    }
-  }
-  else {
-    # No new data.
-    $ds->EndBatch( -1 );
-    return;
-  }
+  return undef;
 }
 
 my %months = (
@@ -334,6 +258,48 @@ sub ParseActors {
 
   my @actors = split(/\s*,\s*/, $text);
   $ce->{actors} = join( ", ", @actors );
+}
+
+sub InitiateChannelDownload {
+  my $self = shift;
+  
+  my( $chd ) = @_;
+
+  return $self->FetchTOC( $chd );
+}
+
+#
+# FetchContent callbacks
+#
+
+
+sub Object2Url {
+  my $self = shift;
+  my( $objectname, $chd ) = @_;
+
+  confess( "xmltvid is undef" ) if not defined $chd->{xmltvid};
+
+  my( $period ) = ($objectname =~ /_(.*)/);
+
+  my $url = $self->{toc}->{$chd->{xmltvid}}->{$period};
+  if( not defined $url ) {
+    return (undef, "Not found in TOC.");
+  }
+  
+  return ($url, undef);
+}
+
+sub FilterContent {
+  my $self = shift;
+  my( $cref, $chd ) = @_;
+
+  my $doc = Word2Xml( $$cref );
+  if( not defined $doc ) {
+    return (undef, "Word2Xml failed" );
+  } 
+
+  my $str = $doc->toString();
+  return( \$str, undef );
 }
 
 1;
