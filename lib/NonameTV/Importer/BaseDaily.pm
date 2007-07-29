@@ -11,13 +11,10 @@ file per day and channel.
 =cut
 
 use DateTime;
-use POSIX qw/floor/;
 
-use NonameTV::Log qw/info progress error logdie/;
+use NonameTV::Importer::BasePeriodic;
 
-use NonameTV::Importer;
-
-use base 'NonameTV::Importer';
+use base 'NonameTV::Importer::BasePeriodic';
 
 sub new {
     my $proto = shift;
@@ -38,47 +35,26 @@ sub new {
     return $self;
 }
 
-sub Import
-{
+sub BatchPeriods { 
   my $self = shift;
-  my( $p ) = @_;
-  
-  NonameTV::Log::verbose( $p->{verbose} );
+  my( $shortgrab ) = @_;
 
-  my $maxdays = $p->{'short-grab'} ? $self->{MaxDaysShort} : $self->{MaxDays};
+  my $maxdays = $shortgrab ? $self->{MaxDaysShort} : $self->{MaxDays};
 
-  my $ds = $self->{datastore};
+  my $start_dt = DateTime->today(time_zone => 'local')
+      ->subtract( days => 1 );
 
-  foreach my $data ($ds->FindGrabberChannels( $self->{grabber_name} ) ) {
-    if( $p->{'force-update'} and not $p->{'short-grab'} )
-    {
-      # Delete all data for this channel.
-      my $deleted = $ds->ClearChannel( $data->{id} );
-      progress( "Deleted $deleted records for $data->{xmltvid}" );
-    }
+  my @periods;
 
-    my $start_dt = DateTime->today(time_zone => 'local')
-                    ->subtract( days => 1 );
+  for( my $days = 0; $days <= $maxdays; $days++ )
+  {
+    my $dt = $start_dt->clone;
+    $dt=$dt->add( days => $days );
 
-    for( my $days = 0; $days <= $maxdays; $days++ )
-    {
-      my $dt = $start_dt->clone;
-      $dt=$dt->add( days => $days );
-
-      my $batch_id = $data->{xmltvid} . "_" . $dt->ymd('-');
-
-      $self->ImportBatch( $batch_id, $data, $p->{'force-update'} );
-    }
+    push @periods, $dt->ymd('-');
   }
-}
 
-sub ImportContent
-{
-  my $self = shift;
-
-  my( $batch_id, $cref, $chd ) = @_;
-
-  die "You must override ImportContent";
+  return @periods;
 }
 
 1;
