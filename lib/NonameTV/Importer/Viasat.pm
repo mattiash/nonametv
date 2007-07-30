@@ -46,8 +46,20 @@ sub new {
     return $self;
 }
 
-sub ImportContent
-{
+sub Object2Url {
+  my $self = shift;
+  my( $objectname, $chd ) = @_;
+
+  my( $year, $week ) = ( $objectname =~ /(\d+)-(\d+)$/ );
+ 
+  my $url = sprintf( "%s%s%02d-%02d_tab.txt",
+                     $self->{UrlRoot}, $chd->{grabber_info}, 
+                     $year, $week );
+  
+  return( $url, undef );
+}
+  
+sub ImportContent {
   my $self = shift;
 
   my( $batch_id, $cref, $chd ) = @_;
@@ -156,21 +168,6 @@ sub ImportContent
 
   # Success
   return 1;
-}
-
-sub FetchDataFromSite
-{
-  my $self = shift;
-  my( $batch_id, $data ) = @_;
-
-  my( $year, $week ) = ( $batch_id =~ /(\d+)-(\d+)$/ );
- 
-  my $url = sprintf( "%s%s%02d-%02d_tab.txt",
-                     $self->{UrlRoot}, $data->{grabber_info}, 
-                     $year, $week );
-  
-  my( $content, $code ) = MyGet( $url );
-  return( $content, $code );
 }
 
 sub row_to_hash

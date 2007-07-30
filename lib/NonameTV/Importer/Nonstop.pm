@@ -277,8 +277,6 @@ sub Object2Url {
   my $self = shift;
   my( $objectname, $chd ) = @_;
 
-  confess( "xmltvid is undef" ) if not defined $chd->{xmltvid};
-
   my( $period ) = ($objectname =~ /_(.*)/);
 
   my $url = $self->{toc}->{$chd->{xmltvid}}->{$period};

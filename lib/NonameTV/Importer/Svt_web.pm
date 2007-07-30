@@ -26,13 +26,6 @@ use NonameTV::Importer::BaseDaily;
 
 use base 'NonameTV::Importer::BaseDaily';
 
-my @SVT_CATEGORIES = qw(Barn Sport Unclassified
-                        Musik/Dans Samhälle Fritid
-                        Kultur Drama Nyheter 
-                        Nöje Film Fakta);
-
-# my @SVT_CATEGORIES = ("");
-
 my %channelids = ( "SVT1" => "svt1.svt.se",
                    "SVT2" => "svt2.svt.se",
                    );
@@ -51,15 +44,61 @@ sub new {
     my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore} );
     $self->{datastorehelper} = $dsh;
 
-    # We need to login to the site before we can do anything else.
-    # The login is stored as a cookie behind the scenes by LWP.
-    my( $d1, $d2 ) =  $self->Login();
-
     return $self;
 }
 
-sub ImportContent
-{
+sub InitiateDownload {
+  my $self = shift;
+
+  # Login
+  my $username = $self->{Username};
+  my $password = $self->{Password};
+
+  my $url = "http://www.pressinfo.svt.se/app/index.asp?"
+    . "SysLoginName=$username"
+    . "\&SysPassword=$password";
+
+  # Do the login. This will set a cookie that will be transferred on all
+  # subsequent page-requests.
+  my( $dataref, $error ) = $self->{cc}->GetUrl( $url );
+  
+  return $error;
+}
+
+sub Object2Url {
+  my $self = shift;
+  my( $objectname, $chd ) = @_;
+
+  # http://www.pressinfo.svt.se/app/schedule_full.html.dl?kanal=SVT%201&Sched_day_from=0&Sched_day_to=0&Det=Det&Genre=&Freetext=
+  # Day=0 today, Day=1 tomorrow etc. Day can be negative.
+  # kanal SVT 1, SVT 2, SVT Europa, Barnkanalen, 24, Kunskapskanalen
+
+
+  my( $date ) = ($objectname =~ /_(.*)/);
+
+  my( $year, $month, $day ) = split( '-', $date );
+  my $dt = DateTime->new( 
+                          year  => $year,
+                          month => $month,
+                          day   => $day 
+                          );
+
+  my $today = DateTime->today( time_zone=>'local' );
+  my $day_diff = $dt->subtract_datetime( $today )->delta_days;
+
+  my $u = URI->new('http://www.pressinfo.svt.se/app/schedule_full.html.dl');
+  $u->query_form( {
+    kanal => $chd->{grabber_info},
+    Sched_day_from => $day_diff,
+    Sched_day_to => $day_diff,
+    Det => "Det",
+    Genre => "",
+    Freetext => ""});
+
+  return( $u->as_string(), undef );
+}
+
+sub ImportContent {
   my $self = shift;
   my( $batch_id, $cref, $chd ) = @_;
 
@@ -76,8 +115,6 @@ sub ImportContent
                                        month => $month, 
                                        day => $day );
   }
-
-  my $cat = $self->FetchCategories( $chd, $date );
 
   my $doc = Html2Xml( $$cref );
   
@@ -143,7 +180,6 @@ sub ImportContent
       start_time  => $starttime,
       title       => norm_title($title),
       description => norm_desc($desc),
-      svt_cat     => $cat->{$title},
     };
     
     if( defined( $endtime ) )
@@ -172,115 +208,6 @@ sub ImportContent
   }
 }
 
-# Fetch the association between title and category/program_type for a
-# specific channel and day. This is done by fetching the listings for each
-# category during the day and looking at which titles are returned.
-sub FetchCategories
-{
-  my $self = shift;
-  my( $chd, $date ) = @_;
-
-  my $ds = $self->{datastore};
-
-  my $cat = {};
-
-  foreach my $svt_cat (@SVT_CATEGORIES)
-  {
-#    my( $program_type, $category ) = $ds->LookupCat( "Svt", $svt_cat );
-    my $batch_id = $chd->{xmltvid} . "_" . $svt_cat . "_" . $date;
-    info( "$batch_id: Fetching categories" );
-    
-    my( $content, $code ) = $self->FetchData( $batch_id, $chd );
-
-    my $doc = Html2Xml( $content );
-  
-    if( not defined( $doc ) )
-    {
-      error( "$batch_id: Failed to parse." );
-      next;
-    }
-  
-    # The data really looks like this...
-    my $ns = $doc->find( "//table/td/table/tr/td/table/tr" );
-    if( $ns->size() == 0 )
-    {
-#      error( "$batch_id: No data found" );
-      next;
-    }
-  
-    my $skipfirst = 1;
-    foreach my $pgm ($ns->get_nodelist)
-    {
-      if( $skipfirst )
-      {
-        $skipfirst = 0;
-        next;
-      }
-    
-      my $title = $pgm->findvalue( 'td[2]//font[@class="text"]//text()' );
-      $cat->{$title} = $svt_cat;
-    }
-  }    
-  return $cat;
-}
-
-sub Login
-{
-  my $self = shift;
-
-  my $username = $self->{Username};
-  my $password = $self->{Password};
-
-  my $url = "http://www.pressinfo.svt.se/app/index.asp?"
-    . "SysLoginName=$username"
-    . "\&SysPassword=$password";
-
-  # Do the login. This will set a cookie that will be transferred on all
-  # subsequent page-requests.
-  MyGet( $url );
-  
-  # We should probably do some error-checking here...
-}
-
-sub FetchDataFromSite
-{
-  my $self = shift;
-  my( $batch_id, $data ) = @_;
-
-  # http://www.pressinfo.svt.se/app/schedule_full.html.dl?kanal=SVT%201&Sched_day_from=0&Sched_day_to=0&Det=Det&Genre=&Freetext=
-  # Day=0 today, Day=1 tomorrow etc. Day can be negative.
-  # kanal SVT 1, SVT 2, SVT Europa, Barnkanalen, 24, Kunskapskanalen
-
-  my( $svt_cat, $date ) = ($batch_id =~ /_(.*)_(.*)/);
-  if( not defined( $svt_cat ) )
-  {
-    $svt_cat = "",
-    ($date) = ($batch_id =~ /_(.*)/);
-  }
-
-  my( $year, $month, $day ) = split( '-', $date );
-  my $dt = DateTime->new( 
-                          year  => $year,
-                          month => $month,
-                          day   => $day 
-                          );
-
-  my $today = DateTime->today( time_zone=>'local' );
-  my $day_diff = $dt->subtract_datetime( $today )->delta_days;
-
-  my $u = URI->new('http://www.pressinfo.svt.se/app/schedule_full.html.dl');
-  $u->query_form( {
-    kanal => $data->{grabber_info},
-    Sched_day_from => $day_diff,
-    Sched_day_to => $day_diff,
-    Det => "Det",
-    Genre => $svt_cat,
-    Freetext => ""});
-
-  my( $content, $code ) = MyGet( $u->as_string );
-  return( $content, $code );
-}
-
 sub extract_extra_info
 {
   my $self = shift;
@@ -289,13 +216,6 @@ sub extract_extra_info
   my( $ds ) = $self->{datastore};
 
   my( $program_type, $category );
-
-  if( defined( $ce->{svt_cat} ) )
-  {
-    ($program_type, $category ) = $ds->LookupCat( "Svt", 
-                                                  $ce->{svt_cat} );
-    AddCategory( $ce, $program_type, $category );
-  }
 
   #
   # Try to extract category and program_type by matching strings
@@ -314,13 +234,6 @@ sub extract_extra_info
   }
 
   AddCategory( $ce, $program_type, $category );
-
-  if( defined( $ce->{svt_cat} ) )
-  {
-    ($program_type, $category ) = $ds->LookupCat( "Svt_fallback", 
-                                                  $ce->{svt_cat} );
-    AddCategory( $ce, $program_type, $category );
-  }
 
   $ce->{title} =~ s/^Seriestart:\s*//;
   $ce->{title} =~ s/^Novellfilm:\s*//;
@@ -381,9 +294,6 @@ sub extract_extra_info
   $ce->{description} = join_text( @sentences );
 
   extract_episode( $ce );
-
-  # Remove temporary fields
-  delete( $ce->{svt_cat} );
 }
 
 sub parse_person_list
