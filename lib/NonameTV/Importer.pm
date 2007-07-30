@@ -69,6 +69,50 @@ sub Import {
   die "You must override Import in your own class"
 }
 
+sub FetchData {
+  my $self = shift;
+  my( $batch_id, $data ) = @_;
+
+  my $root = "/var/local/nonametv/override";
+  my $code = 0;
+  my $content;
+
+  if( -f( "$root/new/$batch_id" ) ) {
+    move( "$root/new/$batch_id", "$root/data/$batch_id" );
+    $code = 1;
+  }
+
+  if( -f( "$root/data/$batch_id" ) ) {
+    # Check if the data on site has changed
+    my( $site_content, $site_code ) = 
+      $self->FetchDataFromSite( $batch_id, $data );
+
+    print STDERR "$batch_id New data available for override.\n"
+      if( $site_code );
+    
+    $site_content = undef;
+
+    # Load data from file
+    {
+      local( $/ ) ;
+      open( my $fh, "$root/data/$batch_id" ) 
+        or die "Failed to read form $root/data/$batch_id: $@";
+      $content = <$fh>;
+    }
+  }
+  else {
+    ( $content, $code ) = $self->FetchDataFromSite( $batch_id, $data );
+    if( -f( "$root/delete/$batch_id" ) ) {
+      # Delete the old override and force update from site.
+      unlink( "$root/delete/$batch_id" );
+      $code = 1;
+    }
+  }
+  
+  return ($content, $code);
+}
+
+
 =item ImportFile
 
 Import the content from a single file.
