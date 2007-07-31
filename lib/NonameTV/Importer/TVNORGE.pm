@@ -34,9 +34,9 @@ sub new {
     
     
     my $dsh = NonameTV::DataStore::Helper->new( $self->{datastorehelper} );
-    #$self->{datastorehelper} = $dsh;
+    $self->{datastorehelper} = $dsh;
     
-    return $self;
+
 }
 
 sub ImportContent
@@ -75,8 +75,8 @@ sub ImportContent
         my $start = $sc->findvalue( './programDate' );
         $start =~ s/\./-/;
                
-        #my $stop = $sc->findvalue( './SLUTTID' );
-        #$stop =~ s/\./:/;
+        # my $stop = $sc->findvalue( './SLUTTID' );
+        # $stop =~ s/\./:/;
         
         my $title = $sc->findvalue( './programTitle' );
         my $subtitle = $sc->findvalue( './episodeTitle' );
