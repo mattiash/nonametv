@@ -33,10 +33,10 @@ sub new {
     defined( $self->{UrlRoot} ) or die "You must specify UrlRoot";
     
     
-    my $dsh = NonameTV::DataStore::Helper->new( $self->{datastorehelper} );
+    my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore} );
     $self->{datastorehelper} = $dsh;
     
-
+    return $self;
 }
 
 sub ImportContent
