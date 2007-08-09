@@ -37,6 +37,11 @@ use base 'NonameTV::Importer::BaseFile';
 # FATAL = 5
 my $BATCH_LOG_LEVEL = 4;
 
+my $command_re = "ÄNDRA|RADERA|TILL|INFOGA|EJ ÄNDRAD|" . 
+    "CHANGE|DELETE|TO|INSERT|UNCHANGED";
+
+my $time_re = '\d\d[\.:]\d\d';
+
 sub new 
 {
   my $proto = shift;
@@ -336,7 +341,7 @@ sub ImportAmendments
       $self->start_date( $date );
     }
     elsif( ($command, $title) = 
-           ($text =~ /^([A-ZÅÄÖ][ A-ZÅÄÖ]+)\s
+           ($text =~ /^($command_re)\s
                        (.*?)\s*
                        ( \( [^)]* \) )*
                      $/x ) )
@@ -352,8 +357,8 @@ sub ImportAmendments
       $e = $self->parse_command( $prevtime, $command, $title );
     }
     elsif( ($time, $command, $title) = 
-           ($text =~ /^(\d\d[\.:]\d\d)\s
-                       ([A-ZÅÄÖ][ A-ZÅÄÖ]+)\s+
+           ($text =~ /^($time_re)\s
+                       ($command_re)\s+
                        ([A-ZÅÄÖ].*?)\s*
                        ( \( [^)]* \) )*
                      $/x ) )
