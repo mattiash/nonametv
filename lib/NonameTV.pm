@@ -258,6 +258,13 @@ all paragraphs in the page.
 
 =cut 
 
+my %paraelem = (
+		p => 1,
+		br => 1,
+		div => 1,
+		td => 1,
+		);
+
 sub FindParagraphs {
   my( $doc, $elements ) = @_;
 
@@ -270,7 +277,7 @@ sub FindParagraphs {
     if( $node->nodeName eq "#text" ) {
       $p .= $node->textContent();
     }
-    elsif( $node->nodeName eq "p" or $node->nodeName eq "br" ) {
+    elsif( defined $paraelem{ $node->nodeName } ) {
       $p = norm( $p );
       if( $p ne "" ) {
 	push @paragraphs, $p;
