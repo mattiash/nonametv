@@ -68,3 +68,4 @@
 73,"National Geographic Sverige",ngcsverige.com,,Discovery,1,NGC,1,,,sv,0,\N
 74,"Aftonbladet TV7",tv7.aftonbladet.se,,Aftonbladet_http,1,,1,,,sv,0,
 75,"Viasat Golf",golf.viasat.se,,Viasat,1,viasat_golf_se_,1,sports,Sports,sv,0,
+76,NASN,se.nasn.com,,NASN,1,,0,sports,Sports,en,0,
