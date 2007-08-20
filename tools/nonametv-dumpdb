@@ -89,7 +89,7 @@ sub dump_table {
   my $out = new IO::File( "> $file" ) 
       or die "Failed to open $file for writing";
 
-  my $csv = Text::CSV_XS->new({eol=> "\n"});
+  my $csv = Text::CSV_XS->new({eol=> "\n", 'binary' => 1});
 
   my $sth = $ds->Iterate( $table, {} );
 
