@@ -66,7 +66,7 @@ The callbackobject must implement the following methods:
   is compared to the previous filtered data to see if the filtered data
   has changed before it is returned by GetContent.
 
-  Both these methods ran return (undef, "errorstring") if an error 
+  Both these methods can return (undef, "errorstring") if an error 
   occured for some reason. The error will be handled in the same way as
   errors from the http-server.
 

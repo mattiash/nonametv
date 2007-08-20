@@ -1,3 +1,5 @@
+Remove obsolete files for the file-importers periodically.
+
 Clarify copyright and license (GPL)
 
 Validate data for AddProgramme and mark the batch so that it will be retried
@@ -6,9 +8,6 @@ until it succeeds.
 TV4: Stabilt. Den gör en falblack till <program_description> om det inte finns episode_desc eller? du kan skriva upp på din todo då med att om den gör denna fallback, kan vi uppenbarligen inte identifiera ett specifikt avsnitt. då ska episodeid sättas till "0000", en indikation på just detta.
 
 Use Namespaces for channels.xml? This would make it easy to add more info to channels.xml in the future that can be removed by tv_grab_se_swedb without specific knowledge about the tags.
-
-Implement some way of specifying alternate sources for listings to allow
-load-balancing.
 
 Eurosport: Subtitles are sometimes empty, sometimes NULL. Should be NULL.
 
@@ -19,8 +18,6 @@ Add more aspect-info.
 Update the trans_cat table with categories for more channels.
 
 Write MythTV wiki page about categories.
-
-Summarize errors per batch. Report which errors are still present in the database.
 
 Look at Maypole (http://maypole.perl.org) to create a web-interface
 for interfacing with the database.
