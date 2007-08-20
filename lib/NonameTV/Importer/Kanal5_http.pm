@@ -37,6 +37,11 @@ sub ImportContent
   my $self = shift;
   my( $batch_id, $cref, $chd ) = @_;
 
+  if( $$cref =~ /Sidan kunde tyv\S*rr inte hittas/ ) {
+    error( "$batch_id: Failed to download" );
+    return 0;
+  }
+
   my $cat = $self->FetchCategories( $batch_id, $chd );
   my $dsh = $self->{datastorehelper};
 
@@ -64,6 +69,11 @@ sub FetchCategories
   if( not defined( $content ) )
   {
     error( "$batch_id: Failed to fetch category-listings" );
+    return {};
+  }
+
+  if( $content =~ /Sidan kunde tyv\S*rr inte hittas/ ) {
+    error( "$batch_id: Failed to download" );
     return {};
   }
    
