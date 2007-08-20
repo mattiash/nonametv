@@ -10,6 +10,7 @@ listchannels,datasource,Source,en
 listchannels,footertext,"Put whatever you want here. It will be displayed on the bottom of the channel list.",en
 exporter-xmltv,episode_part,Part,sv
 exporter-xmltv,episode_number,Del,sv
+exporter-xmltv,episode_season,säsong,sv
 exporter-xmltv,of,av,sv
 listchannels,title,"This is the title of your channel listing page.",sv
 listchannels,headertext,"Put whatever you want here. It will be displayed on the top of the channel list.",sv
