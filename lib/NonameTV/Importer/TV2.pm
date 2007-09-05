@@ -20,10 +20,11 @@ program_type
 
 
 use DateTime;
+use Date::Parse;
 use Encode;
 
 use NonameTV qw/MyGet expand_entities AddCategory norm/;
-#use NonameTV::DataStore::Helper;
+use NonameTV::DataStore::Helper;
 use NonameTV::Log qw/info progress error logdie/;
 
 use NonameTV::Importer::BaseWeekly;
@@ -40,8 +41,9 @@ sub new {
 
     defined( $self->{UrlRoot} ) or die "You must specify UrlRoot";
 
-    #my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore} );
-    #$self->{datastorehelper} = $dsh;
+    my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore}, 
+    "Europe/Oslo" );
+    $self->{datastorehelper} = $dsh;
 
     return $self;
 }
@@ -52,8 +54,8 @@ sub ImportContent
 
   my( $batch_id, $cref, $chd ) = @_;
 
-  my $ds = $self->{datastore};
-  #my $dsh = $self->{datastorehelper};
+  #my $ds = $self->{datastore};
+  my $dsh = $self->{datastorehelper};
 
   # Decode the string into perl's internal format.
   # see perldoc Encode
@@ -70,11 +72,23 @@ sub ImportContent
   }
 
   my $columns = [ split( "\t", $rows[0] ) ];
-  my $date;
+  my $date = "";
+  my $olddate = "";
+  #print ( $batch_id );
   for ( my $i = 1; $i < scalar @rows; $i++ )
   {
     my $inrow = $self->row_to_hash($batch_id, $rows[$i], $columns );
-    #my $date = $inrow->{'SENDEDATO'};
+    $date = $inrow->{'SENDEDATO'};
+    if ($date ne $olddate) {
+      my $ymd = parseDate(fq( $date ));
+      print "\n>>>STARTING NEW DATE $ymd <<<\n";
+      
+      $dsh->StartDate( $ymd );
+    
+    }
+    
+    $olddate = $date;
+    
     #$date = substr( $date, 0, 10 );
     #$date =~ s/\./-/;
     #if ( exists($inrow->{'Date'}) )
@@ -167,7 +181,7 @@ sub ImportContent
     }
 
     #$self->extract_extra_info( $ce );
-    $ds->AddProgramme( $ce );
+    $dsh->AddProgramme( $ce );
   }
 
   # Success
@@ -225,7 +239,16 @@ sub parseStart
     my $yr  = substr( $string,  6, 4 );
     my $hr  = substr( $string, 11, 2 );
     my $min = substr( $string, 14, 2 );
-    return ( "$yr-$mnt-$day $hr:$min:00");
+    return ( "$hr:$min:00");
+}
+
+sub parseDate
+{
+    my ($string) = @_;
+    my $day = substr( $string,  0, 2 );
+    my $mnt = substr( $string,  3, 2 );
+    my $year = substr( $string, 6, 4 );
+    return ("$year-$mnt-$day");
 }
 
 sub fq

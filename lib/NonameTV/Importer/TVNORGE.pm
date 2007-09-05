@@ -68,14 +68,21 @@ sub ImportContent
     # Start date
     
     #$dsh->StartDate( $date, "00:00" );
-    
+    my $curdate="";
+    my $olddate="";
     foreach my $sc ($ns->get_nodelist)
     {
     
-        my $start = $sc->findvalue( './programDate' );
-        $start =~ s/\./-/;
-               
+        my $datetimestring = $sc->findvalue( './programDate' );
+        #print "\n>>>> $datetimestring <<<<\n";
+        my $curdate = getDate( $datetimestring );
+        
+        if ($curdate ne $olddate) {
+            $dsh->StartDate( $curdate, "00:00" );
+        }               
+
         # my $stop = $sc->findvalue( './SLUTTID' );
+        my $start = getStart( $datetimestring );
         # $stop =~ s/\./:/;
         
         my $title = $sc->findvalue( './programTitle' );
@@ -136,18 +143,30 @@ sub FetchDataFromSite
 }
 
 
-sub createDate
+sub getStart
 {
-    my $self = shift;
     my( $str ) = @_;
-    
+    #print "\n>>> $str <<<\n";
     my $date = substr( $str, 0, 2 );
-    my $month = substr( $str, 2, 2 );
-    my $year = substr( $str, 4, 4 );
+    my $month = substr( $str, 3, 2 );
+    my $year = substr( $str, 6, 4 );
     
-    return "$year-$month-$date";
+    my $hour = substr( $str, 11, 2 );
+    my $min = substr( $str, 14, 2 );
+    
+    return "$hour:$min";
 
 }
 
+sub getDate
+{
+    my ($str) = @_;
+    
+    my $date = substr( $str, 0, 2 );
+    my $month = substr( $str, 3, 2 );
+    my $year = substr( $str, 6, 4 );
+    
+    return "$year-$month-$date"; 
+}
 1;
 
