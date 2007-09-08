@@ -69,7 +69,6 @@ sub ImportContent
       error( "$batch_id: Invalid starttime '" . $sc->findvalue( './@start' ) . "'. Skipping." );
       next;
     }
-#print "START: $start\n";
 
     #
     # end time
@@ -80,39 +79,115 @@ sub ImportContent
       error( "$batch_id: Invalid endtime '" . $sc->findvalue( './@stop' ) . "'. Skipping." );
       next;
     }
-#print "END: $end\n";
     
     #
-    # title, subtitle
+    # title
     #
     my $title = $sc->getElementsByTagName('title');
+    if( not defined $title or !length($title) )
+    {
+      error( "$batch_id: Invalid title '" . $sc->findvalue( './@title' ) . "'. Skipping." );
+      next;
+    }
 #print "TITLE: $title\n";
     
     #
+    # subtitle
+    #
+    my $subtitle  = $sc->getElementsByTagName('sub-title');
+    my $org_title = $sc->getElementsByTagName('sub-title');
+
+    #
     # description
     #
-    my $desc  = $sc->getElementsByTagName('desc');
-#print "DESC: $desc\n";
-    #my $genre = $desc;
+    my $desc = $sc->getElementsByTagName('desc');
+
+    #
+    # genre
+    #
+    my $genre = $sc->getElementsByTagName('category');
+    
+    #
+    # url
+    #
+    my $url = $sc->getElementsByTagName('url');
+
+    #
+    # production year
+    #
+    my $production_year = $sc->getElementsByTagName( 'year' );
+
+    #
+    # episode number
+    #
+    my $episode = $sc->getElementsByTagName( 'episode-num' );
+    
+    # The director and actor info are children of 'credits'
+    my $directors = $sc->getElementsByTagName( 'director' );
+    my $actors = $sc->getElementsByTagName( 'actor' );
+    my $writers = $sc->getElementsByTagName( 'writer' );
+    my $adapters = $sc->getElementsByTagName( 'adapter' );
+    my $producers = $sc->getElementsByTagName( 'producer' );
+    my $presenters = $sc->getElementsByTagName( 'presenter' );
+    my $commentators = $sc->getElementsByTagName( 'commentator' );
+    my $guests = $sc->getElementsByTagName( 'guest' );
     
     my $ce = {
-      channel_id  => $chd->{id},
-      title       => norm($title),
-      start_time  => $start->ymd("-") . " " . $start->hms(":"),
-      end_time    => $end->ymd("-") . " " . $end->hms(":"),
-      #description => norm($desc),
+      channel_id   => $chd->{id},
+      title        => norm($title) || norm($org_title),
+      start_time   => $start->ymd("-") . " " . $start->hms(":"),
+      end_time     => $end->ymd("-") . " " . $end->hms(":"),
     };
 
-    #my($program_type, $category ) = $ds->LookupCat( "Phazer", $genre );
+    if( defined( $subtitle ) and length( $subtitle ) )
+    {
+#print "SUBTITLE: $subtitle\n";
+      $ce->{subtitle} = norm($subtitle);
+    }
 
-    #AddCategory( $ce, $program_type, $category );
+    if( defined( $desc ) and length( $desc ) )
+    {
+#print "DESC: $desc\n";
+      $ce->{description} = norm($desc);
+    }
 
-    #if( defined( $production_year ) and ($production_year =~ /(\d\d\d\d)/) )
-    #{
-    #  $ce->{production_date} = "$1-01-01";
-    #}
+    if( defined( $genre ) and length( $genre ) )
+    {
+print "GENRE: $genre\n";
+      my($program_type, $category ) = $ds->LookupCat( "Phazer", $genre );
+      AddCategory( $ce, $program_type, $category );
+    }
+
+    if( defined( $url ) and length( $url ) )
+    {
+print "URL: $url\n";
+      $ce->{url} = norm($url);
+    }
+
+    if( defined( $production_year ) and ($production_year =~ /(\d\d\d\d)/) )
+    {
+print "YEAR: $production_year\n";
+      $ce->{production_date} = "$1-01-01";
+    }
+
+    if( defined( $episode ) and ($episode =~ /\S/) )
+    {
+print "EPISODE: $episode\n";
+      $ce->{episode} = norm($episode);
+      $ce->{program_type} = 'series';
+    }
+
+#print "------------------------------------------------------------------\n";
+#print "CHANNEL ID: $ce->{channel_id}\n";
+#print "START     : $ce->{start_time}\n";
+#print "END       : $ce->{end_time}\n";
+#print "TITLE     : $ce->{title}\n";
+#print "DESC      : $ce->{description}\n";
+#print "CATEGORY  : $ce->{category}\n";
+#print "------------------------------------------------------------------\n";
 
     $ds->AddProgramme( $ce );
+
   }
   
   # Success
