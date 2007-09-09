@@ -8,6 +8,13 @@ use warnings;
 Importer for data from bleb.org.
 The data are in XML format.
 
+    Bleb =>
+    {
+      Type => 'Bleb',
+      UrlRoot => 'http://www.bleb.org/tv/data/listings/',
+      MaxDays => 1,
+    },
+
 Features:
 
 =cut
@@ -219,7 +226,7 @@ sub FetchDataFromSite
   # in different directory for every day
   # starting with 0 for today
 
-  my $day = 2;
+  my $day = 0;
   my $url = $self->{UrlRoot} . "/" . $day . "/" . $data->{grabber_info};
 print "URL: $url\n";
 
