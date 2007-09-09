@@ -97,8 +97,8 @@ sub ImportContent
     }
     my $end = $self->create_dt( $endtime );
 
-#print "$starttime - $endtime\n";
-#print "$start - $end\n";
+#print "$starttime -> $start\n";
+#print "$endtime -> $end\n";
     
     #
     # check once more if start/end are extracted and defined ok
@@ -212,9 +212,6 @@ sub FetchDataFromSite
 {
   my $self = shift;
   my( $batch_id, $data ) = @_;
-  my $url;
-  my ( $content, $code );
-  my $allcontent;
 
   my( $year, $week ) = ($batch_id =~ /_(\d+)-(\d+)/);
 
@@ -222,18 +219,11 @@ sub FetchDataFromSite
   # in different directory for every day
   # starting with 0 for today
 
-#  for (my $day = 0; $day < $self->{MaxDays}; $day++) {
-#    $url = $self->{UrlRoot} . "/" . $day . "/" . $data->{grabber_info};
-#print "URL: $url\n";
-#    ( $content, $code ) = MyGet( $url );
-#print "CONTENT: $content\n";
-#    $allcontent .= $content;
-#  }
-#print "ALLCONTENT: $allcontent\n";
+  my $day = 2;
+  my $url = $self->{UrlRoot} . "/" . $day . "/" . $data->{grabber_info};
+print "URL: $url\n";
 
-my $day = 0;
-  $url = $self->{UrlRoot} . "/" . $day . "/" . $data->{grabber_info};
-  ( $content, $code ) = MyGet( $url );
+  my ( $content, $code ) = MyGet( $url );
   return( $content, $code );
 }
 
