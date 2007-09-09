@@ -3,8 +3,9 @@
 NROOT=/var/local/nonametv
 
 perl -I lib/ tools/nonametv-export Xmltv $1 $2 $3
+perl -I lib/ tools/nonametv-export Json $1 $2 $3
 
-tools/se/nonametv-xmltv-genhtml $NROOT/xmltv_staging
+tools/se/nonametv-xmltv-genhtml $NROOT/xmltv_staging .
 
 tools/se/nonametv-update-check http://xmltv1.tvsajten.com/xmltv/last_updated \
                                http://xmltv2.tvsajten.com/xmltv/last_updated \
