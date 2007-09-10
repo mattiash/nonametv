@@ -480,10 +480,7 @@ sub WriteEntry
   $self->{writer_entries}++;
 
   my $start_time = create_dt( $entry->{start_time}, "UTC" );
-#  $start_time->set_time_zone( "Europe/Stockholm" );
-  
   my $end_time = create_dt( $entry->{end_time}, "UTC" );
-#  $end_time->set_time_zone( "Europe/Stockholm" );
   
   my $d = {
     channel => $chd->{xmltvid},
@@ -495,7 +492,7 @@ sub WriteEntry
   $d->{desc} = { $chd->{sched_lang} => $entry->{description} } 
     if defined( $entry->{description} ) and $entry->{description} ne "";
   
-  $d->{'sub-title'} = { $chd->{sched_lang} => $entry->{subtitle} }
+  $d->{'subTitle'} = { $chd->{sched_lang} => $entry->{subtitle} }
     if defined( $entry->{subtitle} ) and $entry->{subtitle} ne "";
   
   if( defined( $entry->{episode} ) and ($entry->{episode} =~ /\S/) )
@@ -526,13 +523,13 @@ sub WriteEntry
       $ep_text .= " " . $self->{lngstr}->{episode_season} . " $season" 
 	  if( $season );
       
-      $d->{'episode-num'} = { xmltv_ns =>  norm($entry->{episode}),
+      $d->{'episodeNum'} = { xmltv_ns =>  norm($entry->{episode}),
 			     onscreen => $ep_text };
     }
     else {
       # This episode is only a segment and not a real episode.
       # I.e. " . . 0/2".
-      $d->{'episode-num'} = { xmltv_ns => norm($entry->{episode}) };
+      $d->{'episodeNum'} = { xmltv_ns => norm($entry->{episode}) };
     }
   }
   
@@ -626,10 +623,10 @@ sub ExportChannelList
   while( my $data = $sth->fetchrow_hashref() )
   {
     $channels->{$data->{xmltvid}} = {
-      "display-name" => {
+      "displayName" => {
 	$data->{sched_lang} => $data->{display_name},
       },
-      "base-url" => $self->{RootUrl},
+      "baseUrl" => $self->{RootUrl},
     };
 
     if( $data->{logo} )
