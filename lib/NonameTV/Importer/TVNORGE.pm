@@ -136,7 +136,8 @@ sub FetchDataFromSite
     my( $batch_id, $data ) = @_;
     #print $batch_id;
 
-    my $u = $self->{UrlRoot};
+#    my $u = $self->{UrlRoot};
+    my $u = $data->{grabber_info};
     my ( $content, $code ) = MyGet ( $u );
     
     return( $content, $code );
