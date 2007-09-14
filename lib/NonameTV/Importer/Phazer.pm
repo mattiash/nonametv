@@ -120,7 +120,17 @@ sub ImportContent
     #
     # episode number
     #
-    my $episode = $sc->getElementsByTagName( 'episode-num' );
+    my $ep_nr = int( $sc->getElementsByTagName( 'episode-num' ) );
+    my $ep_se = 0;
+    my $episode = undef;
+    if( ($ep_nr > 0) and ($ep_se > 0) )
+    {
+      $episode = sprintf( "%d . %d .", $ep_se-1, $ep_nr-1 );
+    }
+    elsif( $ep_nr > 0 )
+    {
+      $episode = sprintf( ". %d .", $ep_nr-1 );
+    }
     
     # The director and actor info are children of 'credits'
     my $directors = $sc->getElementsByTagName( 'director' );
@@ -153,26 +163,26 @@ sub ImportContent
 
     if( defined( $genre ) and length( $genre ) )
     {
-print "GENRE: $genre\n";
+#print "GENRE: $genre\n";
       my($program_type, $category ) = $ds->LookupCat( "Phazer", $genre );
       AddCategory( $ce, $program_type, $category );
     }
 
     if( defined( $url ) and length( $url ) )
     {
-print "URL: $url\n";
+#print "URL: $url\n";
       $ce->{url} = norm($url);
     }
 
     if( defined( $production_year ) and ($production_year =~ /(\d\d\d\d)/) )
     {
-print "YEAR: $production_year\n";
+#print "YEAR: $production_year\n";
       $ce->{production_date} = "$1-01-01";
     }
 
     if( defined( $episode ) and ($episode =~ /\S/) )
     {
-print "EPISODE: $episode\n";
+#print "EPISODE: $episode\n";
       $ce->{episode} = norm($episode);
       $ce->{program_type} = 'series';
     }
@@ -239,7 +249,8 @@ sub FetchDataFromSite
   #my $dt = DateTime->new( year=>$year, day => 4 );
   #$dt->add( days => $week * 7 - $dt->day_of_week - 6 );
 
-  my $url = $self->{UrlRoot} . "\?$data->{grabber_info}";
+  my $url = $self->{UrlRoot} . $data->{grabber_info};
+#print "url: $url\n";
 
   my( $content, $code ) = MyGet( $url );
   return( $content, $code );
