@@ -9,15 +9,15 @@ Combiner           http      daily         xml      yes
 Discovery          mail      split         word     no
 Eurosport          ftp       one file      xml      yes    
 Expressen          mail      split         word     no
-ExtremeSports
-HRT
+ExtremeSports      http      monthly       xls      yes
+HRT                http      3 days        xml      yes
 Infomedia          http      daily         html     yes
 Kanal5_http        http      weekly        word+xml no
 Kanal5_mail        mail      weekly        word     no
 Mtve               http      daily         xml      yes
 NetTV
 Nonstop            http      weekly        word     no
-Phazer
+Phazer             http      weekly        xml      yes
 Svt_web            http      daily         html     yes
 Timeshifter        http      daily         xml      yes
 TV4                http      daily         xml      yes
