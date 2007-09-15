@@ -215,11 +215,12 @@ sub FetchDataFromSite
   my $is_leap  = DateTime->today->is_leap_year;
   $mondays[2]++ if $is_leap;
 
-  my $url = $self->{UrlRoot} . $data->{grabber_info} . "_" .
-            strftime( '%Y%m', localtime ) . "01-" . strftime( '%Y%m', localtime ) . $mondays[$nowmonth] .
-            ".xls";
+  #my $url = $self->{UrlRoot} . $data->{grabber_info} . "_" .
+  #          strftime( '%Y%m', localtime ) . "01-" . strftime( '%Y%m', localtime ) . $mondays[$nowmonth] .
+  #          ".xls";
 
-#  print "Fetching xls file from $url\n";
+  my $url = "http://express.extreme.com/Files/Months/Listings/Pan%20Euro%20Listings%20Sept%20English.xls";
+  print "Fetching xls file from $url\n";
 
   my( $content, $code ) = MyGet( $url );
 
