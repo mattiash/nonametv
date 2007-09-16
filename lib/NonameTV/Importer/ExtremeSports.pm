@@ -111,6 +111,16 @@ sub ImportContent
       # episode_number (column 29)
       $oWkC = $oWkS->{Cells}[$iR][29];
       my $episode_number = $oWkC->Value;
+      my $episode_season = 0;
+      my $episode = undef;
+      if( ($episode_number > 0) and ($episode_season > 0) )
+      {
+        $episode = sprintf( "%d . %d .", $episode_season-1, $episode_number-1 );
+      }
+      elsif( $episode_number > 0 )
+      {
+        $episode = sprintf( ". %d .", $episode_number-1 );
+      }
 
       # format start and end times
       my( $start , $end ) = create_dt( $schedule_date , $start_time , $duration );
@@ -124,9 +134,9 @@ sub ImportContent
         end_time     => $end->ymd("-") . " " . $end->hms(":"),
       };
 
-      if( defined( $episode_number ) and ($episode_number =~ /\S/) )
+      if( defined( $episode ) and ($episode =~ /\S/) )
       {
-        $ce->{episode} = norm($episode_number);
+        $ce->{episode} = norm($episode);
         $ce->{program_type} = 'series';
       }
 
