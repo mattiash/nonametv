@@ -78,6 +78,10 @@ sub new {
     $self->{lngstr} = LoadLanguage( $self->{Language}, 
                                    "exporter-xmltv", $ds );
 
+    # if KeepXml is set, xml files are not deleted after gzip
+    # (disabled by default)
+    $self->{KeepXml} = 0 unless defined $self->{KeepXml};
+
     return $self;
 }
 
@@ -444,7 +448,14 @@ sub CloseWriter
 
   $w->end();
 
-  system("gzip -f -n $path$filename.new");
+  if( $self->{KeepXml} ){
+    system("gzip -c -f -n $path$filename.new > $path$filename.new.gz");
+    move( "$path$filename.new" , "$path$filename" );
+    progress( "Kept $filename" );
+  } else {
+    system("gzip -f -n $path$filename.new");
+  }
+
   if( -f "$path$filename.gz" )
   {
     system("diff $path$filename.new.gz $path$filename.gz > /dev/null");
@@ -452,6 +463,10 @@ sub CloseWriter
     {
       move( "$path$filename.new.gz", "$path$filename.gz" );
       progress( "Exported $filename.gz" );
+      if( $self->{KeepXml} ){
+        move( "$path$filename.new" , "$path$filename" );
+        progress( "Kept $filename" );
+      }
       if( not $self->{writer_entries} )
       {
         error( "Xmltv: $filename.gz is empty" );
@@ -469,6 +484,9 @@ sub CloseWriter
     else
     {
       unlink( "$path$filename.new.gz" );
+      if( $self->{KeepXml} ){
+        unlink( "$path$filename.new" );
+      }
     }
   }
   else
@@ -674,7 +692,13 @@ sub ExportChannelList
   
   $w->endTag( 'tv' );
   $w->end();
-  system("gzip -f -n $self->{Root}channels.xml");
+
+  if( $self->{KeepXml} ){
+    progress( "Keeping $self->{Root}channels.xml" );
+    system("gzip -c -f -n $self->{Root}channels.xml > $self->{Root}channels.xml.gz");
+  } else {
+    system("gzip -f -n $self->{Root}channels.xml");
+  }
 }
 
 #
