@@ -1,7 +1,7 @@
 #!/bin/bash
 
-NROOT=/var/local/nonametv
-PROOT=/home/chriswa/nonametv
+NROOT=$HOME/nonametv/var
+PROOT=$HOME/nonametv/nonametv
 
 h=true
 d=true
@@ -50,4 +50,4 @@ $h perl -I lib tools/nonametv-import Timeshifter --short-grab
 tools/no/nonametv-updatesite
 
 $d tools/no/nonametv-xmltv-compare-run
-perl -I lib tools/nonametv-batchlog > /var/local/nonametv/xmltv_compare/00status.html
+perl -I lib tools/nonametv-batchlog > $NROOT/xmltv_compare/00status.html

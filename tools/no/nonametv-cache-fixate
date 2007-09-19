@@ -1,6 +1,6 @@
 #!/bin/sh
 
-BASE=/var/local/nonametv
+BASE=$HOME/nonametv
 
 echo Storing a copy of the cache in $BASE/cache.old
 rm $BASE/cache.old/*

@@ -1,6 +1,6 @@
 #!/bin/sh
 
-NROOT=/var/local/nonametv
+NROOT=$HOME/nonametv/var
 SC_OPT=-qq
 VALIDATE_OPT=
 
