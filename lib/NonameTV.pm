@@ -5,6 +5,7 @@ use warnings;
 
 # Mark this source-file as encoded in utf-8.
 use utf8;
+use Env;
 
 use LWP::UserAgent;
 use File::Temp qw/tempfile tempdir/;
@@ -49,8 +50,17 @@ sub ReadConfig
   my( $file ) = @_;
 
 #  $file = "/etc/nonametv-utf8.conf" unless defined $file;
-  $file = "/etc/nonametv.conf" unless defined $file;
-
+  
+  #$file = "~/.nonametv.conf" unless defined $file;
+  #$file = "/etc/nonametv.conf" unless defined $file;
+  if (-e "$HOME/.nonametv.conf") {
+  	$file = "$HOME/.nonametv.conf";
+  } elsif (-e "/etc/nonametv.conf") {
+  	$file = "/etc/nonametv.conf";
+  } else {
+  	die "No configuration file found in $HOME/.nonametv.conf or /etc/nonametv.conf"
+  }
+  
   open IN, "< $file" or die "Failed to read from configuration file $file";
   my $config = "";
   while(<IN>)
