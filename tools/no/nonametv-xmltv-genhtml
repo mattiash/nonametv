@@ -1,11 +1,13 @@
 #!/usr/bin/perl -w
 
 use File::Copy;
-
+use POSIX qw(strftime);
 # How large an empty xmltv-file can be.
 use constant EMPTY_SIZE => 140;
 
 use strict;
+
+my $today = strftime "%y-%m", localtime;
 
 if( scalar( @ARGV ) != 1 )
 {
@@ -66,6 +68,7 @@ print OUT << "EOHEAD";
 <html>
 <head>
 <style type="text/css">
+  .today { background-color: light-grey; }  
   .X {  text-align: center; }
   .E {  text-align: center; background-color: grey; }
 </style>
@@ -81,7 +84,13 @@ EOHEAD
 foreach my $date (sort keys %dates)
 {
   my( $s ) = ($date =~ m/(\d\d-\d\d)$/);
-  print OUT "    <td>$s</td>\n";
+  if ($s eq $today) {
+  	print OUT "    <td>$s</td>\n";
+  } else {
+  	print OUT "    <td class="today">$s</td>\n";
+  }
+  
+  #print OUT "    <td>$s</td>\n";
 }
 
 print OUT << "EOD";
