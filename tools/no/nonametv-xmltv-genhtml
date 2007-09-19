@@ -7,7 +7,7 @@ use constant EMPTY_SIZE => 140;
 
 use strict;
 
-my $today = strftime "%y-%m", localtime;
+my $today = strftime "%m-%d", localtime;
 
 if( scalar( @ARGV ) != 1 )
 {
@@ -68,10 +68,11 @@ print OUT << "EOHEAD";
 <html>
 <head>
 <style type="text/css">
-  .today { background-color: light-grey; }  
+  .today { background-color: lightgrey; }  
   .X {  text-align: center; }
   .E {  text-align: center; background-color: grey; }
 </style>
+<!-- today: $today -->
 </head>
 <body>
 <h1>Schedules</h1>
@@ -84,10 +85,10 @@ EOHEAD
 foreach my $date (sort keys %dates)
 {
   my( $s ) = ($date =~ m/(\d\d-\d\d)$/);
-  if ($s eq $today) {
+  if ($s ne $today) {
   	print OUT "    <td>$s</td>\n";
   } else {
-  	print OUT "    <td class="today">$s</td>\n";
+  	print OUT "    <td class=\"today\">$s</td>\n";
   }
   
   #print OUT "    <td>$s</td>\n";
