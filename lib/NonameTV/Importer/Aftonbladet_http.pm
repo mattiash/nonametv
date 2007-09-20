@@ -50,7 +50,7 @@ sub FilterContent {
   } 
 
   my $paragraphs = FindParagraphs( $doc, 
-      "//div[\@id='AB_artikelytaContainer']//table//." );
+      "//div[\@id='abArtikelytaContainer']//table//." );
 
   my $str = join( "\n", @{$paragraphs} );
   
@@ -72,7 +72,7 @@ sub ImportContent {
 
   if( scalar(@paragraphs) == 0 ) {
     error( "$batch_id: No paragraphs found." ) ;
-    return;
+    return 0;
   }
 
   my $currdate = undef;
