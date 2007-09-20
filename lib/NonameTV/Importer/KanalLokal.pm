@@ -49,6 +49,7 @@ sub ImportContentFile {
   my $xmltvid=$chd->{xmltvid};
   my $channel_id = $chd->{id};
   my $ds = $self->{datastore};
+  $ds->{SILENCE_END_START_OVERLAP}=1;
 
   my $doc;
   my $xml = XML::LibXML->new;
@@ -83,20 +84,21 @@ sub ImportContentFile {
     $starttime =~ s/^(\d+:\d+).*/$1/;
     $endtime =~ s/^(\d+:\d+).*/$1/;
 
+    my $start_dt = $self->to_utc( $date, $starttime );
+    my $end_dt = $self->to_utc( $date, $endtime );
+
+    if( $starttime gt $endtime ) {
+      $end_dt = $end_dt->add( days => 1 );
+    }
+
     my $ce = {
       channel_id => $channel_id,
       title => $title,
       description => $synopsis,
-      start_time => "$date $starttime",
+      start_time => $start_dt->ymd('-') . " " . $start_dt->hms(':'),
+      end_time => $end_dt->ymd('-') . " " . $end_dt->hms(':'),
     };
-
-    if( $starttime gt $endtime ) {
-      $ce->{end_time} = IncreaseDate( $date ) . " $endtime";
-    }
-    else {
-      $ce->{end_time} = "$date $endtime";
-    }
-
+    
     $ds->AddProgramme( $ce );
   }
 
@@ -118,14 +120,6 @@ sub ParseDate {
   return $dt;
 }
 
-sub IncreaseDate {
-  my( $text ) = @_;
-
-  my $dt = ParseDate( $text );
-
-  return $dt->add( days => 1 )->ymd( '-' );
-}
-
 sub FindWeek {
   my( $text ) = @_;
 
@@ -134,6 +128,26 @@ sub FindWeek {
   my( $week_year, $week_num ) = $dt->week;
 
   return "$week_year-$week_num";
+}
+
+sub to_utc {
+  my $self = shift;
+  my( $date, $time ) = @_;
+
+  my( $year, $month, $day ) = split( '-', $date );
+  my( $hour, $minute ) = split( ":", $time );
+
+  my $dt = DateTime->new( year   => $year,
+                          month  => $month,
+                          day    => $day,
+                          hour   => $hour,
+                          minute => $minute,
+                          time_zone => 'Europe/Stockholm',
+                          );
+  
+  $dt->set_time_zone( "UTC" );
+  
+  return $dt;
 }
   
 1;
