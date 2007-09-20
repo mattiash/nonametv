@@ -39,6 +39,8 @@ sub new {
     my $proto = shift;
     my $class = ref($proto) || $proto;
     my $self  = $class->SUPER::new( @_ );
+    my $conf  = NonameTV::ReadConfig();
+    
     bless ($self, $class);
 
     $self->{OptionSpec} = [ qw/force-update verbose+ short-grab/ ];
@@ -54,7 +56,8 @@ sub new {
     $name =~ s/.*:://;
 
     $self->{cc} = NonameTV::ContentCache->new( { 
-      basedir => "/var/local/nonametv/contentcache/" . 
+      #basedir => "/var/local/nonametv/contentcache/" . 
+      basedir => $conf->{ContentCachePath} .
           $name,
       callbackobject => $self,
       warnafter => 23*60*60,
