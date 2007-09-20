@@ -25,7 +25,7 @@ while( my $entry = $sth->fetchrow_hashref() )
   my $xmltvid = $entry->{xmltvid};
   my $logo = $entry->{logo};
 
-#  print "Processing $xmltvid\n";
+  print "Processing $xmltvid\n";
 
   my $url = "$iconroot$xmltvid.png";
   if( head( $url ) )
