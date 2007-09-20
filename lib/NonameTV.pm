@@ -48,7 +48,8 @@ our $Conf;
 sub ReadConfig
 {
   my( $file ) = @_;
-
+  return $Conf if defined $Conf;
+  
 #  $file = "/etc/nonametv-utf8.conf" unless defined $file;
   
   #$file = "~/.nonametv.conf" unless defined $file;
