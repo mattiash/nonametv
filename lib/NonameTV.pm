@@ -34,7 +34,7 @@ BEGIN {
 		      FindParagraphs
                       norm AddCategory
                       ParseDescCatSwe FixProgrammeData
-		      ParseXmltv/;
+		      ParseXml ParseXmltv/;
 }
 our @EXPORT_OK;
 
@@ -104,6 +104,8 @@ sub MyGet
 # åäö ÅÄÖ
 my %ent = (
            257  => 'ä',
+	   231  => 'c', # This should really be a c with a special mark on it.
+	                # Unicode 000E7, UTF-8 195 167.
            337  => 'ö',
            8211 => '-',
            8212 => '--',
@@ -493,16 +495,18 @@ sub FixProgrammeData
   }
 }
 
-=pod
+=pod 
 
-Parse a reference to an xml-string in xmltv-format into a reference to an 
-array of hashes with programme-info.
+my $doc = ParseXml( $strref );
+
+Parse an xml-string into an XML::LibXML document. Takes a reference to a
+string as the only reference.
 
 =cut
 
 my $xml;
 
-sub ParseXmltv {
+sub ParseXml {
   my( $cref ) = @_;
 
   if( not defined $xml ) {
@@ -517,6 +521,22 @@ sub ParseXmltv {
     error( "???: Failed to parse: $@" );
     return undef;
   }
+
+  return $doc;
+}
+
+=pod
+
+Parse a reference to an xml-string in xmltv-format into a reference to an 
+array of hashes with programme-info.
+
+=cut
+
+sub ParseXmltv {
+  my( $cref ) = @_;
+
+  my $doc = ParseXml( $cref );
+  return undef if not defined $doc;
 
   my @d;
 
