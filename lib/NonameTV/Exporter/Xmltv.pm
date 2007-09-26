@@ -652,20 +652,13 @@ sub ExportChannelList
 {
   my( $self ) = @_;
   my $ds = $self->{datastore};
- 
-  my $output = new IO::File("> $self->{Root}channels.xml");
-  
-  my %w_args = ( 
-                 encoding    => $self->{Encoding},
-                 DATA_INDENT => 2, 
-                 DATA_MODE   => 1,
-                 OUTPUT      => $output,
-                 );
-  my $w = new XML::Writer( %w_args );
 
-  $w->xmlDecl( $self->{Encoding} );
+  my $result = "";
 
-  $w->startTag( 'tv', 'generator-info-name' => 'nonametv' );
+  my $odoc = XML::LibXML::Document->new( "1.0", "iso-8859-1" );
+  my $root = $odoc->createElement('tv');
+  $root->setAttribute( 'generator-info-name', 'nonametv' );
+  $odoc->setDocumentElement($root);
 
   my( $res, $sth ) = $ds->Sql( "
       SELECT * from channels 
@@ -674,24 +667,37 @@ sub ExportChannelList
 
   while( my $data = $sth->fetchrow_hashref() )
   {
-    $w->startTag( 'channel', id => $data->{xmltvid} );
-    $w->startTag( 'display-name', lang => $data->{sched_lang} );
-    $w->characters( $data->{display_name} );
-    $w->endTag( 'display-name' );
-    $w->startTag( 'base-url' );
-    $w->characters( $self->{RootUrl} );
-    $w->endTag( 'base-url' );
+    my $ch = $odoc->createElement( 'channel' );
+    $ch->setAttribute( id => $data->{xmltvid} );
+    my $dn = $odoc->createElement( 'display-name' );
+    $dn->setAttribute( 'lang', $self->{Language} );
+    $dn->appendText( $data->{display_name} ); 
+    $ch->appendChild( $dn );
+
+    my $bu = $odoc->createElement( 'base-url' );
+    $bu->appendText( $self->{RootUrl} );
+    $ch->appendChild( $bu );
+
     if( $data->{logo} )
     {
-      $w->emptyTag( 'icon', 
-                    src => $self->{IconRootUrl} . 
+      my $logo = $odoc->createElement( 'icon' );
+      $logo->setAttribute( 'src', $self->{IconRootUrl} . 
                            $data->{xmltvid} .  ".png"  );
+      $ch->appendChild( $logo );
     }
-    $w->endTag( 'channel' );
+
+    $root->appendChild( $ch );
   }
-  
-  $w->endTag( 'tv' );
-  $w->end();
+
+  open( my $fh, '>:encoding(' . $self->{Encoding} . ')', 
+	"$self->{Root}channels.xml" )
+    or logdie( "Xmltv: cannot write to $self->{Root}channels.xml" );
+
+  $odoc->toFH( $fh, 1 );
+  close( $fh );
+
+#  $odoc->toFile( "$self->{Root}channels.xml", 1 )
+#      or logdie( "Xmltv: cannot write to $self->{Root}channels.xml" );
 
   if( $self->{KeepXml} ){
     progress( "Keeping $self->{Root}channels.xml" );
