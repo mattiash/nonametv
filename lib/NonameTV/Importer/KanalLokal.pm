@@ -73,8 +73,12 @@ sub ImportContentFile {
     my $date = norm( $div->findvalue( 'StartDate' ) );
     my $starttime = norm( $div->findvalue( 'StartTime' ) );
     my $endtime = norm( $div->findvalue( 'EndTime' ) );
-    my $title = norm( $div->findvalue( 'Title1' ) );
+    my $title1 = norm( $div->findvalue( 'Title1' ) );
+    my $title2 = norm( $div->findvalue( 'Title2' ) );
     my $synopsis = norm( $div->findvalue( 'Synopsis1' ) );
+
+    # Prefer Title2 before Title1
+    my $title = $title2 eq "" ? $title1 : $title2;
 
     if( not defined( $batch_id ) ) {
       $batch_id = $xmltvid . "_" . FindWeek( $date );
