@@ -624,7 +624,7 @@ sub ExportChannelList
   {
     $channels->{$data->{xmltvid}} = {
       "displayName" => {
-	$data->{sched_lang} => $data->{display_name},
+	$data->{sched_lang} => $self->{Language},
       },
       "baseUrl" => $self->{RootUrl},
     };
