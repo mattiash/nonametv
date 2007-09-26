@@ -43,11 +43,12 @@ sub new {
     
     bless ($self, $class);
 
-    $self->{OptionSpec} = [ qw/force-update verbose+ short-grab/ ];
+    $self->{OptionSpec} = [ qw/force-update verbose+ short-grab remove-old/ ];
     $self->{OptionDefaults} = { 
       'force-update' => 0,
       'verbose'      => 0,
       'short-grab'   => 0,
+      'remove-old'   => 0,
     };
 
     # $self->{grabber_name} hasn't been set yet, so we'll build our
@@ -106,6 +107,11 @@ sub ImportContent
 sub Import {
   my $self = shift;
   my( $p ) = @_;
+
+  if( $p->{'remove-old'} ) {
+    $self->RemoveOld();
+    return;
+  }
   
   if( not $self->can("Object2Url") ) {
     # Fallback to old code...
@@ -261,6 +267,12 @@ sub ImportBatch {
     # failure
     $ds->EndBatch( 0, $message );
   }
+}
+
+sub RemoveOld {
+  my $self = shift;
+
+  $self->{cc}->RemoveOld();
 }
 
 1;

@@ -12,6 +12,7 @@ if [ $1x = --weeklyx ]
 then
   # Run weekly commands.
   perl -I lib tools/nonametv-remove-old
+  tools/se/nonametv-import-allhttp --remove-old
   exit
 fi
 

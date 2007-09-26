@@ -372,8 +372,9 @@ sub RemoveOld {
   my @statefiles = glob( $g );
 
   foreach my $statefile (@statefiles) {
-    if( -M( $statefile ) > 7*24*60*60 ) {
+    if( -M( $statefile ) > 7 ) {
       my( $base ) = ($statefile =~ /(.*)\.state$/);
+
       unlink( $statefile );
       unlink( "$base.content" );
       unlink( "$base.filtered" );
