@@ -224,8 +224,14 @@ sub ParseProgram {
 
   my $ce;
 
-  my $b = norm($div->findvalue('.//b'));
+  my $b = norm($div->findvalue('.//b[1]'));
+  my $b2 = norm($div->findvalue('.//b'));
+  
   my( $time, $title ) = ( $b =~ /^(\d{1,2}:\d{2}) (.+)/ );
+
+  if( not defined( $title ) ) {
+    ( $time, $title ) = ( $b2 =~ /^(\d{1,2}:\d{2}) (.+)/ );
+  }
 
   if( $title eq "CLOSEDOWN" ) {
     $ce->{title} = "end-of-transmission";
@@ -295,6 +301,11 @@ sub FilterContent {
   if( not defined $doc ) {
     return (undef, "Word2Xml failed" );
   } 
+
+  my @unwantednodes = $doc->findnodes( '//@style|//@align' );
+  foreach my $node (@unwantednodes) {
+    $node->unbindNode();
+  }
 
   my $str = $doc->toString();
   return( \$str, undef );
