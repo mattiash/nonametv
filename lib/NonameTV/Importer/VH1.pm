@@ -67,6 +67,13 @@ sub ImportContentFile
     error( "VH1 $file: Failed to parse" );
     return;
   }
+
+  my @nodes = $doc->findnodes( 
+     '//span[@style="text-transform:uppercase"]/text()' );
+  foreach my $node (@nodes) {
+    my $str = $node->getData();
+    $node->setData( uc( $str ) );
+  }
   
   # Find all paragraphs.
   my $ns = $doc->find( "//div" );
@@ -83,7 +90,7 @@ sub ImportContentFile
 
     if( $text eq "" ) {
     }
-    elsif( $text =~ /^\S+day \d{1,2} \S+$/i ) {
+    elsif( $text =~ /^\S+day \d{1,2}[stndrth]* \S+$/i ) {
       my $date = ParseDate( $text, $file  );
       if( not defined $date ) {
         error( "VH1 $file: Unknown date $text" );
@@ -100,7 +107,7 @@ sub ImportContentFile
     }
     elsif( $text =~ /^\d{4} / ) {
       my( $start, $title, $description ) = ($text =~ 
-        /^(\d{4}) ([A-Z0-9\'\&s\/ \-:,()]+) ([A-Z].*)/);
+        /^(\d{4}) ([A-Z0-9\'\&s\/ \-:,()\*]+) ([A-Z].*)/);
 
       if( not defined( $start ) ) {
 	error( "Match failed for '$text'" ); 
@@ -144,7 +151,7 @@ my %months = (
 sub ParseDate {
   my( $text, $file ) = @_;
 
-  my( $wday, $day, $month ) = ($text =~ /^(.*?)\s+(\d+)\s+([a-z]+)\.*$/i);
+  my( $wday, $day, $month ) = ($text =~ /^(.*?)\s+(\d+)[stndrth]*\s+([a-z]+)\.*$/i);
   my $monthnum = $months{lc $month};
 
   if( not defined $monthnum ) {
