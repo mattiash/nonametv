@@ -53,8 +53,8 @@ sub Object2Url {
   my $today = DateTime->today( time_zone=>'local' );
   my $day_diff = $dt->subtract_datetime( $today )->delta_days;
 
-  my $url = sprintf( "%s/%2d", $self->{UrlRoot}, $day_diff );
-  
+  my $url = sprintf( "%s%d", $self->{UrlRoot}, $day_diff );
+
   return( $url, undef );
 }
 
