@@ -610,6 +610,10 @@ sub WriteEntry
   if( $data->{actors} =~ /\S/ )
   {
     $d->{credits}->{actor} = [split( ", ", $data->{actors})];
+    foreach my $actor (@{$d->{credits}->{actor}} ) {
+      error( "Xmltv: Bad actor $data->{actors} in $self->{writer_filename}" )
+	  if( $actor =~ /^\s*$/ );
+    }
   }
 
   if( $data->{writers} =~ /\S/ )

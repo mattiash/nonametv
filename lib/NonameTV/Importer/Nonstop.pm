@@ -259,10 +259,10 @@ sub ParseProgram {
 sub ParseActors {
   my( $text, $ce ) = @_;
 
-  $text =~ s/^with\s*//i;
+  $text =~ s/^with[, ]*//i;
   $text =~ s/\.$//i;
 
-  my @actors = split(/\s*,\s*/, $text);
+  my @actors = split(/[, ]+/, $text);
   $ce->{actors} = join( ", ", @actors );
 }
 
