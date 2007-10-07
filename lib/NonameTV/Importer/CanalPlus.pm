@@ -220,6 +220,10 @@ sub ImportContent
     $ce->{program_type} = "series"
       if $series;
 
+    if( (not $series) and (not $sport) ) {
+      $ce->{program_type} = 'movie';
+    }
+
     my($program_type, $category ) = $ds->LookupCat( "CanalPlus", 
                                                     $genre );
     AddCategory( $ce, $program_type, $category );
