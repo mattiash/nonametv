@@ -32,14 +32,12 @@
 34,"MTV Nordic",nordic.mtve.com,,Mtve,1,1,1,,,en,0,\N
 35,Kunskapskanalen,kunskapskanalen.svt.se,,Svt,1,Kunskapskanalen,1,,,sv,0,\N
 36,SVT24,svt24.svt.se,,Svt,1,24,1,,,sv,0,\N
-37,"SVT Extra",extra.svt.se,,Svt,1,"SVT Extra",1,,,sv,1,\N
 38,"Disney Channel",disneychannel.se,,Infomedia,1,DSS,1,,Children's,sv,0,\N
 40,"Discovery Civilisation",nordic.civilisation.discovery.com,,Discovery,1,CI.EU,1,,,sv,0,\N
 41,"Discovery Travel & Living",nordic.travel.discovery.com,,Discovery,1,TL.EU,1,,,sv,0,\N
 42,"Discovery Science",nordic.science.discovery.com,,Discovery,1,SC.EU,1,,,sv,0,\N
 43,"Discovery Mix",nordic.mix.discovery.com,,Combiner,1,,0,,,sv,0,\N
 44,Kunskap/Barnkanalen,kunskapbarn.svt.se,,Combiner,1,,1,,,sv,0,\N
-45,Sport-Expressen,sport.expressen.se,,Expressen,1,,1,sports,Sports,sv,0,\N
 46,"Eurosport 2",eurosport2.eurosport.com,,Eurosport,1,Eurosport2,1,sports,Sports,sv,0,\N
 47,"Toon Disney",toon.disneychannel.se,,Infomedia,1,TOS,1,,Children's,sv,0,\N
 48,"CANAL+ Mix",mix.canalplus.se,,CanalPlus,1,9,1,,,sv,0,\N
@@ -49,7 +47,6 @@
 53,VH1,vh1.com,,VH1,1,,1,,,en,0,\N
 54,Nature/Crime/Nickelodeon,viasat-nature-nick.spa.se,,Combiner,1,,0,,,sv,0,\N
 55,TV6,tv6.viasat.se,,Viasat,1,tv6_se_,1,,,sv,0,\N
-56,P1,p1.sr.se,,SR,0,p1,0,,,sv,0,\N
 57,"Playhouse Disney",playhouse.disneychannel.se,,Infomedia,1,PDW,0,,Children's,sv,0,\N
 58,"SVT HD",hd.svt.se,,Svt,1,"SVT HD",0,,,sv,1,
 59,"TV4 Komedi",komedi.tv4.se,,TV4,1,9,1,,,sv,0,
@@ -69,3 +66,10 @@
 74,"Aftonbladet TV7",tv7.aftonbladet.se,,Aftonbladet_http,1,,1,,,sv,0,
 75,"Viasat Golf",golf.viasat.se,,Viasat,1,viasat_golf_se_,1,sports,Sports,sv,0,
 76,NASN,se.nasn.com,,NASN,1,,0,sports,Sports,en,0,
+77,P1,p1.sr.se,,SverigesRadio,1,,0,,,sv,0,
+78,"TV4 Sport",sport.tv4.se,,TV4,1,10,1,sports,Sports,sv,0,
+79,"Kanal Lokal Stockholm",stockholm.kanallokal.se,,KanalLokal,1,,0,,,sv,0,
+80,"Kanal Lokal Göteborg",goteborg.kanallokal.se,,KanalLokal,1,,0,,,sv,0,
+81,"Kanal Lokal Skåne",skane.kanallokal.se,,KanalLokal,1,,0,,,sv,0,
+82,"Kanal Lokal Östergötland",ostergotland.kanallokal.se,,KanalLokal,1,,0,,,sv,0,
+83,"Axess TV",axess.se,,Axess,0,,0,,,sv,0,
