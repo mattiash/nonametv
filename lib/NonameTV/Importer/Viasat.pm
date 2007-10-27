@@ -40,6 +40,8 @@ sub new {
 
     defined( $self->{UrlRoot} ) or die "You must specify UrlRoot";
 
+    $self->{datastore}->{SILENCE_DUPLICATE_SKIP} = 1;
+
     my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore} );
     $self->{datastorehelper} = $dsh;
 
