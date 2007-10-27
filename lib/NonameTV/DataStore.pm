@@ -286,7 +286,7 @@ sub AddProgramme
   {
     error( $self->{currbatchname} . 
       ": Starttime must be later than last starttime: " . 
-      $self->{last_start} . " -> " . $data->{start_time} );
+      $self->{last_start} . " -> " . $data->{start_time} . ": " . $data->{title} );
     return;
   }
 
@@ -310,7 +310,7 @@ sub AddProgramme
     {
       error( $self->{currbatchname} . 
 	  ": Stoptime must be later than starttime: " . 
-	  $data->{start_time} . " -> " . $data->{end_time} );
+	  $data->{start_time} . " -> " . $data->{end_time} . ": " . $data->{title} );
       return;
     }
   }
