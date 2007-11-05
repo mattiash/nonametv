@@ -151,7 +151,7 @@ my %months = (
 sub ParseDate {
   my( $text, $file ) = @_;
 
-  my( $wday, $day, $month ) = ($text =~ /^(.*?)\s+(\d+)[stndrth]*\s+([a-z]+)\.*$/i);
+  my( $wday, $day, $month ) = ($text =~ /^(.*?)\s+(\d+)[stndrh]*\s+([a-z]+)\.*$/i);
   my $monthnum = $months{lc $month};
 
   if( not defined $monthnum ) {
