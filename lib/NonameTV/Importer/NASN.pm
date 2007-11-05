@@ -101,7 +101,7 @@ sub ImportContent {
   my $ce = undef;
 
   foreach my $text (@paragraphs) {
-    next if $text =~/^All times in BST/i;
+    next if $text =~/^All times in (BST)|(GMT)/i;
 
     if( $text =~ /^\d+.\d\d\s*[ap]m$/ ) {
       $dsh->AddProgramme( $ce ) if( defined( $ce ) );
