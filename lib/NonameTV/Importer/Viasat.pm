@@ -57,7 +57,7 @@ sub Object2Url {
   my $url = sprintf( "%s%s%02d-%02d_tab.txt",
                      $self->{UrlRoot}, $chd->{grabber_info}, 
                      $year, $week );
-  
+
   return( $url, undef );
 }
   

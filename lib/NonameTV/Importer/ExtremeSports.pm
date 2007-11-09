@@ -229,8 +229,9 @@ sub FetchDataFromSite
   #          strftime( '%Y%m', localtime ) . "01-" . strftime( '%Y%m', localtime ) . $mondays[$nowmonth] .
   #          ".xls";
 
-  my $url = "http://express.extreme.com/Files/Months/Listings/Pan%20Euro%20Listings%20Oct%20English%20v7.xls";
-  my $url = "http://express.extreme.com/Files/Months/Listings/Pan%20Euro%20Listings%20Oct%20English%20v7.xls";
+  #my $url = "http://express.extreme.com/Files/Months/Listings/Pan%20Euro%20Listings%20Oct%20English%20v7.xls";
+  #my $url = "http://express.extreme.com/Files/Months/Listings/Pan%20Euro%20Listings%20Oct%20English%20v7.xls";
+  my $url = "http://express.extreme.com/Files/Months/Listings/Pan%20Euro%20Listings%20Nov%20English%20v1.xls";
   print "Fetching xls file from $url\n";
 
   my( $content, $code ) = MyGet( $url );
