@@ -166,7 +166,12 @@ sub ImportContent {
     my $time  = $pgm->findvalue( 'td[1]//text()' );
     my $title = $pgm->findvalue( 'td[2]//font[@class="text"]//text()' );
     my $desc  = $pgm->findvalue( 'td[2]//font[@class="textshorttabla"]//text()' );
-    
+
+    # SVt can have titles that include program block information.
+    # Ideally we should use the fact that they are separated by <br>
+    # but I cannot make that work.
+    $title =~ s/.*\d+:\d+\s*-\s*\d+:\d+://;
+
     my( $starttime ) = ( $time =~ /^\s*(\d+\.\d+)/ );
     my( $endtime ) = ( $time =~ /-\s*(\d+.\d+)/ );
     
