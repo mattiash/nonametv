@@ -95,7 +95,7 @@ sub ImportContent
     #
     # genre
     #
-    my $genre = norm($sc->getElementsByTagName( 'category' ));
+    my $genre = $sc->getElementsByTagName( 'category' );
 
     #
     # url
@@ -157,8 +157,8 @@ sub ImportContent
       #$ce->{program_type} = 'series';
     #}
 
+    #print "Category: $genre\n";
     my($program_type, $category ) = $ds->LookupCat( "RTLTV", $genre );
-
     AddCategory( $ce, $program_type, $category );
 
     #if( defined( $production_year ) and ($production_year =~ /(\d\d\d\d)/) )
