@@ -173,6 +173,30 @@ $channel_data{ "viasat-nature-nick.spa.se" } =
       ],
   };
 
+=pod
+
+Cartoon Network/TCM
+
+=cut
+
+$channel_data{ "cntcm.tv.gonix.net" } =
+  { 
+    "cartoonnetwork.tv.gonix.net" => 
+      [ 
+        {
+          day => 'all',
+	  time => '0600-2000',
+        },
+      ],
+    "tcm.tv.gonix.net" =>
+      [
+        {
+          day => 'all',
+	  time => '2000-0600',
+        },
+      ],
+  };
+
 use DateTime;
 use XML::LibXML;
 use Compress::Zlib;
