@@ -15,6 +15,7 @@ Features:
 
 use POSIX qw/strftime/;
 use DateTime;
+use Unicode::String qw(utf8 latin1);
 use HTML::TableExtract;
 use HTML::Parse;
 use HTML::FormatText;
@@ -46,6 +47,7 @@ sub ImportContent
 
   my $nowday;
   my $starttime;
+  my $laststart;
   my $duration;
   my $title;
   my $director;
@@ -209,8 +211,14 @@ sub ImportContent
     # set right times
     #
     my( $start_dt , $end_dt ) = create_dt( $nowyear , $nowmonth , $nowday , $starttime , $duration );
+#print "LASTS: $laststart\n";
 #print "START: $start_dt\n";
 #print "END  : $end_dt\n";
+    if( $start_dt < $laststart ){
+      $start_dt->add( days => 1 );
+      $end_dt->add( days => 1 );
+    }
+    $laststart = $start_dt;
 
     if( defined $nowday ){
 
@@ -255,13 +263,13 @@ sub create_dt
                            second => 0,
                            time_zone => 'Europe/Zagreb',
                            );
+
   # times are in CET timezone in original file
-  #$sdt->set_time_zone( "UTC" );
+  $sdt->set_time_zone( "UTC" );
 
   # end time
   $du =~ s/'//gi;
-  my $edt = DateTime->from_object( object => $sdt );
-  $edt->add( minutes => $du );
+  my $edt = $sdt->clone->add( minutes => $du );
 
   return( $sdt, $edt );
 }
