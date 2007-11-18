@@ -5,8 +5,8 @@ use warnings;
 
 =pod
 
-Import data from Excel-files delivered via e-mail.  Each day
-is handled as a separate batch.
+Import data from Excel-files delivered via e-mail.
+Each file is for one week.
 
 Features:
 
@@ -73,7 +73,7 @@ sub ImportContentFile {
     #my $date = SheetDate( $firstdate , $iSheet );
 #print "DATUM($iSheet): $date\n";
 
-    for(my $iR = $oWkS->{MinRow}+1 ; defined $oWkS->{MaxRow} && $iR <= $oWkS->{MaxRow} ; $iR++) {
+    for($iR = $oWkS->{MinRow}+1 ; defined $oWkS->{MaxRow} && $iR <= $oWkS->{MaxRow} ; $iR++) {
 
       # Time Slot
       $oWkC = $oWkS->{Cells}[$iR][0];
