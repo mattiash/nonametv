@@ -43,6 +43,8 @@ sub ImportContentFile {
   my( $time_slot, $etime );
   my( $en_title, $cro_title );
   my( $start_dt, $end_dt );
+  my( $date, $firstdate );
+  my( $oBook, $iR, $oWkS, $oWkC );
 
   progress( "FOXlife: Processing $file" );
   
@@ -53,12 +55,11 @@ sub ImportContentFile {
   my $ds = $self->{datastore};
   $ds->{SILENCE_END_START_OVERLAP}=1;
 
-  my $oBook = Spreadsheet::ParseExcel::Workbook->Parse( $file );
-  my($iR, $oWkS, $oWkC);
+  $oBook = Spreadsheet::ParseExcel::Workbook->Parse( $file );
 
   # the date is to be extracted from file name
-  my $firstdate = FirstDate( $file );
-  my $date = $firstdate;
+  $firstdate = FirstDate( $file );
+  $date = $firstdate;
 
   my $batch_id = $xmltvid . "_" . FindWeek( $firstdate );
   $ds->StartBatch( $batch_id , $channel_id );
@@ -97,7 +98,6 @@ sub ImportContentFile {
         if( $start_dt gt $end_dt ) {
           $end_dt = $end_dt->add( days => 1 );
         }
-print "end_dt: $end_dt\n";
 
         progress( "FOXlife: from $start_dt to $end_dt : $en_title" );
 
@@ -116,7 +116,7 @@ print "end_dt: $end_dt\n";
       # save the current endtime as the start
       # of the next show
       $start_dt = $end_dt;
-print "start_dt: $start_dt\n";
+#print "start_dt: $start_dt\n";
 
       # EN Title
       $en_title = $oWkS->{Cells}[$iR][1]->Value;
