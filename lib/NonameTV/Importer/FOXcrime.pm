@@ -1,4 +1,4 @@
-package NonameTV::Importer::FOXlife;
+package NonameTV::Importer::FOXcrime;
 
 use strict;
 use warnings;
@@ -32,7 +32,7 @@ sub new {
   my $self  = $class->SUPER::new( @_ );
   bless ($self, $class);
 
-  $self->{grabber_name} = "FOXlife";
+  $self->{grabber_name} = "FOXcrime";
 
   return $self;
 }
@@ -46,7 +46,7 @@ sub ImportContentFile {
   my( $date, $firstdate , $lastdate , $mnth );
   my( $oBook, $oWkS, $oWkC );
 
-  progress( "FOXlife: Processing $file" );
+  progress( "FOXcrime: Processing $file" );
   
   $self->{fileerror} = 0;
 
@@ -65,7 +65,7 @@ sub ImportContentFile {
 
     $oWkS = $oBook->{Worksheet}[$iSheet];
 
-    progress( "FOXlife: Processing worksheet: $oWkS->{Name} - $date" );
+    progress( "FOXcrime: Processing worksheet: $oWkS->{Name} - $date" );
 
     my $batch_id = $xmltvid . "_" . $date;
     $ds->StartBatch( $batch_id , $channel_id );
@@ -102,12 +102,11 @@ progress("MaxRow: $oWkS->{MaxRow}");
           $end_dt->add( days => 1 );
         }
 
-        progress( "FOXlife: from $start_dt to $end_dt : $en_title" );
+        progress( "FOXcrime: from $start_dt to $end_dt : $cro_title" );
 
         my $ce = {
           channel_id => $channel_id,
           title => $cro_title,
-          subtitle => $en_title,
           start_time => $start_dt->ymd('-') . " " . $start_dt->hms(':'),
           end_time => $end_dt->ymd('-') . " " . $end_dt->hms(':'),
         };
@@ -121,15 +120,8 @@ progress("MaxRow: $oWkS->{MaxRow}");
       $start_dt = $end_dt;
 #print "start_dt: $start_dt\n";
 
-      # EN Title
-      $oWkC = $oWkS->{Cells}[$iR][1];
-      if( $oWkC ){
-        $en_title = $oWkC->Value;
-#print "en_title: $en_title\n";
-      }
-
       # Croatian Title
-      $oWkC = $oWkS->{Cells}[$iR][2];
+      $oWkC = $oWkS->{Cells}[$iR][1];
       if( $oWkC ){
         $cro_title = $oWkC->Value;
 #print "cro_title: $cro_title\n";

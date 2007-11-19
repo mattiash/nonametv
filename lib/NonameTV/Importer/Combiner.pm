@@ -185,14 +185,14 @@ $channel_data{ "cntcm.tv.gonix.net" } =
       [ 
         {
           day => 'all',
-	  time => '0600-2000',
+	  time => '0500-2100',
         },
       ],
     "tcm.tv.gonix.net" =>
       [
         {
           day => 'all',
-	  time => '2000-0600',
+	  time => '2100-0500',
         },
       ],
   };
