@@ -16,6 +16,7 @@ Features:
 use POSIX qw/strftime/;
 use DateTime;
 use Unicode::String qw(utf8 latin1);
+use Locale::Recode;
 use HTML::TableExtract;
 use HTML::Parse;
 use HTML::FormatText;
@@ -131,6 +132,10 @@ sub ImportContent
 
     # trim
     $content =~ s/^\s+|\s+$//g;
+
+    # recode the title from windows-1250 to UTF-8
+    my $cod = Locale::Recode->new( from => 'windows-1250' , to => 'UTF-8' );
+    $cod->recode( $content );
 
     if ( $content ) {
       $title = $content;
