@@ -43,7 +43,7 @@ sub ImportContentFile {
   my( $time_slot, $etime );
   my( $en_title, $cro_title );
   my( $start_dt, $end_dt );
-  my( $date, $firstdate , $lastdate , $mnth );
+  my( $date, $firstdate , $lastdate );
   my( $oBook, $oWkS, $oWkC );
 
   progress( "FOXlife: Processing $file" );
@@ -58,7 +58,7 @@ sub ImportContentFile {
   $oBook = Spreadsheet::ParseExcel::Workbook->Parse( $file );
 
   # the date is to be extracted from file name
-  ( $firstdate , $lastdate , $mnth ) = ParseDates( $file );
+  ( $firstdate , $lastdate ) = ParseDates( $file );
   $date = $firstdate;
 
   for(my $iSheet=0; $iSheet < $oBook->{SheetCount} ; $iSheet++) {
@@ -69,9 +69,6 @@ sub ImportContentFile {
 
     my $batch_id = $xmltvid . "_" . $date;
     $ds->StartBatch( $batch_id , $channel_id );
-
-progress("MinRow: $oWkS->{MinRow}");
-progress("MaxRow: $oWkS->{MaxRow}");
 
     #for($iR = $oWkS->{MinRow} ; defined $oWkS->{MaxRow} && $iR <= $oWkS->{MaxRow} ; $iR++) {
     for(my $iR = 1 ; defined $oWkS->{MaxRow} && $iR <= $oWkS->{MaxRow} ; $iR++) {
@@ -102,7 +99,7 @@ progress("MaxRow: $oWkS->{MaxRow}");
           $end_dt->add( days => 1 );
         }
 
-        progress( "FOXlife: from $start_dt to $end_dt : $en_title" );
+        #progress( "FOXlife: from $start_dt to $end_dt : $en_title" );
 
         my $ce = {
           channel_id => $channel_id,
@@ -177,6 +174,8 @@ sub FindWeek {
 sub ParseDates {
   my( $fname ) = @_;
 
+  my $mnumb;
+
 print "$fname\n";
   my $year = DateTime->today->year();
 
@@ -188,7 +187,11 @@ print "$fday $lday\n";
   $mname =~ s/ .*//;
 print "$mname\n";
 
-  return( $year."-11-".$fday , $year."-11-".$lday , $mname );
+  if( $fname =~ /December/ ){
+    $mnumb = 12;
+  }
+
+  return( $year."-".$mnumb."-".$fday , $year."-".$mnumb."-".$lday );
 }
 
 sub to_utc {
