@@ -41,9 +41,9 @@ sub ImportContentFile {
   my $self = shift;
   my( $file, $chd ) = @_;
   my( $time_slot, $etime );
-  my( $en_title, $cro_title );
+  my( $en_title, $cro_title , $genre );
   my( $start_dt, $end_dt );
-  my( $date, $firstdate , $lastdate , $mnth );
+  my( $date, $firstdate , $lastdate );
   my( $oBook, $oWkS, $oWkC );
 
   progress( "FOXcrime: Processing $file" );
@@ -58,7 +58,7 @@ sub ImportContentFile {
   $oBook = Spreadsheet::ParseExcel::Workbook->Parse( $file );
 
   # the date is to be extracted from file name
-  ( $firstdate , $lastdate , $mnth ) = ParseDates( $file );
+  ( $firstdate , $lastdate ) = ParseDates( $file );
   $date = $firstdate;
 
   for(my $iSheet=0; $iSheet < $oBook->{SheetCount} ; $iSheet++) {
@@ -70,12 +70,10 @@ sub ImportContentFile {
     my $batch_id = $xmltvid . "_" . $date;
     $ds->StartBatch( $batch_id , $channel_id );
 
-progress("MinRow: $oWkS->{MinRow}");
-progress("MaxRow: $oWkS->{MaxRow}");
-
     #for($iR = $oWkS->{MinRow} ; defined $oWkS->{MaxRow} && $iR <= $oWkS->{MaxRow} ; $iR++) {
     for(my $iR = 1 ; defined $oWkS->{MaxRow} && $iR <= $oWkS->{MaxRow} ; $iR++) {
 
+#print "5\n";
       # Time Slot
       $oWkC = $oWkS->{Cells}[$iR][0];
       if( $oWkC ){
@@ -83,35 +81,51 @@ progress("MaxRow: $oWkS->{MaxRow}");
 #print "time_slot $time_slot\n";
       }
 
-      $etime = $time_slot;
+#print "6 $time_slot\n";
+      if( $time_slot ){
+        $etime = $time_slot;
 #print "etime $etime\n";
-      $end_dt = $self->to_utc( $date, $etime );
+        $end_dt = $self->to_utc( $date, $etime );
 #print "end_dt $end_dt\n";
+      } else {
+        $end_dt = $start_dt->clone->add( hours => 2 );
+      }
+#print "7\n";
 
       # NOTICE: we miss the last show of the day
 
       # now after we got the next time_slot
       # we do the update
+#print "$start_dt\n";
+#print "$end_dt\n";
+#print "8\n";
       if( defined($start_dt) and defined($end_dt) ) {
 
 #        $etime =~ s/^(\d+:\d+).*/$1/;
 
         #$end_dt = $self->to_utc( $date, $etime );
 
+#print "9\n";
         if( $start_dt gt $end_dt ) {
           $end_dt->add( days => 1 );
         }
+#print "A\n";
 
-        progress( "FOXcrime: from $start_dt to $end_dt : $cro_title" );
+        #progress( "FOXcrime: from $start_dt to $end_dt : $cro_title" );
 
         my $ce = {
           channel_id => $channel_id,
           title => $cro_title,
+          subtitle => $en_title,
           start_time => $start_dt->ymd('-') . " " . $start_dt->hms(':'),
           end_time => $end_dt->ymd('-') . " " . $end_dt->hms(':'),
         };
     
+        my($program_type, $category ) = $ds->LookupCat( "FOXcrime", $genre );
+        #AddCategory( $ce, $program_type, $category );
+
         $ds->AddProgramme( $ce );
+#print "--------\n";
 
       }
 
@@ -119,13 +133,31 @@ progress("MaxRow: $oWkS->{MaxRow}");
       # of the next show
       $start_dt = $end_dt;
 #print "start_dt: $start_dt\n";
+#print "1\n";
 
-      # Croatian Title
+      # EN Title
       $oWkC = $oWkS->{Cells}[$iR][1];
+      if( $oWkC ){
+        $en_title = $oWkC->Value;
+print "en_title: $en_title\n";
+      }
+
+#print "2\n";
+      # Croatian Title
+      $oWkC = $oWkS->{Cells}[$iR][2];
       if( $oWkC ){
         $cro_title = $oWkC->Value;
 #print "cro_title: $cro_title\n";
       }
+#print "3\n";
+
+      # Genre
+      $oWkC = $oWkS->{Cells}[$iR][3];
+      if( $oWkC ){
+        $genre = $oWkC->Value;
+#print "genre: $genre\n";
+      }
+#print "4\n";
 
     } # next show
 
@@ -169,6 +201,8 @@ sub FindWeek {
 sub ParseDates {
   my( $fname ) = @_;
 
+  my $mnumb;
+
 print "$fname\n";
   my $year = DateTime->today->year();
 
@@ -180,7 +214,11 @@ print "$fday $lday\n";
   $mname =~ s/ .*//;
 print "$mname\n";
 
-  return( $year."-11-".$fday , $year."-11-".$lday , $mname );
+  if( $fname =~ /December/ ){
+    $mnumb = 12;
+  }
+
+  return( $year."-".$mnumb."-".$fday , $year."-".$mnumb."-".$lday );
 }
 
 sub to_utc {
