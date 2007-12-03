@@ -24,9 +24,9 @@ use NonameTV::Log qw/info progress error logdie
                      log_to_string log_to_string_result/;
 use NonameTV qw/AddCategory norm/;
 
-use NonameTV::Importer;
+use NonameTV::Importer::BaseFile;
 
-use base 'NonameTV::Importer';
+use base 'NonameTV::Importer::BaseFile';
 
 sub new 
 {

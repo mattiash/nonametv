@@ -25,9 +25,9 @@ use XML::LibXML;
 use NonameTV qw/MyGet norm AddCategory/;
 use NonameTV::Log qw/info progress error logdie/;
 
-use NonameTV::Importer::BaseOne;
+use NonameTV::Importer::BaseDaily;
 
-use base 'NonameTV::Importer::BaseOne';
+use base 'NonameTV::Importer::BaseDaily';
 
 my $strdmy;
 
@@ -61,7 +61,6 @@ sub ImportContent
     error( "$batch_id: Failed to parse $@" );
     return 0;
   }
-  
 
   # Find all "channel"-entries.
   my $ch = $doc->find( "//channel" );
@@ -220,15 +219,20 @@ sub FetchDataFromSite
   my $self = shift;
   my( $batch_id, $data ) = @_;
 
-  my( $year, $week ) = ($batch_id =~ /_(\d+)-(\d+)/);
+  my( $bprefixyear , $bmonth , $bday ) = split( "-" , $batch_id );
+
+  my $today = DateTime->today->day();
+
+  my $dayoff = $bday - $today;
+
+  #progress("ID $batch_id BDAY $bday TODAY $today DAYOFF $dayoff");
 
   # Bleb provides listings for today + 6 days
   # in different directory for every day
   # starting with 0 for today
 
-  my $day = 0;
-  my $url = $self->{UrlRoot} . "/" . $day . "/" . $data->{grabber_info};
-print "URL: $url\n";
+  my $url = $self->{UrlRoot} . "/" . $dayoff . "/" . $data->{grabber_info};
+  progress("Fetching data from: $url");
 
   my ( $content, $code ) = MyGet( $url );
   return( $content, $code );

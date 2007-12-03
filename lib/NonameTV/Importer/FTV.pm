@@ -46,6 +46,7 @@ sub ImportContent
   my( $stime , $etime );
   my( $start_dt , $end_dt );
   my( $program_title , $program_description );
+  my( $genre );
 
   my $ds = $self->{datastore};
   $ds->{SILENCE_END_START_OVERLAP}=1;
@@ -94,8 +95,8 @@ sub ImportContent
           end_time     => $end_dt->ymd("-") . " " . $end_dt->hms(":"),
         };
 
-        #my($program_type, $category ) = $ds->LookupCat( "FTV", $genre );
-        #AddCategory( $ce, $program_type, $category );
+        my($program_type, $category ) = $ds->LookupCat( "FTV", $genre );
+        AddCategory( $ce, $program_type, $category );
 
         $ds->AddProgramme( $ce );
       }
@@ -106,6 +107,11 @@ sub ImportContent
       # program_title (column 2)
       $oWkC = $oWkS->{Cells}[$iR][2];
       $program_title = $oWkC->Value;
+      if( $program_title =~ /Midnight Hot/ ){ $genre = "erotic"; }
+      elsif( $program_title =~ /F Hot/ ){ $genre = "erotic"; }
+      elsif( $program_title =~ /Lingerie/ ){ $genre = "erotic"; }
+      elsif( $program_title =~ /F Party/ ){ $genre = "magazine"; }
+      else { $genre = ""; }
 
       # program_description (column 3)
       $oWkC = $oWkS->{Cells}[$iR][3];
