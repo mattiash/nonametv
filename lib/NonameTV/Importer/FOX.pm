@@ -73,24 +73,18 @@ sub ImportContentFile {
     #for($iR = $oWkS->{MinRow} ; defined $oWkS->{MaxRow} && $iR <= $oWkS->{MaxRow} ; $iR++) {
     for(my $iR = 1 ; defined $oWkS->{MaxRow} && $iR <= $oWkS->{MaxRow} ; $iR++) {
 
-#print "5\n";
       # Time Slot
       $oWkC = $oWkS->{Cells}[$iR][0];
       if( $oWkC ){
         $time_slot = $oWkC->Value;
-#print "time_slot $time_slot\n";
       }
 
-#print "6 $time_slot\n";
       if( $time_slot ){
         $etime = $time_slot;
-#print "etime $etime\n";
         $end_dt = $self->to_utc( $date, $etime );
-#print "end_dt $end_dt\n";
       } else {
         $end_dt = $start_dt->clone->add( hours => 2 );
       }
-#print "7\n";
 
       # NOTICE: we miss the last show of the day
 
@@ -105,13 +99,11 @@ sub ImportContentFile {
 
         #$end_dt = $self->to_utc( $date, $etime );
 
-#print "9\n";
         if( $start_dt gt $end_dt ) {
           $end_dt->add( days => 1 );
         }
-#print "A\n";
 
-        #progress( "FOX: from $start_dt to $end_dt : $cro_title" );
+        progress( "FOX: from $start_dt to $end_dt : $en_title" );
 
         my $ce = {
           channel_id => $channel_id,
@@ -125,7 +117,6 @@ sub ImportContentFile {
         #AddCategory( $ce, $program_type, $category );
 
         $ds->AddProgramme( $ce );
-#print "--------\n";
 
       }
 
@@ -139,25 +130,20 @@ sub ImportContentFile {
       $oWkC = $oWkS->{Cells}[$iR][1];
       if( $oWkC ){
         $en_title = $oWkC->Value;
-print "en_title: $en_title\n";
+#print "en_title: $en_title\n";
       }
 
-#print "2\n";
       # Croatian Title
       $oWkC = $oWkS->{Cells}[$iR][2];
       if( $oWkC ){
         $cro_title = $oWkC->Value;
-#print "cro_title: $cro_title\n";
       }
-#print "3\n";
 
       # Genre
       $oWkC = $oWkS->{Cells}[$iR][3];
       if( $oWkC ){
         $genre = $oWkC->Value;
-#print "genre: $genre\n";
       }
-#print "4\n";
 
     } # next show
 
@@ -203,21 +189,19 @@ sub ParseDates {
 
   my $mnumb;
 
-print "$fname\n";
   my $year = DateTime->today->year();
 
   my( $fday , $lday ) = ($fname =~ m/(\d+)/g );
-print "$fday $lday\n";
 
   my $mname = $fname;
   $mname =~ s/.* (\d+) - (\d+) //;
   $mname =~ s/ .*//;
-print "$mname\n";
 
-  if( $fname =~ /November/ ){
+  if( $fname =~ /January/ ){
+    $mnumb = 1;
+  } elsif( $fname =~ /November/ ){
     $mnumb = 11;
-  }
-  if( $fname =~ /December/ ){
+  } elsif( $fname =~ /December/ ){
     $mnumb = 12;
   }
 
