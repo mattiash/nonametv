@@ -1,4 +1,4 @@
-package NonameTV::Importer::FOXcrime;
+package NonameTV::Importer::FOX;
 
 use strict;
 use warnings;
@@ -32,7 +32,7 @@ sub new {
   my $self  = $class->SUPER::new( @_ );
   bless ($self, $class);
 
-  $self->{grabber_name} = "FOXcrime";
+  $self->{grabber_name} = "FOX";
 
   return $self;
 }
@@ -46,7 +46,7 @@ sub ImportContentFile {
   my( $date, $firstdate , $lastdate );
   my( $oBook, $oWkS, $oWkC );
 
-  progress( "FOXcrime: Processing $file" );
+  progress( "FOX: Processing $file" );
   
   $self->{fileerror} = 0;
 
@@ -65,7 +65,7 @@ sub ImportContentFile {
 
     $oWkS = $oBook->{Worksheet}[$iSheet];
 
-    progress( "FOXcrime: Processing worksheet: $oWkS->{Name} - $date" );
+    progress( "FOX: Processing worksheet: $oWkS->{Name} - $date" );
 
     my $batch_id = $xmltvid . "_" . $date;
     $ds->StartBatch( $batch_id , $channel_id );
@@ -111,7 +111,7 @@ sub ImportContentFile {
         }
 #print "A\n";
 
-        #progress( "FOXcrime: from $start_dt to $end_dt : $cro_title" );
+        #progress( "FOX: from $start_dt to $end_dt : $cro_title" );
 
         my $ce = {
           channel_id => $channel_id,
@@ -121,7 +121,7 @@ sub ImportContentFile {
           end_time => $end_dt->ymd('-') . " " . $end_dt->hms(':'),
         };
     
-        my($program_type, $category ) = $ds->LookupCat( "FOXcrime", $genre );
+        my($program_type, $category ) = $ds->LookupCat( "FOX", $genre );
         #AddCategory( $ce, $program_type, $category );
 
         $ds->AddProgramme( $ce );
@@ -214,6 +214,9 @@ print "$fday $lday\n";
   $mname =~ s/ .*//;
 print "$mname\n";
 
+  if( $fname =~ /November/ ){
+    $mnumb = 11;
+  }
   if( $fname =~ /December/ ){
     $mnumb = 12;
   }
