@@ -1,0 +1,122 @@
+package NonameTV::Importer::Discovery_xml;
+
+use strict;
+use warnings;
+
+=pod
+
+Import data for DiscoveryChannel in xml-format. 
+
+=cut
+
+use utf8;
+
+use DateTime;
+use XML::LibXML;
+
+use NonameTV qw/ParseXml norm/;
+use NonameTV::DataStore::Helper;
+use NonameTV::Log qw/info progress error logdie 
+                     log_to_string log_to_string_result/;
+
+use NonameTV::Importer::BaseOne;
+
+use base 'NonameTV::Importer::BaseOne';
+
+sub new {
+  my $proto = shift;
+  my $class = ref($proto) || $proto;
+  my $self  = $class->SUPER::new( @_ );
+  bless ($self, $class);
+
+  $self->{grabber_name} = "Discovery_xml";
+
+  return $self;
+}
+
+sub ImportContent {
+  my $self = shift;
+  my( $batch_id, $cref, $chd ) = @_;
+
+  $self->{batch_id} = $batch_id;
+
+  my $xmltvid=$chd->{xmltvid};
+  my $channel_id = $chd->{id};
+
+  my $ds = $self->{datastore};
+
+  my $doc = ParseXml( $cref );
+
+  my $ns = $doc->find( "//BROADCAST" );
+
+  if( $ns->size() == 0 ) {
+    error( "$batch_id: No data found" );
+    return 0;
+  }
+  
+  foreach my $b ($ns->get_nodelist) {
+    # Verify that there is only one PROGRAMME
+    # Verify that there is only one TEXT.
+
+    my $start = $b->findvalue( "BROADCAST_START_DATETIME" );
+    my $end = $b->findvalue( "BROADCAST_END_TIME" );
+    my $title = $b->findvalue( "BROADCAST_TITLE" );
+    my $subtitle = $b->findvalue( "BROADCAST_SUBTITLE" );
+    my $episode = $b->findvalue( "PROGRAMME[1]/EPISODE_NUMBER" );
+    my $desc = $b->findvalue( "PROGRAMME[1]/TEXT[1]/TEXT_TEXT" );
+
+    my $ce = {
+      channel_id => $chd->{id},
+      start_time => ParseDateTime( $start ),
+      end_time => ParseDateTime( $end ),
+      title => norm($title),
+      description => norm($desc),
+    };
+
+    $ce->{subtitle} = norm($subtitle) if $subtitle ne "";
+
+    $ce->{episode} = ". " . ($episode-1) . " ." if $episode ne "";
+
+    $ds->AddProgramme( $ce );
+  }
+
+  return 1;
+}
+
+# The start and end-times are in the format 2007-12-31T01:00
+# and are expressed in the local timezone.
+sub ParseDateTime {
+  my( $str ) = @_;
+
+  my( $year, $month, $day, $hour, $minute ) = 
+      ($str =~ /^(\d+)-(\d+)-(\d+)T(\d+):(\d+)$/ );
+
+  my $dt = DateTime->new(
+    year => $year,
+    month => $month,
+    day => $day,
+    hour => $hour,
+    minute => $minute,
+    time_zone => "Europe/Stockholm"
+      );
+
+  $dt->set_time_zone( "UTC" );
+
+  return $dt->ymd("-") . " " . $dt->hms(":");
+}
+
+sub Object2Url {
+  my $self = shift;
+  my( $objectname, $chd ) = @_;
+
+  my $url = sprintf( "%s%s", $self->{UrlRoot}, $chd->{grabber_info} );
+  
+  return( $url, undef );
+}
+
+1;
+
+### Setup coding system
+## Local Variables:
+## coding: utf-8
+## End:
