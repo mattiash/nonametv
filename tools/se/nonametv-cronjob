@@ -33,6 +33,7 @@ tools/se/nonametv-update-mark > $NROOT/xmltv_staging/last_updated
 $d tools/se/nonametv-import-allhttp
 $h tools/se/nonametv-import-allhttp --short-grab
 $d perl -I lib tools/nonametv-import Eurosport
+$d perl -I lib tools/nonametv-import Discovery_xml
 tools/se/nonametv-import-allmail
 
 $d perl -I lib/ tools/nonametv-export Xmltv --remove-old
