@@ -15,6 +15,7 @@ Features:
 
 use DateTime;
 use XML::LibXML;
+use HTTP::Date;
 
 use NonameTV qw/MyGet norm AddCategory/;
 use NonameTV::Log qw/info progress error logdie/;
@@ -32,6 +33,12 @@ sub new {
     $self->{grabber_name} = "CanalPlus";
 
     defined( $self->{UrlRoot} ) or die "You must specify UrlRoot";
+
+    # Canal Plus' webserver returns the following date in some headers:
+    # Fri, 31-Dec-9999 23:59:59 GMT
+    # This makes Time::Local::timegm and timelocal print an error-message
+    # when they are called from HTTP::Date::str2time.
+    # Therefore, I have included HTTP::Date and modified it slightly.
 
     return $self;
 }
@@ -270,7 +277,10 @@ sub create_dt
   
   my( $hour, $minute, $second ) = split( ":", $time );
   
-  
+  if( $second > 59 ) {
+    return undef;
+  }
+
   my $dt = DateTime->new( year   => $year,
                           month  => $month,
                           day    => $day,
@@ -295,11 +305,12 @@ sub FetchDataFromSite
   # Find the first day in the given week.
   # Copied from
   # http://www.nntp.perl.org/group/perl.datetime/5417?show_headers=1 
+#  print STDERR "DBG: $batch_id, $year, $week\n";
   my $ds = DateTime->new( year=>$year, day => 4 );
   $ds->add( days => $week * 7 - $ds->day_of_week - 6 );
-
+  
   my $de=$ds->clone->add( days => 6 );
-
+#  print STDERR "DBG: " . $ds->ymd() . " " . $ds->ymd() . "\n";
 #http://grids.canalplus.se/Export.aspx?f=xml&c=0&ds=2006-09-25&de=2006-10-01&l=SE
   my $url = $self->{UrlRoot} .
     'ds=' . $ds->ymd("-") . '&' . 
