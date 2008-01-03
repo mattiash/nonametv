@@ -105,6 +105,7 @@ sub FetchDataFromSite
     chn => $data->{grabber_info},
     date => $date,
   });
+  progress("Infomedia: fetching from: $u");
 
   my( $content, $code ) = MyGet( $u->as_string );
 

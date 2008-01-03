@@ -197,8 +197,9 @@ sub ParseDates {
   $mname =~ s/.* (\d+) - (\d+) //;
   $mname =~ s/ .*//;
 
-  if( $fname =~ /January/ ){
+  if( $fname =~ /January/ or $fname =~ /Jan/ ){
     $mnumb = 1;
+    $year = 2008;
   } elsif( $fname =~ /November/ ){
     $mnumb = 11;
   } elsif( $fname =~ /December/ ){
