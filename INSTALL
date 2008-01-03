@@ -13,6 +13,10 @@ wvHtml from http://wvware.sourceforge.net/
 
 sitecopy from http://www.lyra.org/sitecopy/
 
+lwp (libwww-perl) 5.808 or later is preferred since if you have 5.805 or
+earlier, you will get a lot of harmless but annoying 
+"Parsing of undecoded UTF-8 will give garbage when decoding entities".
+
 INSTALLATION
 
 Create a directory called /var/local/nonametv.
