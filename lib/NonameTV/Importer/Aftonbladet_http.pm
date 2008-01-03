@@ -7,6 +7,8 @@ use warnings;
 
 Import data from Aftonbladet's website.
 
+New scheduleformat at http://wwwc.aftonbladet.se/atv/pressrum/tabla/50.html
+
 Features:
 
 =cut
@@ -50,7 +52,7 @@ sub FilterContent {
   } 
 
   my $paragraphs = FindParagraphs( $doc, 
-      "//div[\@id='abArtikelytaContainer']//table//." );
+      "//table//." );
 
   my $str = join( "\n", @{$paragraphs} );
   
@@ -170,7 +172,10 @@ sub ParseDate {
   my $dt = DateTime->today();
   $dt->set( month => $monthnum, day => $day );
  
-  if( $dt < DateTime->today()->add( days => -180 ) ) {
+  if( $dt > DateTime->today()->add( days => 180 ) ) {
+    $dt->add( years => -1 );
+  }
+  elsif( $dt < DateTime->today()->add( days => -180 ) ) {
     $dt->add( years => 1 );
   }
 
@@ -221,7 +226,7 @@ sub Object2Url {
 
   my( $year, $week ) = ( $objectname =~ /(\d+)-(\d+)$/ );
  
-  my $url = sprintf( "%s/%02d.html", $self->{UrlRoot}, $week );
+  my $url = sprintf( "%s/%d.html", $self->{UrlRoot}, $week );
   
   return( $url, undef );
 }
