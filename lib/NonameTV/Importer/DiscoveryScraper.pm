@@ -12,7 +12,8 @@ use warnings;
 
 use POSIX;
 use DateTime;
-use Unicode::String qw(utf8 latin1);
+#use Unicode::String qw(utf8 latin1);
+use Encode;
 #use XML::LibXML;
 use HTML::TableExtract;
 use HTML::Entities;
@@ -74,23 +75,14 @@ sub ImportContent
     my $start = norm(@$row[0]); 
     #print "\n>>>$start\n";
     next if ($start eq "TID" || $start eq "TIME");
-    my $fulltext = norm(@$row[1]); 
+    my $fulltext = decode_utf8(norm(@$row[1])); 
     my $tmptitle = $1 if $fulltext =~ m!<strong>(.*)</strong>!i; 
     my @titlearray = split(':', $tmptitle);
     my $title = norm(shift(@titlearray));
     my $subtitle = norm(join(':',@titlearray));
     
-    #my ($title, $subtitle) = "","";
-    #$title, $subtitle = $2, $3 if $tmptitle =~ m!(.*):\s(.*)!i;
-    #if ($title eq "") {
-    #  $title = $tmptitle;
-    #}
-#    my $titledec = utf8($title);
-#    my $newtitle = $titledec->latin1;
     my $desc = $1 if $fulltext =~ m!description">(.*)</div>!i;
-#    my $descdec = utf8($desc);
-#    my $newdesc = $descdec->latin1;
-    #print $start,"\n", $title,"\n", $desc,"\n";
+	#$desc = decode_utf8($desc);
   
     my $ce = {
         start_time => $start,
@@ -138,7 +130,7 @@ sub FetchDataFromSite
   my $grinfo = $data->{grabber_info};
   my ( $chan, $lang ) = split('_',$grinfo);
   $url = "$url$chan&language_code=$lang";
-  print "\n>>>> $url <<<<\n";
+  #print "\n>>>> $url <<<<\n";
   my( $content, $code ) = MyGet( $url );
 
   return( $content, $code );
