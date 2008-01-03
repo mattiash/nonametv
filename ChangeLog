@@ -1,3 +1,7 @@
+2008-01-03 15:00  tcrnek
+
+	* RSS exporter added
+
 2006-10-27 20:04  tcrnek
 
 	* New sql tables added: lang_en, lang_hr and lang_se.

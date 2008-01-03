@@ -67,6 +67,7 @@ sub new {
     defined( $self->{Language} ) or die "You must specify Language";
     defined( $self->{NowOnChannelUrl} ) or die "You must specify NowOnChannelUrl";
     defined( $self->{TodayOnChannelUrl} ) or die "You must specify TodayOnChannelUrl";
+    defined( $self->{ImagesUrl} ) or die "You must specify ImagesUrl";
 
     $self->{MaxDays} = 365 unless defined $self->{MaxDays};
     $self->{MinDays} = $self->{MaxDays} unless defined $self->{MinDays};
@@ -333,6 +334,15 @@ sub ExportFile {
     lastBuildDate  => $now->dmy('-') . ' ' . $now->hms(':'),
     managingEditor => $self->{AdminEmail},
     webMaster      => $self->{AdminEmail},
+  );
+
+  $rss->image(
+    title       => $chd->{display_name},
+    url         => $self->{ImagesUrl} . "/" . $chd->{xmltvid} . ".png",
+    link        => $self->{RootUrl},
+    width       => 16,
+    height      => 16,
+    description => $chd->{display_name},
   );
 
   my $done = 0;
