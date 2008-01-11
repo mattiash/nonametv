@@ -168,7 +168,7 @@ sub FetchDataFromSite
   my $nowmonth = DateTime->today->month_name();
   my $nowyear = DateTime->today->year();
 
-  my $url = $self->{UrlRoot} . "/" . $data->{grabber_info} .  $nowmonth . $nowyear .  ".xls";
+  my $url = $self->{UrlRoot} . "/" . $data->{grabber_info} .  $nowmonth . "_" . $nowyear .  ".xls";
 
   progress("Fetching xls file from $url");
 
