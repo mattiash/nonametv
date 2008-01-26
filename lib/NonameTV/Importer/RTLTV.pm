@@ -226,7 +226,7 @@ sub FetchDataFromSite
   #$dt->add( days => $week * 7 - $dt->day_of_week - 6 );
 
   my $url = $self->{UrlRoot};
-  #print "URL: $url\n";
+  progress("RTLTV: fetching data from $url");
 
   my( $content, $code ) = MyGet( $url );
   return( $content, $code );

@@ -197,12 +197,31 @@ sub ParseDates {
   $mname =~ s/.* (\d+) - (\d+) //;
   $mname =~ s/ .*//;
 
+  $year = 2008;
+
   if( $fname =~ /January/ or $fname =~ /Jan/ ){
     $mnumb = 1;
-    $year = 2008;
-  } elsif( $fname =~ /November/ ){
+  } elsif( $fname =~ /February/ or $fname =~ /Feb/ ){
+    $mnumb = 2;
+  } elsif( $fname =~ /March/ or $fname =~ /Mar/ ){
+    $mnumb = 3;
+  } elsif( $fname =~ /April/ or $fname =~ /Apr/ ){
+    $mnumb = 4;
+  } elsif( $fname =~ /May/ or $fname =~ /May/ ){
+    $mnumb = 5;
+  } elsif( $fname =~ /June/ or $fname =~ /Jun/ ){
+    $mnumb = 6;
+  } elsif( $fname =~ /July/ or $fname =~ /Jul/ ){
+    $mnumb = 7;
+  } elsif( $fname =~ /August/ or $fname =~ /Aug/ ){
+    $mnumb = 8;
+  } elsif( $fname =~ /September/ or $fname =~ /Sep/ ){
+    $mnumb = 9;
+  } elsif( $fname =~ /October/ or $fname =~ /Oct/ ){
+    $mnumb = 10;
+  } elsif( $fname =~ /November/ or $fname =~ /Nov/ ){
     $mnumb = 11;
-  } elsif( $fname =~ /December/ ){
+  } elsif( $fname =~ /December/ or $fname =~ /Dec/ ){
     $mnumb = 12;
   }
 
