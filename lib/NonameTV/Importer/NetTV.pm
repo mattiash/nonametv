@@ -6,6 +6,7 @@ use warnings;
 =pod
 
 Import data from Excel-files delivered via e-mail.
+Each file is for one week.
 
 Features:
 
@@ -13,228 +14,181 @@ Features:
 
 use utf8;
 
-require Unicode::Map8;
-
-use POSIX qw/strftime/;
 use DateTime;
 use Spreadsheet::ParseExcel;
 
 use NonameTV::DataStore::Helper;
 use NonameTV::Log qw/info progress error logdie 
                      log_to_string log_to_string_result/;
-use NonameTV qw/AddCategory norm/;
+#use NonameTV qw/AddCategory norm/;
 
 use NonameTV::Importer::BaseFile;
 
 use base 'NonameTV::Importer::BaseFile';
 
-sub new 
-{
+sub new {
   my $proto = shift;
   my $class = ref($proto) || $proto;
   my $self  = $class->SUPER::new( @_ );
   bless ($self, $class);
-  
-  my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore} );
-  $self->{datastorehelper} = $dsh;
 
-  my $sth = $self->{datastore}->Iterate( 'channels', 
-                                         { grabber => 'NetTV' },
-                                         qw/xmltvid id grabber_info/ )
-    or logdie "Failed to fetch grabber data";
-
-  while( my $data = $sth->fetchrow_hashref )
-  {
-    $self->{channel_data}->{$data->{xmltvid}} = 
-                            { id => $data->{id}, };
-  }
-
-  $sth->finish;
-
-    $self->{OptionSpec} = [ qw/verbose/ ];
-    $self->{OptionDefaults} = { 
-      'verbose'      => 0,
-    };
+  $self->{grabber_name} = "NetTV";
 
   return $self;
 }
 
-sub Import
-{
+sub ImportContentFile {
   my $self = shift;
-  my( $p ) = @_;
+  my( $file, $chd ) = @_;
+  my( $kada, $newtime, $lasttime );
+  my( $title, $genre , $episode , $premiere );
+  my( $day, $month , $year , $hour , $min );
+  my( $oBook, $oWkS, $oWkC );
 
-  foreach my $file (@ARGV)
-  {
-    progress( "NetTV: Processing $file" );
-    $self->ImportFile( "", $file, $p );
-  } 
-}
-
-sub ImportFile
-{
-  my $self = shift;
-  my( $contentname, $file, $p ) = @_;
-
-  # We only support one channel for NetTV.
-  my $xmltvid="nettv.tv.gonix.net";
-
-  my $channel_id = $self->{channel_data}->{$xmltvid}->{id};
-  
-  my $dsh = $self->{datastorehelper};
-  
-  # Only process .xls-files.
+  # Only process .xls files.
   return if $file !~  /\.xls$/i;
 
+  progress( "NetTV: Processing $file" );
+  
+  $self->{fileerror} = 0;
+
+  my $xmltvid=$chd->{xmltvid};
+  my $channel_id = $chd->{id};
   my $ds = $self->{datastore};
   $ds->{SILENCE_END_START_OVERLAP}=1;
 
-  $ds->StartBatch( $xmltvid , $channel_id );
+  $oBook = Spreadsheet::ParseExcel::Workbook->Parse( $file );
 
-  my $oBook = Spreadsheet::ParseExcel::Workbook->Parse($file);
+  for(my $iSheet=0; $iSheet < $oBook->{SheetCount} ; $iSheet++) {
 
-  my($iR, $oWkS, $oWkC);
+    $oWkS = $oBook->{Worksheet}[$iSheet];
 
-  # There are 2 Worksheets in the xls file
-  # The name of the sheet that contains schedule is PPxle
+    # process only the sheet with the name PPxle
+    next if ( $oWkS->{Name} !~ /PPxle/ );
 
-  # The columns in the xls file are:
-  # --------------------------------
-  # kada - date and time
-  # ime emisije - title
-  # vrsta emisije - genre
-  # epizoda - episode number
-  # p/r - premiere or retransmission
+    progress( "NetTV: Processing worksheet: $oWkS->{Name}" );
 
-  foreach my $oWkS (@{$oBook->{Worksheet}}) {
-    print "--------- SHEET:", $oWkS->{Name}, "\n";
+    my $batch_id = $xmltvid . "_" . $file;
+    $ds->StartBatch( $batch_id , $channel_id );
 
-    # the schedule is inside of the sheet named "PPxle"
-    next if $oWkS->{Name} ne "PPxle";
+    for(my $iR = $oWkS->{MinRow} ; defined $oWkS->{MaxRow} && $iR <= $oWkS->{MaxRow} ; $iR++) {
+    #for(my $iR = 1 ; defined $oWkS->{MaxRow} && $iR <= $oWkS->{MaxRow} ; $iR++) {
 
-    print "processing sheet: $oWkS->{Name}\n";
-
-    my ( $day , $month , $year , $hour , $min );
-    my ( $newtime , $lasttime );
-    my ( $title , $genre , $episode , $premiere );
-
-    # process xls
-    for(my $iR = 0 ; defined $oWkS->{MaxRow} && $iR <= $oWkS->{MaxRow} ; $iR++) {
-
-      # field "kada" (column 0)
+      # Time Slot
       $oWkC = $oWkS->{Cells}[$iR][0];
-      my $kada = $oWkC->Value;
-
-      my( $a , $b , $c ) = split( '\.' , $kada );
-
-      if( $c ne undef ){ # we are on the row with date
-        $day = $a;
-        $month = $b;
-        $year = $c + 2000;
-        $hour = undef;
-        $min = undef;
-      } elsif( $year ne undef ){
-        $hour = $a;
-        $min = $b;
+      if( $oWkC ){
+        $kada = $oWkC->Value;
       }
 
-      if( $hour ne undef ){
-        $newtime = create_dt( $day , $month , $year , $hour , $min );
+      # next if kada is empty
+      next if ( ! $kada );
+      next if( $kada !~ /\S.*\S/ );
+
+      # count number of dots in a string
+      my $count = ($kada =~ tr/\.//);
+      if ( $count == 2 ){	# row with the date
+
+        ( $day , $month , $year ) = split( '\.' , $kada );
+        $year += 2000;
+
+      } elsif ( $count == 1 ){	# row with the time of the show
+
+        ( $hour , $min ) = split( '\.' , $kada );
+
+      } else {
+        next;
       }
 
-        # we are on next row already
-        # write the previous row now as we stil have data from previous row loaded in variables
+      next if( ! $day );
+      next if( ! $hour );
 
-        if( defined( $lasttime ) and defined( $newtime ) ){
-          my $ce = {
-            channel_id   => $channel_id,
-            start_time   => $lasttime->ymd("-") . " " . $lasttime->hms(":"), 
-            end_time     => $newtime->ymd("-") . " " . $newtime->hms(":"),
-            #title        => Utf8Conv( norm($title) ),
-            #title        => norm($title),
-            title        => Unicode::String::latin1( norm($title) ),
-          };
-  
-          if( defined( $episode ) )
-          {
-            $ce->{episode} = norm($episode);
-            #$ce->{program_type} = 'series';
-          }
+      $newtime = create_dt( $day , $month , $year , $hour , $min );
 
-          if( defined( $genre ) )
-          {
-            my($program_type, $category ) = $ds->LookupCat( "NetTV", $genre );
-      
-            AddCategory( $ce, $program_type, $category );
+      if( defined( $lasttime ) and defined( $newtime ) ){
 
-          }
+        if( $newtime < $lasttime ){
+          $newtime->add( days => 1 );
+        }
+#        progress("NetTV: $lasttime - $newtime : $title");
 
-          $ds->AddProgramme( $ce );
+        my $ce = {
+          channel_id   => $channel_id,
+          start_time   => $lasttime->ymd("-") . " " . $lasttime->hms(":"),
+          end_time     => $newtime->ymd("-") . " " . $newtime->hms(":"),
+          title        => $title,
+        };
+
+#        if( defined( $episode ) )
+#        {
+#          $ce->{episode} = norm($episode);
+#          #$ce->{program_type} = 'series';
+#        }
+
+        if( defined( $genre ) and $genre =~ /\S/ )
+        {
+          my( $program_type, $category ) = $ds->LookupCat( "NetTV", $genre );
+          #AddCategory( $ce, $program_type, $category );
         }
 
-      # field "ime emisije" (column 1)
+        $ds->AddProgramme( $ce );
+      }
+
+      # Title
       $oWkC = $oWkS->{Cells}[$iR][1];
-      $title = $oWkC->Value;
-#print "$title\n";
-#my $m = Unicode::Map8->new( "cp1250" )
-#$m->recode8("utf8", $title);
-print "$title\n";
+      if( $oWkC ){
+        $title = $oWkC->Value;
+      }
 
-      # field "vrsta emisije" (column 2)
+      # Genre
       $oWkC = $oWkS->{Cells}[$iR][2];
-      $genre = $oWkC->Value;
+      if( $oWkC ){
+        $genre = $oWkC->Value;
+      }
 
-      # field "epizoda" (column 3)
+      # Episode
       $oWkC = $oWkS->{Cells}[$iR][3];
-      $episode = $oWkC->Value;
+      if( $oWkC ){
+        $episode = $oWkC->Value;
+      }
 
-      # field "premiere/replay" (column 4)
+      # Premiere
       $oWkC = $oWkS->{Cells}[$iR][4];
-      $premiere = $oWkC->Value;
+      if( $oWkC ){
+        $premiere = $oWkC->Value;
+      }
 
       if( defined( $newtime ) ){
         $lasttime = $newtime;
       }
 
-    }
-  }
+    } # next row (next show)
 
-  my $date = undef;
-  my $loghandle;
- 
- $dsh->EndBatch( 1, log_to_string_result( $loghandle ) );
-}
+    $ds->EndBatch( 1 );
 
-sub create_dt
-{
-  my ( $day , $month , $year , $hour , $min ) = @_;
-
-  my $dt = DateTime->new( year   => $year,
-                           month  => $month,
-                           day    => $day,
-                           hour   => $hour,
-                           minute => $min,
-                           second => 0,
-                           time_zone => 'Europe/Zagreb',
-                           ); 
-  # times are in CET timezone in original XLS file
-  $dt->set_time_zone( "UTC" );
-  
-  return( $dt );
-}
-
-sub extract_extra_info
-{
-  my( $ce ) = shift;
-
-  if( $ce->{title} =~ /^slut$/i )
-  {
-    $ce->{title} = "end-of-transmission";
-  }
+  } # next worksheet
 
   return;
 }
 
+sub create_dt
+{
+  my ( $dy , $mo , $yr , $hr , $mn ) = @_;
+
+  my $dt = DateTime->new( year   => $yr,
+                           month  => $mo,
+                           day    => $dy,
+                           hour   => $hr,
+                           minute => $mn,
+                           second => 0,
+                           time_zone => 'Europe/Zagreb',
+                           );
+
+  # times are in CET timezone in original XLS file
+  $dt->set_time_zone( "UTC" );
+
+  return( $dt );
+}
+  
 1;
 
 ### Setup coding system
