@@ -75,8 +75,10 @@ sub ImportContentFile {
     my $batch_id = $xmltvid . "_" . $file;
     $ds->StartBatch( $batch_id , $channel_id );
 
+    for(my $iC = $oWkS->{MinCol} ; defined $oWkS->{MaxCol} && $iC <= $oWkS->{MaxCol} ; $iC++) {
+
     # Date & Day info is in the first row
-    $oWkC = $oWkS->{Cells}[0][1];
+    $oWkC = $oWkS->{Cells}[0][$iC];
     if( $oWkC ){
       $dateinfo = $oWkC->Value;
     }
@@ -100,7 +102,7 @@ sub ImportContentFile {
       next if( $kada !~ /\S.*\S/ );
 
       # Title
-      $oWkC = $oWkS->{Cells}[$iR][1];
+      $oWkC = $oWkS->{Cells}[$iR][$iC];
       if( $oWkC ){
         $title = $oWkC->Value;
       }
@@ -147,6 +149,7 @@ sub ImportContentFile {
       }
 
     } # next row (next show)
+    } # next column (next day)
 
     $ds->EndBatch( 1 );
 
