@@ -5,6 +5,9 @@ use warnings;
 
 =pod
 
+channel: Kapital Network
+country: Croatia
+
 Import data from Excel-files delivered via e-mail.
 Each file is for one week.
 
