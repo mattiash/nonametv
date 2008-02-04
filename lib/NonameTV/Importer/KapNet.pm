@@ -1,4 +1,4 @@
-package NonameTV::Importer::NetTV;
+package NonameTV::Importer::KapNet;
 
 use strict;
 use warnings;
@@ -32,7 +32,7 @@ sub new {
   my $self  = $class->SUPER::new( @_ );
   bless ($self, $class);
 
-  $self->{grabber_name} = "NetTV";
+  $self->{grabber_name} = "KapNet";
 
   return $self;
 }
@@ -40,15 +40,16 @@ sub new {
 sub ImportContentFile {
   my $self = shift;
   my( $file, $chd ) = @_;
+  my( $dateinfo );
   my( $kada, $newtime, $lasttime );
-  my( $title, $genre , $episode , $premiere );
+  my( $title, $newtitle , $lasttitle , $newdescription , $lastdescription );
   my( $day, $month , $year , $hour , $min );
   my( $oBook, $oWkS, $oWkC );
 
   # Only process .xls files.
   return if $file !~  /\.xls$/i;
 
-  progress( "NetTV: Processing $file" );
+  progress( "KapNet: Processing $file" );
   
   $self->{fileerror} = 0;
 
@@ -64,15 +65,26 @@ sub ImportContentFile {
     $oWkS = $oBook->{Worksheet}[$iSheet];
 
     # process only the sheet with the name PPxle
-    next if ( $oWkS->{Name} !~ /PPxle/ );
+    #next if ( $oWkS->{Name} !~ /PPxle/ );
 
-    progress( "NetTV: Processing worksheet: $oWkS->{Name}" );
+    progress( "KapNet: Processing worksheet: $oWkS->{Name}" );
 
     my $batch_id = $xmltvid . "_" . $file;
     $ds->StartBatch( $batch_id , $channel_id );
 
+    # Date & Day info is in the first row
+    $oWkC = $oWkS->{Cells}[0][1];
+    if( $oWkC ){
+      $dateinfo = $oWkC->Value;
+    }
+    next if ( ! $dateinfo );
+    next if( $dateinfo !~ /\S.*\S/ );
+
+    ( $day , $month , $year ) = ParseDate( $dateinfo );
+
+    progress("KapNet: Processing day: $day / $month / $year ($dateinfo)");
+
     for(my $iR = $oWkS->{MinRow} ; defined $oWkS->{MaxRow} && $iR <= $oWkS->{MaxRow} ; $iR++) {
-    #for(my $iR = 1 ; defined $oWkS->{MaxRow} && $iR <= $oWkS->{MaxRow} ; $iR++) {
 
       # Time Slot
       $oWkC = $oWkS->{Cells}[$iR][0];
@@ -84,81 +96,51 @@ sub ImportContentFile {
       next if ( ! $kada );
       next if( $kada !~ /\S.*\S/ );
 
-      # count number of dots in a string
-      my $count = ($kada =~ tr/\.//);
-      if ( $count == 2 ){	# row with the date
-
-        ( $day , $month , $year ) = split( '\.' , $kada );
-        $year += 2000;
-
-      } elsif ( $count == 1 ){	# row with the time of the show
-
-        ( $hour , $min ) = split( '\.' , $kada );
-
-      } else {
-        next;
-      }
-
-      next if( ! $day );
-      next if( ! $hour );
-
-      $newtime = create_dt( $day , $month , $year , $hour , $min );
-
-      if( defined( $lasttime ) and defined( $newtime ) ){
-
-        if( $newtime < $lasttime ){
-          $newtime->add( days => 1 );
-        }
-#        progress("NetTV: $lasttime - $newtime : $title");
-
-        my $ce = {
-          channel_id   => $channel_id,
-          start_time   => $lasttime->ymd("-") . " " . $lasttime->hms(":"),
-          end_time     => $newtime->ymd("-") . " " . $newtime->hms(":"),
-          title        => $title,
-        };
-
-#        if( defined( $episode ) )
-#        {
-#          $ce->{episode} = norm($episode);
-#          #$ce->{program_type} = 'series';
-#        }
-
-        if( defined( $genre ) and $genre =~ /\S/ )
-        {
-          my( $program_type, $category ) = $ds->LookupCat( "NetTV", $genre );
-          AddCategory( $ce, $program_type, $category );
-        }
-
-        $ds->AddProgramme( $ce );
-      }
-
       # Title
       $oWkC = $oWkS->{Cells}[$iR][1];
       if( $oWkC ){
         $title = $oWkC->Value;
       }
 
-      # Genre
-      $oWkC = $oWkS->{Cells}[$iR][2];
-      if( $oWkC ){
-        $genre = $oWkC->Value;
+      # next if title is empty as it spreads across more cells
+      next if ( ! $title );
+      next if( $title !~ /\S.*\S/ );
+
+      # create the time
+      $newtime = create_dt( $day , $month , $year , $kada );
+
+      # all data is in one string which has to be split
+      # to title and description
+      if( $title =~ /: / ){
+        ( $newtitle , $newdescription ) = split( ':', $title );
+      } else {
+        $newtitle = $title;
+        $newdescription = '';
       }
 
-      # Episode
-      $oWkC = $oWkS->{Cells}[$iR][3];
-      if( $oWkC ){
-        $episode = $oWkC->Value;
-      }
+      if( defined( $lasttitle ) and defined( $newtitle ) ){
 
-      # Premiere
-      $oWkC = $oWkS->{Cells}[$iR][4];
-      if( $oWkC ){
-        $premiere = $oWkC->Value;
+        if( $newtime < $lasttime ){
+          $newtime->add( days => 1 );
+        }
+
+        progress("KapNet: $lasttime - $newtime : $lasttitle");
+
+        my $ce = {
+          channel_id   => $channel_id,
+          start_time   => $lasttime->ymd("-") . " " . $lasttime->hms(":"),
+          end_time     => $newtime->ymd("-") . " " . $newtime->hms(":"),
+          title        => $lasttitle,
+          description  => $lastdescription,
+        };
+
+        $ds->AddProgramme( $ce );
       }
 
       if( defined( $newtime ) ){
         $lasttime = $newtime;
+        $lasttitle = $newtitle;
+        $lastdescription = $newdescription;
       }
 
     } # next row (next show)
@@ -170,13 +152,26 @@ sub ImportContentFile {
   return;
 }
 
+sub ParseDate
+{
+  my ( $dinfo ) = @_;
+
+  my( $d, $m ) = ( $dinfo =~ /(\d+)\.(\d+)/ );
+
+  my $y = DateTime->today()->year;
+
+  return( $d , $m , $y );
+}
+  
 sub create_dt
 {
-  my ( $dy , $mo , $yr , $hr , $mn ) = @_;
+  my ( $d , $m , $y , $tinfo ) = @_;
 
-  my $dt = DateTime->new( year   => $yr,
-                           month  => $mo,
-                           day    => $dy,
+  my( $hr, $mn ) = ( $tinfo =~ /(\d+)\:(\d+)/ );
+
+  my $dt = DateTime->new( year   => $y,
+                           month  => $m,
+                           day    => $d,
                            hour   => $hr,
                            minute => $mn,
                            second => 0,
