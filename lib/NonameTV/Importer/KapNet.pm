@@ -77,78 +77,79 @@ sub ImportContentFile {
 
     for(my $iC = $oWkS->{MinCol} ; defined $oWkS->{MaxCol} && $iC <= $oWkS->{MaxCol} ; $iC++) {
 
-    # Date & Day info is in the first row
-    $oWkC = $oWkS->{Cells}[0][$iC];
-    if( $oWkC ){
-      $dateinfo = $oWkC->Value;
-    }
-    next if ( ! $dateinfo );
-    next if( $dateinfo !~ /\S.*\S/ );
-
-    ( $day , $month , $year ) = ParseDate( $dateinfo );
-
-    progress("KapNet: Processing day: $day / $month / $year ($dateinfo)");
-
-    for(my $iR = $oWkS->{MinRow} ; defined $oWkS->{MaxRow} && $iR <= $oWkS->{MaxRow} ; $iR++) {
-
-      # Time Slot
-      $oWkC = $oWkS->{Cells}[$iR][0];
+      # Date & Day info is in the first row
+      $oWkC = $oWkS->{Cells}[0][$iC];
       if( $oWkC ){
-        $kada = $oWkC->Value;
+        $dateinfo = $oWkC->Value;
       }
+      next if ( ! $dateinfo );
+      next if( $dateinfo !~ /\S.*\S/ );
 
-      # next if kada is empty
-      next if ( ! $kada );
-      next if( $kada !~ /\S.*\S/ );
+      ( $day , $month , $year ) = ParseDate( $dateinfo );
 
-      # Title
-      $oWkC = $oWkS->{Cells}[$iR][$iC];
-      if( $oWkC ){
-        $title = $oWkC->Value;
-      }
+      progress("KapNet: Processing day: $day / $month / $year ($dateinfo)");
 
-      # next if title is empty as it spreads across more cells
-      next if ( ! $title );
-      next if( $title !~ /\S.*\S/ );
+      for(my $iR = $oWkS->{MinRow} ; defined $oWkS->{MaxRow} && $iR <= $oWkS->{MaxRow} ; $iR++) {
 
-      # create the time
-      $newtime = create_dt( $day , $month , $year , $kada );
-
-      # all data is in one string which has to be split
-      # to title and description
-      if( $title =~ /: / ){
-        ( $newtitle , $newdescription ) = split( ':', $title );
-      } else {
-        $newtitle = $title;
-        $newdescription = '';
-      }
-
-      if( defined( $lasttitle ) and defined( $newtitle ) ){
-
-        if( $newtime < $lasttime ){
-          $newtime->add( days => 1 );
+        # Time Slot
+        $oWkC = $oWkS->{Cells}[$iR][0];
+        if( $oWkC ){
+          $kada = $oWkC->Value;
         }
 
-        progress("KapNet: $lasttime - $newtime : $lasttitle");
+        # next if kada is empty
+        next if ( ! $kada );
+        next if( $kada !~ /\S.*\S/ );
 
-        my $ce = {
-          channel_id   => $channel_id,
-          start_time   => $lasttime->ymd("-") . " " . $lasttime->hms(":"),
-          end_time     => $newtime->ymd("-") . " " . $newtime->hms(":"),
-          title        => $lasttitle,
-          description  => $lastdescription,
-        };
+        # Title
+        $oWkC = $oWkS->{Cells}[$iR][$iC];
+        if( $oWkC ){
+          $title = $oWkC->Value;
+        }
 
-        $ds->AddProgramme( $ce );
-      }
+        # next if title is empty as it spreads across more cells
+        next if ( ! $title );
+        next if( $title !~ /\S.*\S/ );
 
-      if( defined( $newtime ) ){
-        $lasttime = $newtime;
-        $lasttitle = $newtitle;
-        $lastdescription = $newdescription;
-      }
+        # create the time
+        $newtime = create_dt( $day , $month , $year , $kada );
 
-    } # next row (next show)
+        # all data is in one string which has to be split
+        # to title and description
+        if( $title =~ /: / ){
+          ( $newtitle , $newdescription ) = split( ':', $title );
+        } else {
+          $newtitle = $title;
+          $newdescription = '';
+        }
+
+        if( defined( $lasttitle ) and defined( $newtitle ) ){
+
+          if( $newtime < $lasttime ){
+            $newtime->add( days => 1 );
+          }
+
+          progress("KapNet: $lasttime - $newtime : $lasttitle");
+
+          my $ce = {
+            channel_id   => $channel_id,
+            start_time   => $lasttime->ymd("-") . " " . $lasttime->hms(":"),
+            end_time     => $newtime->ymd("-") . " " . $newtime->hms(":"),
+            title        => $lasttitle,
+            description  => $lastdescription,
+          };
+
+          $ds->AddProgramme( $ce );
+        }
+
+        if( defined( $newtime ) ){
+          $lasttime = $newtime;
+          $lasttitle = $newtitle;
+          $lastdescription = $newdescription;
+        }
+
+      } # next row (next show)
+
     } # next column (next day)
 
     $ds->EndBatch( 1 );
