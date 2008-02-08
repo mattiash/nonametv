@@ -42,6 +42,10 @@ sub ImportContent
   my $self = shift;
 
   my( $batch_id, $cref, $chd ) = @_;
+  my( $schedule_date , $start_time , $duration );
+  my( $event_title , $event_episode_title , $event_short_description );
+  my( $genre , $sub_genre , $production_year );
+  my( $episode_number , $episode_season , $episode );
 
   my $ds = $self->{datastore};
   $ds->{SILENCE_END_START_OVERLAP}=1;
@@ -74,45 +78,49 @@ sub ImportContent
 
       # schedule_date (column 0)
       $oWkC = $oWkS->{Cells}[$iR][0];
-      my $schedule_date = $oWkC->Value;
+      $schedule_date = $oWkC->Value;
 
       # start_time (column 1)
       $oWkC = $oWkS->{Cells}[$iR][1];
-      my $start_time = $oWkC->Value;
+      $start_time = $oWkC->Value;
 
       # duration (column 2)
       $oWkC = $oWkS->{Cells}[$iR][2];
-      my $duration = $oWkC->Value;
+      $duration = $oWkC->Value;
 
       # event_title (column 3)
       $oWkC = $oWkS->{Cells}[$iR][3];
-      my $event_title = $oWkC->Value;
+      $event_title = $oWkC->Value;
 
       # event_episode_title (column 4)
       $oWkC = $oWkS->{Cells}[$iR][4];
-      my $event_episode_title = $oWkC->Value;
+      if( $oWkC ){
+        $event_episode_title = $oWkC->Value;
+      }
 
       # event_short_description (column 5)
       $oWkC = $oWkS->{Cells}[$iR][5];
-      my $event_short_description = $oWkC->Value;
+      $event_short_description = $oWkC->Value;
 
       # genre (column 8)
       $oWkC = $oWkS->{Cells}[$iR][8];
-      my $genre = $oWkC->Value;
+      $genre = $oWkC->Value;
 
       # sub_genre (column 9)
       $oWkC = $oWkS->{Cells}[$iR][9];
-      my $sub_genre = $oWkC->Value;
+      $sub_genre = $oWkC->Value;
 
       # production_year (column 27)
       $oWkC = $oWkS->{Cells}[$iR][27];
-      my $production_year = $oWkC->Value;
+      if( $oWkC ){
+        $production_year = $oWkC->Value;
+      }
 
       # episode_number (column 29)
       $oWkC = $oWkS->{Cells}[$iR][29];
-      my $episode_number = $oWkC->Value;
-      my $episode_season = 0;
-      my $episode = undef;
+      $episode_number = $oWkC->Value;
+      $episode_season = 0;
+      $episode = undef;
       if( ($episode_number > 0) and ($episode_season > 0) )
       {
         $episode = sprintf( "%d . %d .", $episode_season-1, $episode_number-1 );
@@ -124,6 +132,8 @@ sub ImportContent
 
       # format start and end times
       my( $start , $end ) = create_dt( $schedule_date , $start_time , $duration );
+
+      progress("ExtremeSports: $start_time -> $event_title");
 
       my $ce = {
         channel_id   => $chd->{id},
@@ -231,8 +241,10 @@ sub FetchDataFromSite
 
   #my $url = "http://express.extreme.com/Files/Months/Listings/Pan%20Euro%20Listings%20Oct%20English%20v7.xls";
   #my $url = "http://express.extreme.com/Files/Months/Listings/Pan%20Euro%20Listings%20Oct%20English%20v7.xls";
-  my $url = "http://express.extreme.com/Files/Months/Listings/Pan%20Euro%20Dec%20Listings%20English.xls";
-  print "Fetching xls file from $url\n";
+  #my $url = "http://express.extreme.com/Files/Months/Listings/Pan%20Euro%20Dec%20Listings%20English.xls";
+  my $url = "http://newsroom.zonemedia.net/Scripts/FileDownload.asp?fName=Extreme%5FPE%5Flistings%5FENG%5FFeb%2Exls&fPath=D%3A%5CZONE%5FPRESS%5CFiles%5CSchedules%5CExtreme%5FPE%5Flistings%5FENG%5FFeb%2Exls";
+
+  progress("ExtremeSports: Fetching xls file from $url");
 
   my( $content, $code ) = MyGet( $url );
 
