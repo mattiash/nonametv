@@ -81,7 +81,7 @@ sub ImportContent
     $date = $inrow->{'SENDEDATO'};
     if ($date ne $olddate) {
       my $ymd = parseDate(fq( $date ));
-      print "\n>>>STARTING NEW DATE $ymd <<<\n";
+      #print "\n>>>STARTING NEW DATE $ymd <<<\n";
       
       $dsh->StartDate( $ymd );
     
@@ -113,6 +113,12 @@ sub ImportContent
     if ($description eq "") {
         $description = fq( norm( $inrow->{'GENERELL_SYNOPSIS'} ));
     }
+    
+    my $subtitle = fq( norm ($inrow->{'EPISODETITTEL'}));
+    if ($subtitle eq "") {
+      $subtitle = fq( norm( $inrow->{'OVERSKRIFT'}))
+    }
+    
     #$description = norm( $description );
     #$description = fq( $description );
     
@@ -134,7 +140,7 @@ sub ImportContent
       channel_id => $chd->{id},
       title => $title,
       description => $description,
-      
+      subtitle => $subtitle,
       start_time => $start,
       #episode => $episode,
 
@@ -195,7 +201,7 @@ sub FetchDataFromSite
 
   my( $year, $week ) = ( $batch_id =~ /(\d+)-(\d+)$/ );
  
-  my $url = sprintf( "%s_%02d_%s_%02d.xls",
+  my $url = sprintf( "%s_%01d_%s_%02d.xls",
                      $self->{UrlRoot}, $week, $data->{grabber_info}, 
                      $year);
   
