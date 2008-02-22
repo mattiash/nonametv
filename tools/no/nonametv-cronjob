@@ -1,7 +1,7 @@
 #!/bin/bash
 
-NROOT=$HOME/nonametv/var
-PROOT=$HOME/nonametv/nonametv
+NROOT=/var/local/nonametv
+PROOT=$HOME/nonametv
 
 h=true
 d=true

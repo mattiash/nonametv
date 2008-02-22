@@ -57,6 +57,7 @@ sub ImportContent
 
   $dsh->StartDate( $date );
   #print $$cref;
+  $$cref = decode_utf8($$cref);
   #my $decoder = utf8($$cref);
   #my $decoded = $decoder->latin1;
   #my $decoded = encode_entities($$cref);
@@ -75,7 +76,8 @@ sub ImportContent
     my $start = norm(@$row[0]); 
     #print "\n>>>$start\n";
     next if ($start eq "TID" || $start eq "TIME");
-    my $fulltext = decode_utf8(norm(@$row[1])); 
+    #my $fulltext = decode_utf8(norm(@$row[1])); 
+    my $fulltext = norm(@$row[1]);
     my $tmptitle = $1 if $fulltext =~ m!<strong>(.*)</strong>!i; 
     my @titlearray = split(':', $tmptitle);
     my $title = norm(shift(@titlearray));
