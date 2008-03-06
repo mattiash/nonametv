@@ -212,6 +212,10 @@ sub ImportContent
       #progress("HBOAdria: duration is $duration");
     }
 
+if( $nowday == 30 ){
+  next;
+}
+
     #
     # set right times
     #
@@ -226,6 +230,8 @@ sub ImportContent
     $laststart = $start_dt;
 
     if( defined $nowday ){
+
+      progress("HBOAdria: $start_dt - $end_dt : $title");
 
       my $ce = {
                channel_id   => $chd->{id},
