@@ -6,12 +6,15 @@ PROOT=/home/mattias/development/nonametv
 cd $PROOT
 
 getmail -q -rdiscovery.rc
+getmail -q -raftonbladet.rc
+getmail -q -rexpressen.rc
 getmail -q -rkanal9.rc
 getmail -q -rngcsverige.rc
+getmail -q -rdr.rc
 perl -I lib tools/se/nonametv-parse-maildir
 perl -I lib tools/nonametv-import Discovery
 perl -I lib tools/nonametv-import Kanal5_mail
-perl -I lib tools/nonametv-import VH1
+#perl -I lib tools/nonametv-import VH1
 perl -I lib tools/nonametv-import KanalLokal
 
 
