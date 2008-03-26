@@ -101,7 +101,10 @@ sub ImportContent {
   my $ce = undef;
 
   foreach my $text (@paragraphs) {
+    # It should be possible to ignore these strings with a better
+    # FilterContent, because they look slightly different in the html.
     next if $text =~/^All times in (BST)|(GMT)/i;
+    next if $text =~/^Subtitling now available on programs produced by ESPN Networks/i;
 
     if( $text =~ /^\d+.\d\d\s*[ap]m$/ ) {
       $dsh->AddProgramme( $ce ) if( defined( $ce ) );
