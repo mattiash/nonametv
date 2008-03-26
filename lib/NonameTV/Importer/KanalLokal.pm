@@ -91,6 +91,16 @@ sub ImportContentFile {
     my $start_dt = $self->to_utc( $date, $starttime );
     my $end_dt = $self->to_utc( $date, $endtime );
 
+    if( not defined( $start_dt ) ) {
+      error( "Invalid start-time '$date' '$starttime'. Skipping." );
+      next;
+    }
+
+    if( not defined( $end_dt ) ) {
+      error( "Invalid end-time '$date' '$endtime'. Skipping." );
+      next;
+    }
+
     if( $starttime gt $endtime ) {
       $end_dt = $end_dt->add( days => 1 );
     }
@@ -141,16 +151,24 @@ sub to_utc {
   my( $year, $month, $day ) = split( '-', $date );
   my( $hour, $minute ) = split( ":", $time );
 
-  my $dt = DateTime->new( year   => $year,
-                          month  => $month,
-                          day    => $day,
-                          hour   => $hour,
-                          minute => $minute,
-                          time_zone => 'Europe/Stockholm',
-                          );
-  
+  my $dt;
+
+  eval { 
+    $dt = DateTime->new( year   => $year,
+			 month  => $month,
+			 day    => $day,
+			 hour   => $hour,
+			 minute => $minute,
+			 time_zone => 'Europe/Stockholm',
+			 );
+  };
+
+  if( not defined $dt ) {
+    return undef;
+  }
+
   $dt->set_time_zone( "UTC" );
-  
+
   return $dt;
 }
   
