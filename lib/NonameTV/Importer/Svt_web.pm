@@ -18,7 +18,7 @@ use DateTime;
 use XML::LibXML;
 use DateTime;
 
-use NonameTV qw/MyGet norm Html2Xml ParseDescCatSwe AddCategory/;
+use NonameTV qw/MyGet norm Html2Xml ParseXml ParseDescCatSwe AddCategory/;
 use NonameTV::DataStore::Helper;
 use NonameTV::Log qw/info progress error logdie/;
 
@@ -98,6 +98,54 @@ sub Object2Url {
   return( $u->as_string(), undef );
 }
 
+sub FilterContent {
+  my $self = shift;
+  my( $cref, $chd ) = @_;
+
+  my $doc = Html2Xml( $$cref );
+  
+  if( not defined $doc ) {
+    return (undef, "Html2Xml failed" );
+  } 
+
+  my $ns = $doc->find( "//@*" );
+
+  # Remove all attributes that we ignore anyway.
+  foreach my $attr ($ns->get_nodelist) {
+    if( $attr->nodeName() ne "class" ) {
+      $attr->unbindNode();
+    }
+  }
+
+  # The data contains a header with text that is changed each day.
+  # E.g. "Tablå för i går Torsdag 27 mars 2008".
+  # Replace it with "Torsdag 27 mars 2008".
+  $ns = $doc->find( '//font[@class="header"]' );
+  if( $ns->size() != 1 ) {
+    return (undef, "Expected to find exactly one heading.");
+  }
+
+  foreach my $node ($ns->get_nodelist) {
+    my $text = $node->textContent();
+    $text =~ s/Tabl.*([MTOFLS])/$1/;
+
+    $node->removeChildNodes();
+    $node->addChild( XML::LibXML::Text->new( $text ) );
+  }
+
+  my $str = $doc->toString(1);
+
+  return( \$str, undef );
+}
+
+sub ContentExtension {
+  return 'html';
+}
+
+sub FilteredExtension {
+  return 'html';
+}
+
 sub ImportContent {
   my $self = shift;
   my( $batch_id, $cref, $chd ) = @_;
@@ -116,7 +164,7 @@ sub ImportContent {
                                        day => $day );
   }
 
-  my $doc = Html2Xml( $$cref );
+  my $doc = ParseXml( $cref );
   
   if( not defined( $doc ) )
   {
