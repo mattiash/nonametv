@@ -59,6 +59,14 @@ sub FilterContent {
   return( \$str, undef );
 }
 
+sub ContentExtension {
+  return 'html';
+}
+
+sub FilteredExtension {
+  return 'txt';
+}
+
 sub ImportContent {
   my $self = shift;
   my( $batch_id, $cref, $chd ) = @_;

@@ -42,6 +42,15 @@ sub new {
     return $self;
 }
 
+
+sub ContentExtension {
+  return 'doc';
+}
+
+sub FilteredExtension {
+  return 'html';
+}
+
 sub ImportContent {
   my $self = shift;
   my( $batch_id, $cref, $chd ) = @_;
