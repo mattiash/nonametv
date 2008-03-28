@@ -70,6 +70,12 @@ The callbackobject must implement the following methods:
   occured for some reason. The error will be handled in the same way as
   errors from the http-server.
 
+  my( $extension ) = $co->ContentExtension();
+  my( $extension ) = $co->FilteredExtension();
+
+  ContentCache will name the files on disk with these extension (e.g. html).
+  If undef is returned, no extension is used.
+
 =cut
 
 sub new {
@@ -122,8 +128,10 @@ sub GetContent {
   my( $objectname, $data, $force ) = @_;
 
   $force = 0 if not defined $force;
-
-  my( $url, $error ) = $self->{callbackobject}->Object2Url( 
+  
+  my $co = $self->{callbackobject};
+  
+  my( $url, $error ) = $co->Object2Url( 
     $objectname, $data );
   if( not defined( $url ) ) {
     return( undef, 
@@ -148,7 +156,7 @@ sub GetContent {
     # from the filter would never be reported if the content filter fails
     # and the content never changes after that.
     my( $filtered_ref, $filter_error ) = 
-	$self->{callbackobject}->FilterContent( $res->content_ref, $data );
+	$co->FilterContent( $res->content_ref, $data );
 
     if( not defined $filtered_ref ) {
       return (undef,
@@ -164,7 +172,8 @@ sub GetContent {
       return (undef, undef);
     }
 
-    $self->WriteReference( $self->Filename( $objectname, "content" ), 
+    $self->WriteReference( $self->Filename( $objectname, "content",
+                           $co->ContentExtension() ), 
 			   $res->content_ref );
 
     $currstate->{contentmd5} = $contentmd5;
@@ -181,7 +190,8 @@ sub GetContent {
       return (undef, undef);
     }
 
-    $self->WriteReference( $self->Filename( $objectname, "filtered" ), 
+    $self->WriteReference( $self->Filename( $objectname, "filtered", 
+                                            $co->FilteredExtension() ), 
 			   $filtered_ref );
     
 
@@ -332,16 +342,23 @@ sub CalculateMD5 {
 
 sub Filename {
   my $self = shift;
-  my( $objectname, $type ) = @_;
+  my( $objectname, $type, $extension ) = @_;
   
+  if( defined( $extension ) ) {
+    $extension = ".$extension";
+  }
+  else {
+    $extension = "";
+  }
+
   if( $type eq "state" ) {
     return "$self->{basedir}/state/$objectname.state";
   }
   elsif( $type eq "content" ) {
-    return "$self->{basedir}/state/$objectname.content";
+    return "$self->{basedir}/state/$objectname.content$extension";
   }
   elsif( $type eq "filtered" ) {
-    return "$self->{basedir}/state/$objectname.filtered";
+    return "$self->{basedir}/state/$objectname.filtered$extension";
   }
   die "Unknown type $type";
 }
@@ -376,8 +393,8 @@ sub RemoveOld {
       my( $base ) = ($statefile =~ /(.*)\.state$/);
 
       unlink( $statefile );
-      unlink( "$base.content" );
-      unlink( "$base.filtered" );
+      unlink <$base.content*>;
+      unlink <$base.filtered*>;
     }
   }
 }

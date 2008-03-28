@@ -95,8 +95,19 @@ sub FilterContent {
   return ( $cref, undef );
 }
 
-sub ImportContent
-{
+sub ContentExtension {
+  my $self = shift;
+
+  return undef;
+}
+
+sub FilteredExtension {
+  my $self = shift;
+
+  return undef;
+}
+
+sub ImportContent {
   my $self = shift;
 
   my( $batch_id, $cref, $chd ) = @_;
