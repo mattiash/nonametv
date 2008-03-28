@@ -183,7 +183,11 @@ sub AddProgramme
   if( defined( $self->{lasttime} ) and ($start_time < $self->{lasttime}) )
   {
     my $new_start_time = $start_time->clone();
-    $new_start_time->add( days => 1 );
+
+    # We cannot use days => 1 here since it dies if the new date
+    # is invalid due to a DST change.
+    $new_start_time->add( hours => 24 );
+
     my $dur =  $new_start_time - $self->{lasttime};
     my( $days, $hours ) = $dur->in_units( 'days', 'hours' );
     $hours += $days*24;
