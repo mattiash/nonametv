@@ -508,6 +508,7 @@ sub ParseXml {
 
   if( not defined $xml ) {
     $xml = XML::LibXML->new;
+    $xml->load_ext_dtd(0);
   }
   
   my $doc;
