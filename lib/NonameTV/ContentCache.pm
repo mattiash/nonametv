@@ -352,13 +352,13 @@ sub Filename {
   }
 
   if( $type eq "state" ) {
-    return "$self->{basedir}/state/$objectname.state";
+    return "$self->{basedir}/$objectname.state";
   }
   elsif( $type eq "content" ) {
-    return "$self->{basedir}/state/$objectname.content$extension";
+    return "$self->{basedir}/$objectname.content$extension";
   }
   elsif( $type eq "filtered" ) {
-    return "$self->{basedir}/state/$objectname.filtered$extension";
+    return "$self->{basedir}/$objectname.filtered$extension";
   }
   die "Unknown type $type";
 }
