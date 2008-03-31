@@ -7,12 +7,13 @@ use lib "$FindBin::Bin/../lib";
 
 use NonameTV;
 use NonameTV::DataStore;
+use NonameTV::Config qw/ReadConfig/;
 
 use Getopt::Long;
 use POSIX qw/strftime/;
 
 # Read configuration
-my $conf = NonameTV::ReadConfig();
+my $conf = ReadConfig();
 
 # Create Datastore
 my $ds = NonameTV::DataStore->new( $conf->{DataStore} );

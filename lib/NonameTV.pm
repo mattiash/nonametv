@@ -41,39 +41,6 @@ our @EXPORT_OK;
 my $wvhtml = '/usr/bin/wvHtml --charset=utf8';
 # my $wvhtml = '/usr/bin/wvHtml';
 
-# Global variable containing the configuration after ReadConfig
-# has been called.
-our $Conf;
-
-sub ReadConfig
-{
-  return $Conf if defined $Conf;
-
-  my $file;
-  if (-e "$HOME/.nonametv.conf") {
-  	$file = "$HOME/.nonametv.conf";
-  } elsif (-e "/etc/nonametv.conf") {
-  	$file = "/etc/nonametv.conf";
-  } else {
-  	die "No configuration file found in $HOME/.nonametv.conf or /etc/nonametv.conf"
-  }
-  
-  open IN, "< $file" or die "Failed to read from configuration file $file";
-  my $config = "";
-  while(<IN>)
-  {
-    $config .= $_;
-  }
-
-  my $conf = eval( $config );
-  die "Error in configuration file $file: $@" if $@;
-
-  NonameTV::Log::init( $conf );
-
-  $Conf = $conf;
-  return $conf;
-}
-
 my $ua = LWP::UserAgent->new( agent => "Grabber from http://tv.swedb.se", 
                               cookie_jar => {} );
 

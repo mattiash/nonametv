@@ -9,6 +9,7 @@ use File::Slurp;
 
 use NonameTV;
 use NonameTV::DataStore;
+use NonameTV::Config qw/ReadConfig/;
 
 use Getopt::Long;
 use Text::CSV_XS;
@@ -40,7 +41,7 @@ EOHELP
 my( $datadir, $country ) = @ARGV;
 
 # Read configuration
-my $conf = NonameTV::ReadConfig();
+my $conf = ReadConfig();
 
 my $ds = NonameTV::DataStore->new( $conf->{DataStore} );
 
