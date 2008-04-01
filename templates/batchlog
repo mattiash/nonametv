@@ -1,0 +1,32 @@
+<html>
+[% USE date %]
+<head>
+  <title>Nonametv Batchlog</title>
+</head>
+<body>
+  <h1>Errors</h1>
+  [% FOREACH error = errors %]
+    <h2>[% error.name %]</h2>
+    Last ok: [% INCLUDE process_ts ts=error.last_updated %]<br>
+    <pre>[% error.abort_message %]</pre>
+  [% END %]
+
+  <h1>Warnings</h1>
+  [% FOREACH error = warnings %]
+    <h2>[% error.name %]</h2>
+    Last ok: [% INCLUDE process_ts ts=error.last_updated %]<br>
+    <pre>[% error.message %]</pre>
+  [% END %]
+
+</body>
+</html>
+
+[% BLOCK process_ts %]
+
+  [% IF ts.length > 0 %]
+    [% date.format( ts, '%F %T' ) %]
+  [% ELSE %]
+  (never)
+  [% END %]
+
+[% END %]
