@@ -6,6 +6,8 @@ use FindBin;
 use lib "$FindBin::Bin/../lib";
 
 use NonameTV;
+use NonameTV::Config qw/ReadConfig/;
+use NonameTV::Log;
 use NonameTV::DataStore;
 use NonameTV::DataStore::Dummy;
 use HTTP::Cache::Transparent;
@@ -26,7 +28,7 @@ Typical Importer-options include
 
 --verbose
 
---force-update  Import data even if the data hasn't changed since the
+--force-update  Import data even if the data has not changed since the
                 last import.
 
 Some importers import data from files specified on the command-line,
@@ -37,8 +39,9 @@ EOHELP
   exit 1;
 }
 
-# Read configuration
-my $conf = NonameTV::ReadConfig();
+my $conf = ReadConfig();
+
+NonameTV::Log::init( $conf );
 
 my $run_test = 0;
 

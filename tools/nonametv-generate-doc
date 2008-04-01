@@ -1,0 +1,48 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+
+use NonameTV::Path;
+
+use Pod::Simple::HTMLBatch;
+
+if( scalar( @ARGV ) != 1 ) {
+  print << "EOH";
+Convert all pod-documentation to HTML. 
+
+Usage: nonametv-generate-doc <outputdir>
+
+EOH
+
+  exit 1;
+}
+
+my( $output_dir ) = @ARGV;
+
+my $root = NonameTV::Path::Root();
+
+my $batchconv = Pod::Simple::HTMLBatch->new;    
+$batchconv->contents_page_start( << 'EOHEAD' );
+<html>
+  <head>
+    <title>NonameTV Documentation</title>
+    <style type="text/css">
+  
+    dl.superindex > dd > a {
+      display: block;
+    }
+
+    </style>
+  </head>
+  <body class='contentspage'>
+  <h1>NonameTV Documentation</h1>
+
+EOHEAD
+
+$batchconv->css_flurry( 0 );
+$batchconv->add_css( 'http://dev.perl.org/css/perl.css' );
+
+$batchconv->batch_convert( [ "$root/lib" ], $output_dir );

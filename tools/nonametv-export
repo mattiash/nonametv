@@ -4,11 +4,14 @@ use strict;
 
 use NonameTV;
 use NonameTV::DataStore;
+use NonameTV::Config qw/ReadConfig/;
+use NonameTV::Log;
 
 use Getopt::Long;
 
-# Read configuration
-my $conf = NonameTV::ReadConfig();
+my $conf = ReadConfig();
+
+NonameTV::Log::init( $conf );
 
 # Create Datastore
 my $ds = NonameTV::DataStore->new( $conf->{DataStore} );

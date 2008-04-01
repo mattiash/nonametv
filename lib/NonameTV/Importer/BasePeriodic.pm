@@ -27,6 +27,7 @@ use DateTime;
 use POSIX qw/floor/;
 
 use NonameTV qw/MyGet/;
+use NonameTV::Config qw/ReadConfig/;
 use NonameTV::Log qw/info progress error logdie
                      log_to_string log_to_string_result/;
 use NonameTV::ContentCache;
@@ -39,7 +40,7 @@ sub new {
     my $proto = shift;
     my $class = ref($proto) || $proto;
     my $self  = $class->SUPER::new( @_ );
-    my $conf  = NonameTV::ReadConfig();
+    my $conf  = ReadConfig();
     
     bless ($self, $class);
 

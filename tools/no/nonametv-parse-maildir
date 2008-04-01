@@ -16,6 +16,7 @@ use Encode qw/decode/;
 
 use NonameTV;
 use NonameTV::DataStore;
+use NonameTV::Config qw/ReadConfig/;
 
 my %opt = ( manual => 0,
             test => 0,
@@ -41,8 +42,7 @@ EOHELP
   exit 1;
 }
 
-# Read configuration
-my $conf = NonameTV::ReadConfig();
+my $conf = ReadConfig();
 
 my $ds = NonameTV::DataStore->new( $conf->{DataStore} );
 my $filestore = $conf->{FileStore};
