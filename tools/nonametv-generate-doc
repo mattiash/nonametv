@@ -27,7 +27,16 @@ my $root = NonameTV::Path::Root();
 my $batchconv = Pod::Simple::HTMLBatch->new;    
 $batchconv->contents_page_start( << 'EOHEAD' );
 <html>
-  <head><title>NonameTV Documentation</title></head>
+  <head>
+    <title>NonameTV Documentation</title>
+    <style type="text/css">
+  
+    dl.superindex > dd > a {
+      display: block;
+    }
+
+    </style>
+  </head>
   <body class='contentspage'>
   <h1>NonameTV Documentation</h1>
 
