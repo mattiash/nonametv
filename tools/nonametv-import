@@ -6,6 +6,7 @@ use FindBin;
 use lib "$FindBin::Bin/../lib";
 
 use NonameTV;
+use NonameTV::Config qw/ReadConfig/;
 use NonameTV::Log;
 use NonameTV::DataStore;
 use NonameTV::DataStore::Dummy;
