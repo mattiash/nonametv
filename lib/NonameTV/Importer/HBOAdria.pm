@@ -51,6 +51,7 @@ sub ImportContent
   my $laststart;
   my $duration;
   my $title;
+  my $audio;
   my $director;
   my $actors;
   my $genre;
@@ -120,7 +121,7 @@ sub ImportContent
     $content =~ s/^\s+|\s+$//g;
 
     if ( $content ) {
-      my $audio = $content;
+      $audio = $content;
       #progress("HBOAdria: audio is $audio");
     }
 
@@ -212,10 +213,6 @@ sub ImportContent
       #progress("HBOAdria: duration is $duration");
     }
 
-if( $nowday == 30 ){
-  next;
-}
-
     #
     # set right times
     #
@@ -231,13 +228,14 @@ if( $nowday == 30 ){
 
     if( defined $nowday ){
 
-      progress("HBOAdria: $start_dt - $end_dt : $title");
+      progress("HBOAdria: $start_dt - $end_dt : $title ($audio,$rating)");
 
       my $ce = {
                channel_id   => $chd->{id},
                title        => $title,
                start_time   => $start_dt->ymd("-") . " " . $start_dt->hms(":"),
                end_time     => $end_dt->ymd("-") . " " . $end_dt->hms(":"),
+               #audio        => $audio,
                directors    => $director,
                actors       => $actors,
       };

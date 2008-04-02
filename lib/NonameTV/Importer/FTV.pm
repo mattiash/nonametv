@@ -63,7 +63,13 @@ sub ImportContent
   # date, time, program, description
 
   foreach my $oWkS (@{$oBook->{Worksheet}}) {
+
     progress("--------- SHEET: $oWkS->{Name}");
+
+    if( $oWkS->{Name} !~ /EPG/ ){
+      progress("Skipping sheet $oWkS->{Name}");
+      next;
+    }
 
     # start from row 2
     # the first row looks like one cell saying like "EPG DECEMBER 2007  (Yamal - HotBird)"
@@ -169,7 +175,7 @@ sub FetchDataFromSite
   my $nowyear = DateTime->today->year();
 
   #my $url = $self->{UrlRoot} . "/" . $data->{grabber_info} .  $nowmonth . "_" . $nowyear .  ".xls";
-  my $url = $self->{UrlRoot} . "/d18/" . "EPG_March_2008_HotBird-Yamal.xls";
+  my $url = $self->{UrlRoot} . "/d18/" . "Grid_EPG_April_2008_HotBird-Yamal.xls";
 
   progress("Fetching xls file from $url");
 
