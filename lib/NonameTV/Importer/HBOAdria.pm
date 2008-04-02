@@ -51,7 +51,7 @@ sub ImportContent
   my $laststart;
   my $duration;
   my $title;
-  my $audio;
+  my $stereo;
   my $director;
   my $actors;
   my $genre;
@@ -112,7 +112,7 @@ sub ImportContent
     }
 
     #
-    # column 2: audio
+    # column 2: stereo
     #
     $col = norm(@$row[2]);
     $content = HTML::FormatText->new->format(parse_html($col));
@@ -121,8 +121,15 @@ sub ImportContent
     $content =~ s/^\s+|\s+$//g;
 
     if ( $content ) {
-      $audio = $content;
-      #progress("HBOAdria: audio is $audio");
+      $stereo = $content;
+
+      $stereo = 'mono' if( $stereo =~ /MONO/ );
+      $stereo = 'stereo' if( $stereo =~ /STEREO/ );
+      $stereo = 'dolby digital' if( $stereo =~ /DOLBY_5\.1/ );
+      $stereo = 'dolby' if( $stereo =~ /DOLBY/ );
+      $stereo = 'surround' if( $stereo =~ /SURROUND/ );
+
+      #progress("HBOAdria: stereo is $stereo");
     }
 
     #
@@ -217,9 +224,6 @@ sub ImportContent
     # set right times
     #
     my( $start_dt , $end_dt ) = create_dt( $nowyear , $nowmonth , $nowday , $starttime , $duration );
-#print "LASTS: $laststart\n";
-#print "START: $start_dt\n";
-#print "END  : $end_dt\n";
     if( $start_dt < $laststart ){
       $start_dt->add( days => 1 );
       $end_dt->add( days => 1 );
@@ -228,14 +232,15 @@ sub ImportContent
 
     if( defined $nowday ){
 
-      progress("HBOAdria: $start_dt - $end_dt : $title ($audio,$rating)");
+      progress("HBOAdria: $start_dt - $end_dt : $title ($stereo,$rating)");
 
       my $ce = {
                channel_id   => $chd->{id},
                title        => $title,
                start_time   => $start_dt->ymd("-") . " " . $start_dt->hms(":"),
                end_time     => $end_dt->ymd("-") . " " . $end_dt->hms(":"),
-               #audio        => $audio,
+               stereo       => $stereo,
+               rating       => $rating,
                directors    => $director,
                actors       => $actors,
       };
