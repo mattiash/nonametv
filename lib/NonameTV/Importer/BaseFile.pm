@@ -18,6 +18,8 @@ use Encode;
 use NonameTV::Log qw/info progress error logdie 
   log_to_string log_to_string_result/;
 
+use NonameTV::Config qw/ReadConfig/;
+
 use NonameTV::Importer;
 
 use base 'NonameTV::Importer';
@@ -34,6 +36,8 @@ sub new {
       'verbose'      => 0,
       'remove-missing' => 0,
     };
+
+    $self->{conf} = ReadConfig();
 
     return $self;
 }
@@ -61,7 +65,7 @@ sub Import {
       progress( "Deleted $deleted records for $data->{xmltvid}" );
     }
 
-    my $dir = $NonameTV::Conf->{FileStore} . "/" . $data->{xmltvid};
+    my $dir = $self->{conf}->{FileStore} . "/" . $data->{xmltvid};
     my $filelist_raw = qx/ls -t -r -1 $dir/;
     my $filelist = decode( "utf-8", $filelist_raw );
 
@@ -116,7 +120,7 @@ sub DoImportContentFile {
   $self->{latestdate} = "1970-01-01";
 
   # Import file
-  my $dir = $NonameTV::Conf->{FileStore} . "/" . $data->{xmltvid};
+  my $dir = $self->{conf}->{FileStore} . "/" . $data->{xmltvid};
   eval { $self->ImportContentFile( "$dir/$file", $data ); };
   my( $message, $highest ) = log_to_string_result( $h );
   if( $@ ) {
@@ -169,7 +173,7 @@ sub RemoveMissing {
 
   my $sth = $ds->Iterate( 'files', { channelid => $chd->{id} } );
 
-  my $dir = $NonameTV::Conf->{FileStore} . "/" . $chd->{xmltvid};
+  my $dir = $self->{conf}->{FileStore} . "/" . $chd->{xmltvid};
 
   while( my $data = $sth->fetchrow_hashref ) {
 
