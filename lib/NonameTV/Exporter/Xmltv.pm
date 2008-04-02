@@ -602,6 +602,18 @@ sub WriteEntry
     $d->{video} = { aspect => $data->{aspect} };
   }
 
+  if( $data->{stereo} =~ /\S/ )
+  {
+    $d->{audio} = { stereo => $data->{stereo} };
+  }
+
+  if( $data->{rating} =~ /\S/ )
+  {
+    # the 'MPAA' string should not be hardcoded like it is now
+    # it is different for each channel/programmer
+    push @{$d->{rating}}, [$data->{rating}, 'MPAA'];
+  }
+
   if( $data->{directors} =~ /\S/ )
   {
     $d->{credits}->{director} = [split( ", ", $data->{directors})];
