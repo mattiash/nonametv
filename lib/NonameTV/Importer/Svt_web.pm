@@ -332,10 +332,7 @@ sub extract_extra_info
      \.\s*
      $/x )
     {
-      $self->parse_other_showings( $ce, $sentences[$i] );
-
-#      print STDERR $sentences[$i] . "\n";
-#      $sentences[$i] = "";
+#      $self->parse_other_showings( $ce, $sentences[$i] );
     }
     elsif( $sentences[$i] =~ /^Text(at|-tv)\s+sid(an)*\s+\d+\.$/ )
     {
