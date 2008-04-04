@@ -93,3 +93,8 @@ CREATE TABLE `languagestrings` (
   `language` varchar(4) NOT NULL default ''
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+CREATE TABLE IF NOT EXISTS `channelgroups` (
+  `abr` varchar(24) NOT NULL,
+  `display_name` varchar(100) NOT NULL,
+  `sortby` varchar(32) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
