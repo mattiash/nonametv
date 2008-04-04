@@ -7,7 +7,7 @@ use DateTime;
 use XML::LibXML;
 use POSIX qw/floor/;
 
-use NonameTV qw/MyGet norm/;
+use NonameTV qw/MyGet Word2Xml norm/;
 use NonameTV::DataStore::Helper;
 use NonameTV::Log qw/info progress error logdie/;
 
@@ -32,20 +32,40 @@ sub new {
     return $self;
 }
 
+sub Object2Url {
+  my $self = shift;
+  my( $objectname, $chd ) = @_;
+
+  my( $year, $week ) = ($objectname =~ /_20(\d+)-(\d+)/);
+
+  my $url = sprintf( "%stab%02d%02d.doc", $self->{UrlRoot}, $week, $year );
+
+  return( $url, undef );
+}
+
+sub FilterContent {
+  my $self = shift;
+  my( $cref, $chd ) = @_;
+
+  if( $$cref =~ /Sidan kunde tyv\S*rr inte hittas/ ) {
+    return( undef, "Failed to download" );
+  }
+
+  my $doc = Word2Xml( $$cref );
+  my $str = $doc->toString(1);
+
+  return( \$str, undef );
+}
+
 sub ImportContent
 {
   my $self = shift;
   my( $batch_id, $cref, $chd ) = @_;
 
-  if( $$cref =~ /Sidan kunde tyv\S*rr inte hittas/ ) {
-    error( "$batch_id: Failed to download" );
-    return 0;
-  }
-
-  my $cat = $self->FetchCategories( $batch_id, $chd );
+#  my $cat = $self->FetchCategories( $batch_id, $chd );
   my $dsh = $self->{datastorehelper};
 
-  return ParseData( $batch_id, $cref, $chd, $cat, $dsh, 0 );
+  return ParseData( $batch_id, $cref, $chd, undef, $dsh, 0 );
 }
 
 # Fetch the association between title and category/program_type for a
@@ -127,19 +147,4 @@ sub FetchCategories
   return $cat;
 }
 
-sub FetchDataFromSite
-{
-  my $self = shift;
-  my( $batch_id, $data ) = @_;
-
-  my( $year, $week, $ext ) = ($batch_id =~ /_20(\d+)-(\d+)(.*)/);
-
-  $ext = ".doc" unless $ext;
-
-  my $url = sprintf( "%stab%02d%02d%s", $self->{UrlRoot}, $week, $year, $ext );
-
-  my( $content, $code ) = MyGet( $url );
-  return( $content, $code );
-}
-  
 1;

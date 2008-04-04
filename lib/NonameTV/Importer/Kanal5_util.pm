@@ -30,7 +30,7 @@ use DateTime;
 use XML::LibXML;
 use POSIX qw/floor/;
 
-use NonameTV qw/Word2Xml Html2Xml norm AddCategory ParseDescCatSwe/;
+use NonameTV qw/Word2Xml Html2Xml ParseXml norm AddCategory ParseDescCatSwe/;
 use NonameTV::DataStore::Helper;
 use NonameTV::Log qw/info progress error logdie/;
 
@@ -58,6 +58,11 @@ sub ParseData
   {
     # This is an override that has already been run through wvHtml
     $doc = Html2Xml( $$cref );
+  }
+  elsif( $$cref =~ /^\<\?xml / )
+  {
+    # This has been run through Word2Xml already.
+    $doc = ParseXml( $cref );
   }
   else
   {
