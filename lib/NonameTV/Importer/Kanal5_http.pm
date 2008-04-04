@@ -43,6 +43,15 @@ sub Object2Url {
   return( $url, undef );
 }
 
+sub ContentExtension {
+  return 'doc';
+}
+
+sub FilteredExtension {
+  return 'xml';
+}
+
+
 sub FilterContent {
   my $self = shift;
   my( $cref, $chd ) = @_;
