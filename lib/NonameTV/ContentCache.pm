@@ -92,6 +92,14 @@ sub new {
   my $ua = LWP::UserAgent->new( agent => $self->{useragent}, 
 				cookie_jar => {} );
 
+  if( defined $self->{credentials} ) {
+    foreach my $cred (keys %{$self->{credentials}}) {
+      my( $host_port, $realm ) = split( "::",  $cred );
+      my( $user, $pass ) = split( "::", $self->{credentials}->{$cred} );
+      $ua->credentials( $host_port, $realm, $user, $pass );
+    }
+  }
+
   $self->{ua} = $ua;
 
   return $self;

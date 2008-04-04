@@ -58,9 +58,8 @@ sub new {
     $name =~ s/.*:://;
 
     $self->{cc} = NonameTV::ContentCache->new( { 
-      #basedir => "/var/local/nonametv/contentcache/" . 
-      basedir => $conf->{ContentCachePath} .
-          $name,
+      basedir => $conf->{ContentCachePath} . $name,
+      credentials => $conf->{ContentCacheCredentials},
       callbackobject => $self,
       warnafter => 23*60*60,
       useragent => "Grabber from http://tv.swedb.se", 
