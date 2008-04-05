@@ -13,7 +13,7 @@ use warnings;
 use DateTime;
 use XML::LibXML;
 
-use NonameTV qw/MyGet norm Html2Xml/;
+use NonameTV qw/MyGet norm Html2Xml ParseXml/;
 use NonameTV::DataStore::Helper;
 use NonameTV::Log qw/info progress error logdie/;
 
@@ -37,6 +37,57 @@ sub new {
     return $self;
 }
 
+sub Object2Url {
+  my $self = shift;
+  my( $objectname, $chd ) = @_;
+
+  my( $date ) = ($objectname =~ /_(.*)/);
+
+  # Date should be in format yyyymmdd.
+  $date =~ tr/-//d;
+
+  my $u = URI->new($self->{UrlRoot});
+  $u->query_form( {
+    chn => $chd->{grabber_info},
+    date => $date,
+  });
+
+  print "URL: " . $u->as_string() . "\n";
+  return( $u->as_string(), undef );
+}
+
+sub FilterContent {
+  my $self = shift;
+  my( $cref, $chd ) = @_;
+
+  my $doc = Html2Xml( $$cref );
+  
+  if( not defined $doc ) {
+    return (undef, "Html2Xml failed" );
+  } 
+
+  my $ns = $doc->find( "//@*" );
+
+  # Remove all attributes that we ignore anyway.
+  foreach my $attr ($ns->get_nodelist) {
+    if( $attr->nodeName() ne "class" ) {
+      $attr->unbindNode();
+    }
+  }
+
+  my $str = $doc->toString(1);
+
+  return( \$str, undef );
+}
+
+sub ContentExtension {
+  return 'html';
+}
+
+sub FilteredExtension {
+  return 'xml';
+}
+
 sub ImportContent
 {
   my $self = shift;
@@ -47,8 +98,8 @@ sub ImportContent
 
   my( $date ) = ($batch_id =~ /_(.*)$/);
 
-  my $doc = Html2Xml( $$cref );
-  
+  my $doc = ParseXml( $cref );
+
   if( not defined( $doc ) )
   {
     error( "$batch_id: Failed to parse." );
