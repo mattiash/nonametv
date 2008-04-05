@@ -32,21 +32,18 @@
 34,"MTV Nordic",nordic.mtve.com,,Mtve,1,1,1,,,en,0,\N
 35,Kunskapskanalen,kunskapskanalen.svt.se,,Svt,1,Kunskapskanalen,1,,,sv,0,\N
 36,SVT24,svt24.svt.se,,Svt,1,24,1,,,sv,0,\N
-38,"Disney Channel",disneychannel.se,,Infomedia,1,DSE,1,,Children's,en,0,
 40,"Discovery Civilisation",nordic.civilisation.discovery.com,,Discovery_xml,1,CISWE,1,,,sv,0,
 41,"Discovery Travel & Living",nordic.travel.discovery.com,,Discovery_xml,1,TLSWE,1,,,sv,0,
 42,"Discovery Science",nordic.science.discovery.com,,Discovery_xml,1,SCSWE,1,,,sv,0,
 43,"Discovery Mix",nordic.mix.discovery.com,,Combiner,1,,0,,,sv,0,\N
 44,Kunskap/Barnkanalen,kunskapbarn.svt.se,,Combiner,1,,1,,,sv,0,\N
 46,"Eurosport 2",eurosport2.eurosport.com,,Eurosport,1,Eurosport2,1,sports,Sports,sv,0,\N
-47,"Toon Disney",toon.disneychannel.se,,Infomedia,1,TOE,1,,Children's,en,0,
 48,"CANAL+ Drama",drama.canalplus.se,,CanalPlus,1,9,1,,,sv,0,\N
 50,"CANAL+ Hits Sport Weekend",hits-sport-weekend.canalplus.se,,CanalPlus,1,14,0,,,sv,0,
 51,"TV4 Fakta",fakta.tv4.se,,TV4,1,7,1,,,sv,0,\N
 53,VH1,vh1.com,,Mtve,1,3,1,,,en,0,\N
 54,Nature/Crime/Nickelodeon,viasat-nature-nick.spa.se,,Combiner,1,,0,,,sv,0,\N
 55,TV6,tv6.viasat.se,,Viasat,1,tv6_se_,1,,,sv,0,\N
-57,"Playhouse Disney",playhouse.disneychannel.se,,Infomedia,1,PDE,0,,Children's,en,0,
 58,"SVT HD",hd.svt.se,,Svt,1,"SVT HD",0,,,sv,1,
 59,"TV4 Komedi",komedi.tv4.se,,TV4,1,9,1,,,sv,0,
 60,"TV4 Guld",guld.tv4.se,,TV4,1,8,1,,,sv,0,
