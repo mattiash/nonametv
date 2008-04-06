@@ -20,15 +20,15 @@ use fields qw/die_on_error dbh/;
 
 sub new {
   my SQLAbstraction $self = shift;
-  my( $p, $first ) = @_;
+  my ( $p, $first ) = @_;
 
-  if( not ref $self ) {
-    $self = fields::new( $self );
+  if ( not ref $self ) {
+    $self = fields::new($self);
   }
 
   my @required_params = qw( );
   my %optional_params = ( die_on_error => 1 );
-  
+
   # Initialize new properties.
   $self->init( $p, \@required_params, \%optional_params );
 
@@ -38,11 +38,11 @@ sub new {
 
 sub init {
   my SQLAbstraction $self = shift;
-  
-  my( $p, $required, $optional ) = @_;
 
-  foreach my $param (keys %{$optional}) {
-    if( exists( $p->{$param} ) ){
+  my ( $p, $required, $optional ) = @_;
+
+  foreach my $param ( keys %{$optional} ) {
+    if ( exists( $p->{$param} ) ) {
       $self->{$param} = $p->{$param};
       delete( $p->{$param} );
     }
@@ -51,8 +51,8 @@ sub init {
     }
   }
 
-  foreach my $param (@{$required}) {
-    if( exists( $p->{$param} ) ) {
+  foreach my $param ( @{$required} ) {
+    if ( exists( $p->{$param} ) ) {
       $self->{$param} = $p->{$param};
       delete( $p->{$param} );
     }
@@ -64,19 +64,19 @@ sub init {
 
 sub check_unknown {
   my SQLAbstraction $self = shift;
-  my( $p, $first ) = @_;
+  my ( $p, $first ) = @_;
 
-  if( not( defined( $first ) ) and (scalar(%{$p})) ) {
-    my( $callingclass ) = caller;
-    croak "Unknown parameters to " . $callingclass . "::new " . 
-      join ", ", keys %{$p};
+  if ( not( defined($first) ) and ( scalar( %{$p} ) ) ) {
+    my ($callingclass) = caller;
+    croak "Unknown parameters to " . $callingclass . "::new " . join ", ",
+      keys %{$p};
   }
 }
 
 sub DESTROY {
   my SQLAbstraction $self = shift;
 
-  $self->{dbh}->disconnect() 
+  $self->{dbh}->disconnect()
     if defined( $self->{dbh} );
 }
 
@@ -107,30 +107,29 @@ with field-names and values.
 
 =cut
 
-sub Count
-{
+sub Count {
   my $self = shift;
-  my( $table, $args ) = @_;
+  my ( $table, $args ) = @_;
 
-  my $dbh=$self->{dbh};
+  my $dbh = $self->{dbh};
 
-  my @where = ("(1)");
+  my @where  = ("(1)");
   my @values = ();
 
   map { push @where, "($_ = ?)"; push @values, $args->{$_}; }
-      sort keys %{$args};
+    sort keys %{$args};
 
   my $where = join " and ", @where;
   my $sql = "select count(*) from $table where $where";
 
-  my $sth = $dbh->prepare( $sql )
-      or die "Prepare failed. $sql\nError: " . $dbh->errstr;
+  my $sth = $dbh->prepare($sql)
+    or die "Prepare failed. $sql\nError: " . $dbh->errstr;
 
-  $sth->execute( @values ) 
-      or die "Execute failed. $sql\nError: " . $dbh->errstr;
+  $sth->execute(@values)
+    or die "Execute failed. $sql\nError: " . $dbh->errstr;
 
-  my $aref=$sth->fetchrow_arrayref;
-  my $res=$aref->[0];
+  my $aref = $sth->fetchrow_arrayref;
+  my $res  = $aref->[0];
   $sth->finish;
   return $res;
 }
@@ -143,26 +142,25 @@ with field-names and values. Returns the number of deleted records.
 
 =cut
 
-sub Delete
-{
+sub Delete {
   my $self = shift;
-  my( $table, $args ) = @_;
+  my ( $table, $args ) = @_;
 
-  my $dbh=$self->{dbh};
+  my $dbh = $self->{dbh};
 
-  my @where = ("(1)");
+  my @where  = ("(1)");
   my @values = ();
 
   map { push @where, "($_ = ?)"; push @values, $args->{$_}; }
-      sort keys %{$args};
+    sort keys %{$args};
 
   my $where = join " and ", @where;
   my $sql = "delete from $table where $where";
 
-  my $sth = $dbh->prepare_cached( $sql )
-      or die "Prepare failed. $sql\nError: " . $dbh->errstr;
+  my $sth = $dbh->prepare_cached($sql)
+    or die "Prepare failed. $sql\nError: " . $dbh->errstr;
 
-  my $res = $sth->execute( @values );
+  my $res = $sth->execute(@values);
   $sth->finish;
 
   return $res;
@@ -177,31 +175,30 @@ Returns the primary key assigned to the new record or -1 if the Add failed.
 
 =cut 
 
-sub Add
-{
+sub Add {
   my $self = shift;
-  my( $table, $args, $die_on_error ) = @_;
+  my ( $table, $args, $die_on_error ) = @_;
 
-  $die_on_error = 1 unless defined( $die_on_error );
+  $die_on_error = 1 unless defined($die_on_error);
 
-  my $dbh=$self->{dbh};
+  my $dbh = $self->{dbh};
 
   my @fields = ();
   my @values = ();
 
   map { push @fields, "$_ = ?"; push @values, $args->{$_}; }
-      sort keys %{$args};
+    sort keys %{$args};
 
   my $fields = join ", ", @fields;
   my $sql = "insert into $table set $fields";
 
-  my $sth = $dbh->prepare_cached( $sql )
-      or die "Prepare failed. $sql\nError: " . $dbh->errstr;
+  my $sth = $dbh->prepare_cached($sql)
+    or die "Prepare failed. $sql\nError: " . $dbh->errstr;
 
   $sth->{PrintError} = 0;
 
-  if( not $sth->execute( @values ) ) {
-    if( $self->{die_on_error} )  {
+  if ( not $sth->execute(@values) ) {
+    if ( $self->{die_on_error} ) {
       die "Execute failed. $sql\nError: " . $dbh->errstr;
     }
     else {
@@ -210,7 +207,7 @@ sub Add
       return -1;
     }
   }
-  
+
   $sth->finish();
 
   return $self->last_inserted_id();
@@ -229,32 +226,32 @@ Example:
 
 sub Update {
   my $self = shift;
-  my( $table, $args, $new_values ) = @_;
+  my ( $table, $args, $new_values ) = @_;
 
-  my $dbh=$self->{dbh};
+  my $dbh = $self->{dbh};
 
-  my @where = ("(1)");
+  my @where  = ("(1)");
   my @values = ();
 
   map { push @where, "($_ = ?)"; push @values, $args->{$_}; }
-      sort keys %{$args};
+    sort keys %{$args};
 
   my $where = join " and ", @where;
 
-  my @set = ();
+  my @set       = ();
   my @setvalues = ();
   map { push @set, "$_ = ?"; push @setvalues, $new_values->{$_}; }
-      sort keys %{$new_values};
+    sort keys %{$new_values};
 
   my $setexpr = join ", ", @set;
 
   my $sql = "UPDATE $table SET $setexpr WHERE $where";
 
-  my $sth = $dbh->prepare( $sql )
-      or die "Prepare failed. $sql\nError: " . $dbh->errstr;
+  my $sth = $dbh->prepare($sql)
+    or die "Prepare failed. $sql\nError: " . $dbh->errstr;
 
-  my $res = $sth->execute( @setvalues, @values ) 
-      or die "Execute failed. $sql\nError: " . $dbh->errstr;
+  my $res = $sth->execute( @setvalues, @values )
+    or die "Execute failed. $sql\nError: " . $dbh->errstr;
 
   $sth->finish();
 
@@ -275,36 +272,36 @@ If $args fails to identify one unique record, undef is returned.
 
 sub Lookup {
   my $self = shift;
-  my( $table, $args, $field ) = @_;
+  my ( $table, $args, $field ) = @_;
 
-  my $dbh=$self->{dbh};
+  my $dbh = $self->{dbh};
 
-  my @where = ("(1)");
+  my @where  = ("(1)");
   my @values = ();
 
   map { push @where, "($_ = ?)"; push @values, $args->{$_}; }
-      sort keys %{$args};
+    sort keys %{$args};
 
   my $where = join " and ", @where;
 
   my $sql;
 
-  if( defined $field ) {
+  if ( defined $field ) {
     $sql = "SELECT $field FROM $table WHERE $where";
   }
   else {
     $sql = "SELECT * FROM $table WHERE $where";
   }
 
-  my $sth = $dbh->prepare_cached( $sql )
-      or die "Prepare failed. $sql\nError: " . $dbh->errstr;
+  my $sth = $dbh->prepare_cached($sql)
+    or die "Prepare failed. $sql\nError: " . $dbh->errstr;
 
-  my $res = $sth->execute( @values ) 
-      or die "Execute failed. $sql\nError: " . $dbh->errstr;
-  
+  my $res = $sth->execute(@values)
+    or die "Execute failed. $sql\nError: " . $dbh->errstr;
+
   my $row = $sth->fetchrow_hashref;
 
-  if( not defined( $row ) ) {
+  if ( not defined($row) ) {
     $sth->finish();
     return undef;
   }
@@ -312,8 +309,8 @@ sub Lookup {
   my $row2 = $sth->fetchrow_hashref;
   $sth->finish();
 
-  die "More than one record returned by $sql (" . join( ", ", @values) . ")"
-      if( defined $row2 );
+  die "More than one record returned by $sql (" . join( ", ", @values ) . ")"
+    if ( defined $row2 );
 
   return $row->{$field} if defined $field;
   return $row;
@@ -328,33 +325,33 @@ as an iterator. Can also take several field-arguments.
 
 sub Iterate {
   my $self = shift;
-  my( $table, $args, @fields ) = @_;
+  my ( $table, $args, @fields ) = @_;
 
-  my $dbh=$self->{dbh};
+  my $dbh = $self->{dbh};
 
-  my @where = ("(1)");
+  my @where  = ("(1)");
   my @values = ();
 
   map { push @where, "($_ = ?)"; push @values, $args->{$_}; }
-      sort keys %{$args};
+    sort keys %{$args};
 
   my $where = join " and ", @where;
 
   my $sql;
 
-  if( scalar( @fields ) > 0 ) {
-    $sql = "SELECT " . join(",", @fields ) . " FROM $table WHERE $where";
+  if ( scalar(@fields) > 0 ) {
+    $sql = "SELECT " . join( ",", @fields ) . " FROM $table WHERE $where";
   }
   else {
     $sql = "SELECT * FROM $table WHERE $where";
   }
 
-  my $sth = $dbh->prepare( $sql )
-      or die "Prepare failed. $sql\nError: " . $dbh->errstr;
+  my $sth = $dbh->prepare($sql)
+    or die "Prepare failed. $sql\nError: " . $dbh->errstr;
 
-  my $res = $sth->execute( @values ) 
-      or die "Execute failed. $sql\nError: " . $dbh->errstr;
-  
+  my $res = $sth->execute(@values)
+    or die "Execute failed. $sql\nError: " . $dbh->errstr;
+
   return undef if $res == 0;
 
   return $sth;
@@ -362,24 +359,24 @@ sub Iterate {
 
 sub Sql {
   my SQLAbstraction $self = shift;
-  my( $sqlexpr, $values ) = @_;
+  my ( $sqlexpr, $values ) = @_;
 
-  my $dbh=$self->{dbh};
+  my $dbh = $self->{dbh};
 
-  my $sth = $dbh->prepare( $sqlexpr )
-      or die "Prepare failed. $sqlexpr\nError: " . $dbh->errstr;
+  my $sth = $dbh->prepare($sqlexpr)
+    or die "Prepare failed. $sqlexpr\nError: " . $dbh->errstr;
 
-  my $res = $sth->execute( @{$values} ) 
-      or die "Execute failed. $sqlexpr\nError: " . $dbh->errstr;
+  my $res = $sth->execute( @{$values} )
+    or die "Execute failed. $sqlexpr\nError: " . $dbh->errstr;
 
-  return ($res, $sth);
+  return ( $res, $sth );
 }
 
 sub DoSql {
   my SQLAbstraction $self = shift;
-  my( $sqlexpr, $values ) = @_;
+  my ( $sqlexpr, $values ) = @_;
 
-  my( $res, $sth ) = $self->Sql( $sqlexpr, $values );
+  my ( $res, $sth ) = $self->Sql( $sqlexpr, $values );
 
   $sth->finish();
 }

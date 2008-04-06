@@ -47,39 +47,38 @@ Specifies how to connect to the MySQL database.
 
 =cut
 
-sub new
-{
+sub new {
   my $class = ref( $_[0] ) || $_[0];
 
-  my $self = { }; 
+  my $self = {};
   bless $self, $class;
 
   # Copy the parameters supplied in the constructor.
-  foreach my $key (keys(%{$_[1]}))
-  {
-      $self->{$key} = ($_[1])->{$key};
+  foreach my $key ( keys( %{ $_[1] } ) ) {
+    $self->{$key} = ( $_[1] )->{$key};
   }
 
-  defined( $self->{type} ) and $self->{type} eq "MySQL" 
+  defined( $self->{type} ) and $self->{type} eq "MySQL"
     or die "type must be MySQL: $self->{type}";
 
-  defined( $self->{dbhost} ) or die "You must specify dbhost";
-  defined( $self->{dbname} ) or die "You must specify dbname";
+  defined( $self->{dbhost} )   or die "You must specify dbhost";
+  defined( $self->{dbname} )   or die "You must specify dbname";
   defined( $self->{username} ) or die "You must specify username";
   defined( $self->{password} ) or die "You must specify password";
 
-  $self->{sa} = SQLAbstraction::mysql->new( 
+  $self->{sa} = SQLAbstraction::mysql->new(
     {
-      dbhost => $self->{dbhost},
-      dbname => $self->{dbname},
-      dbuser => $self->{username},
+      dbhost     => $self->{dbhost},
+      dbname     => $self->{dbname},
+      dbuser     => $self->{username},
       dbpassword => $self->{password},
-    } );
+    }
+  );
 
   $self->{sa}->Connect();
 
   $self->{SILENCE_END_START_OVERLAP} = 0;
-  $self->{SILENCE_DUPLICATE_SKIP} = 0;
+  $self->{SILENCE_DUPLICATE_SKIP}    = 0;
 
   return $self;
 }
@@ -103,53 +102,47 @@ a set of programmes.
 
 =cut
 
-sub StartBatch
-{
-  my( $self, $batchname ) = @_;
+sub StartBatch {
+  my ( $self, $batchname ) = @_;
 
-  confess( "Nested calls to StartBatch" )
-    if( defined( $self->{currbatch} ) );
-  
+  confess("Nested calls to StartBatch")
+    if ( defined( $self->{currbatch} ) );
+
   my $id = $self->{sa}->Lookup( 'batches', { name => $batchname }, 'id' );
 
-  if( defined( $id ) )
-  {
-    $self->{sa}->DoSql( "START TRANSACTION" );
+  if ( defined($id) ) {
+    $self->{sa}->DoSql("START TRANSACTION");
     $self->{sa}->Delete( 'programs', { batch_id => $id } );
   }
-  else
-  {
+  else {
     $id = $self->{sa}->Add( 'batches', { name => $batchname } );
-    $self->{sa}->DoSql( "START TRANSACTION" );
+    $self->{sa}->DoSql("START TRANSACTION");
   }
-    
+
   $self->{last_start} = "1970-01-01 00:00:00";
-  $self->{last_prog} = undef;
+  $self->{last_prog}  = undef;
 
   $self->SetBatch( $id, $batchname );
 }
 
 # Hidden method used internally and by DataStore::Updater.
-sub SetBatch
-{
+sub SetBatch {
   my $self = shift;
-  my( $id, $batchname ) = @_;
+  my ( $id, $batchname ) = @_;
 
-  $self->{currbatch} = $id;
+  $self->{currbatch}     = $id;
   $self->{currbatchname} = $batchname;
-  $self->{batcherror} = 0;
+  $self->{batcherror}    = 0;
 }
 
 # Hidden method used internally and by DataStore::Updater.
-sub ClearBatch
-{
+sub ClearBatch {
   my $self = shift;
 
   delete $self->{currbatch};
   delete $self->{currbatchname};
   delete $self->{batcherror};
 }
-
 
 =item EndBatch
 
@@ -168,44 +161,42 @@ is not stored. The log-message can be undef.
 
 =cut
 
-sub EndBatch
-{
-  my( $self, $success, $log ) = @_;
-  
-  confess( "EndBatch called without StartBatch" )
+sub EndBatch {
+  my ( $self, $success, $log ) = @_;
+
+  confess("EndBatch called without StartBatch")
     unless defined( $self->{currbatch} );
-  
+
   $log = "" if not defined $log;
 
-  $self->AddLastProgramme( undef );
+  $self->AddLastProgramme(undef);
 
-  if( $success == 0 or $self->{batcherror} )
-  {
+  if ( $success == 0 or $self->{batcherror} ) {
     $self->{sa}->DoSql("Rollback");
     error( $self->{currbatchname} . ": Rolling back changes" );
 
-    if( defined( $log ) )
-    {
+    if ( defined($log) ) {
       $self->SetBatchAbortMessage( $self->{currbatch}, $log );
     }
   }
-  elsif( $success==1 )
-  {
-    $self->{sa}->Update( 'batches', { id => $self->{currbatch} }, 
-                   { last_update => time(),
-                     message => $log,
-                     abort_message => "",
-                   } );
+  elsif ( $success == 1 ) {
+    $self->{sa}->Update(
+      'batches',
+      { id => $self->{currbatch} },
+      {
+        last_update   => time(),
+        message       => $log,
+        abort_message => "",
+      }
+    );
 
     $self->{sa}->DoSql("Commit");
   }
-  elsif( $success == -1 )
-  {
+  elsif ( $success == -1 ) {
     $self->{sa}->DoSql("Rollback");
   }
-  else
-  {
-    confess( "Wrong value for success" );
+  else {
+    confess("Wrong value for success");
   }
 
   delete $self->{currbatch};
@@ -213,12 +204,11 @@ sub EndBatch
 
 sub SetBatchAbortMessage {
   my $self = shift;
-  my( $batch, $message ) = @_;
+  my ( $batch, $message ) = @_;
 
-  $self->{sa}->Update( 'batches', { id => $batch },
-		 { abort_message => $message } );
+  $self->{sa}
+    ->Update( 'batches', { id => $batch }, { abort_message => $message } );
 }
-
 
 =item AddProgramme
 
@@ -252,31 +242,32 @@ programme explicitly, or add a special program like this:
 
 =cut
 
-sub AddProgramme
-{
-  my( $self, $data ) = @_;
+sub AddProgramme {
+  my ( $self, $data ) = @_;
 
-  logdie( "You must call StartBatch before AddProgramme" ) 
+  logdie("You must call StartBatch before AddProgramme")
     unless exists $self->{currbatch};
 
-  logdie( "Required item channel_id missing in call to NonameTV::DataStore::AddProgramme" ) 
-      if not defined( $data->{channel_id} );
+  logdie(
+"Required item channel_id missing in call to NonameTV::DataStore::AddProgramme"
+  ) if not defined( $data->{channel_id} );
 
   return if $self->{batcherror};
-  
-  if( ( $data->{start_time} eq $self->{last_start} )
-      and ($data->{title} = $self->{last_title} ) )
+
+  if (  ( $data->{start_time} eq $self->{last_start} )
+    and ( $data->{title} = $self->{last_title} ) )
   {
-    error( $self->{currbatchname} . 
-           ": Skipping duplicate entry for $data->{start_time}" )
+    error( $self->{currbatchname}
+        . ": Skipping duplicate entry for $data->{start_time}" )
       unless $self->{SILENCE_DUPLICATE_SKIP};
-    return
+    return;
   }
-  elsif( $data->{start_time} le $self->{last_start} )
-  {
-    error( $self->{currbatchname} . 
-      ": Starttime must be later than last starttime: " . 
-      $self->{last_start} . " -> " . $data->{start_time} . ": " . $data->{title} );
+  elsif ( $data->{start_time} le $self->{last_start} ) {
+    error($self->{currbatchname}
+        . ": Starttime must be later than last starttime: "
+        . $self->{last_start} . " -> "
+        . $data->{start_time} . ": "
+        . $data->{title} );
     return;
   }
 
@@ -285,60 +276,55 @@ sub AddProgramme
   $self->{last_start} = $data->{start_time};
   $self->{last_title} = $data->{title};
 
-  if( $data->{title} eq 'end-of-transmission' )
-  {
+  if ( $data->{title} eq 'end-of-transmission' ) {
+
     # We have already added all the necessary info with the call to
     # AddLastProgramme. Do not add an explicit entry for end-of-transmission
     # since this might collide with the start of tomorrows shows.
     return;
   }
 
-
-  if( exists( $data->{end_time} ) )
-  {
-    if( $data->{start_time} ge $data->{end_time} )
-    {
-      error( $self->{currbatchname} . 
-	  ": Stoptime must be later than starttime: " . 
-	  $data->{start_time} . " -> " . $data->{end_time} . ": " . $data->{title} );
+  if ( exists( $data->{end_time} ) ) {
+    if ( $data->{start_time} ge $data->{end_time} ) {
+      error($self->{currbatchname}
+          . ": Stoptime must be later than starttime: "
+          . $data->{start_time} . " -> "
+          . $data->{end_time} . ": "
+          . $data->{title} );
       return;
     }
   }
 
-  FixProgrammeData( $data );
+  FixProgrammeData($data);
 
-  $self->{last_prog} = dclone( $data );
+  $self->{last_prog} = dclone($data);
 }
 
-sub AddLastProgramme
-{
+sub AddLastProgramme {
   my $self = shift;
-  my( $nextstart ) = @_;
+  my ($nextstart) = @_;
 
   my $data = $self->{last_prog};
   return if not defined $data;
 
-  if( defined( $nextstart ) )
-  {
-    if( defined( $data->{end_time} ) )
-    {
-      if( $nextstart lt $data->{end_time} )
-      {
-        error( $self->{currbatchname} . 
-               " Starttime must be later than or equal to last endtime: " . 
-               $data->{end_time} . " -> " . $nextstart ) 
+  if ( defined($nextstart) ) {
+    if ( defined( $data->{end_time} ) ) {
+      if ( $nextstart lt $data->{end_time} ) {
+        error($self->{currbatchname}
+            . " Starttime must be later than or equal to last endtime: "
+            . $data->{end_time} . " -> "
+            . $nextstart )
           unless $self->{SILENCE_END_START_OVERLAP};
 
         $data->{end_time} = $nextstart;
       }
     }
-    else
-    {
+    else {
       $data->{end_time} = $nextstart;
     }
   }
 
-  $self->AddProgrammeRaw( $data );
+  $self->AddProgrammeRaw($data);
   $self->{last_prog} = undef;
 }
 
@@ -349,89 +335,84 @@ require that the programmes are added in order.
 
 =cut
 
-sub AddProgrammeRaw
-{
-  my( $self, $data ) = @_;
-  
-  logdie( "You must call StartBatch before AddProgramme" ) 
+sub AddProgrammeRaw {
+  my ( $self, $data ) = @_;
+
+  logdie("You must call StartBatch before AddProgramme")
     unless exists $self->{currbatch};
 
   return if $self->{batcherror};
-  
-  if( $data->{title} !~ /\S/ )
-  {
+
+  if ( $data->{title} !~ /\S/ ) {
     error( $self->{currbatchname} . ": Empty title at " . $data->{start_time} );
     $data->{title} = "end-of-transmission";
   }
 
   $data->{batch_id} = $self->{currbatch};
 
-  if( not defined( $data->{category} ) )
-  {
+  if ( not defined( $data->{category} ) ) {
     delete( $data->{category} );
   }
 
-  if( not defined( $data->{program_type} ) )
-  {
+  if ( not defined( $data->{program_type} ) ) {
     delete( $data->{program_type} );
   }
 
-  
-  if( exists( $data->{description} ) and defined( $data->{description} ) )
-  {
+  if ( exists( $data->{description} ) and defined( $data->{description} ) ) {
+
     # Strip leading and trailing whitespace from description.
     $data->{description} =~ s/^\s+//;
     $data->{description} =~ s/\s+$//;
   }
 
-  if( $self->{sa}->Add( 'programs', $data, 0 ) == -1 )
-  {
+  if ( $self->{sa}->Add( 'programs', $data, 0 ) == -1 ) {
     my $err = $self->{dbh_errstr};
 
     # Check for common error-conditions
-    my $data_org = $self->{sa}->Lookup( "programs", 
-                                  { 
-                                    channel_id => $data->{channel_id},
-                                    start_time => $data->{start_time}
-                                  }
-                                  );
-
-    if( defined( $data_org ) )
-    {
-      if( $data_org->{title} eq "end-of-transmission" )
+    my $data_org = $self->{sa}->Lookup(
+      "programs",
       {
-        error( $self->{currbatchname} . ": Replacing end-of-transmission " .
-               "for $data->{channel_id}-$data->{start_time}" );
+        channel_id => $data->{channel_id},
+        start_time => $data->{start_time}
+      }
+    );
 
-        $self->{sa}->Delete( "programs", 
-                                  { 
-                                    channel_id => $data->{channel_id},
-                                    start_time => $data->{start_time}
-                                  }
-                       );
+    if ( defined($data_org) ) {
+      if ( $data_org->{title} eq "end-of-transmission" ) {
+        error($self->{currbatchname}
+            . ": Replacing end-of-transmission "
+            . "for $data->{channel_id}-$data->{start_time}" );
 
-        if( $self->{sa}->Add( 'programs', $data, 0 ) == -1 )
-        {
+        $self->{sa}->Delete(
+          "programs",
+          {
+            channel_id => $data->{channel_id},
+            start_time => $data->{start_time}
+          }
+        );
+
+        if ( $self->{sa}->Add( 'programs', $data, 0 ) == -1 ) {
           error( $self->{currbatchname} . ": " . $self->{dbh_errstr} );
           $self->{batcherror} = 1;
         }
       }
-      elsif( $data_org->{title} eq $data->{title} )
-      {
-        error( $self->{currbatchname} . ": Skipping duplicate entry " .
-               "for $data->{channel_id}-$data->{start_time}" ) 
+      elsif ( $data_org->{title} eq $data->{title} ) {
+        error($self->{currbatchname}
+            . ": Skipping duplicate entry "
+            . "for $data->{channel_id}-$data->{start_time}" )
           unless $self->{SILENCE_DUPLICATE_SKIP};
       }
-      else
-      {
-        error( $self->{currbatchname} . ": Duplicate programs " .
-               $data->{start_time} . ": '" . $data->{title} . "', '" . 
-               $data_org->{title} . "'" );
+      else {
+        error($self->{currbatchname}
+            . ": Duplicate programs "
+            . $data->{start_time} . ": '"
+            . $data->{title} . "', '"
+            . $data_org->{title}
+            . "'" );
         $self->{batcherror} = 1;
       }
     }
-    else
-    {
+    else {
       error( $self->{currbatchname} . ": $err" );
       $self->{batcherror} = 1;
     }
@@ -449,10 +430,9 @@ Returns the number of programs that were deleted.
 
 sub ClearChannel {
   my $self = shift;
-  my( $chid ) = @_;
+  my ($chid) = @_;
 
-  my $deleted = $self->{sa}->Delete( 'programs', 
-			       { channel_id => $chid } );
+  my $deleted = $self->{sa}->Delete( 'programs', { channel_id => $chid } );
 
   return $deleted;
 }
@@ -468,14 +448,14 @@ Takes one parameter: the name of the grabber.
 
 sub FindGrabberChannels {
   my $self = shift;
-  my( $grabber ) = @_;
+  my ($grabber) = @_;
 
   my @result;
 
   my $sth = $self->{sa}->Iterate( 'channels', { grabber => $grabber } )
-      or logdie( "$grabber: Failed to fetch grabber data" );
+    or logdie("$grabber: Failed to fetch grabber data");
 
-  while( my $data = $sth->fetchrow_hashref ) {
+  while ( my $data = $sth->fetchrow_hashref ) {
     push @result, $data;
   }
 
@@ -483,8 +463,7 @@ sub FindGrabberChannels {
 
   return @result;
 }
-  
-  
+
 =item LookupCat
 
 Lookup a category found in an infile and translate it to
@@ -495,18 +474,17 @@ a proper program_type and category for use in AddProgramme.
 
 =cut
 
-sub LookupCat
-{
+sub LookupCat {
   my $self = shift;
-  my( $type, $org ) = @_;
+  my ( $type, $org ) = @_;
 
-  return (undef, undef) if (not defined( $org )) or ($org !~ /\S/);
+  return ( undef, undef ) if ( not defined($org) ) or ( $org !~ /\S/ );
 
   $org =~ s/^\s+//;
   $org =~ s/\s+$//;
 
   # I should be using locales, but I don't dare turn them on.
-  $org = lc( $org );
+  $org = lc($org);
   $org =~ tr/ÅÄÖ/åäö/;
 
   # The field has room for 50 characters. Unicode may occupy
@@ -518,36 +496,31 @@ sub LookupCat
   $self->LoadCategories()
     if not exists( $self->{categories} );
 
-  
-  if( not exists( $self->{categories}->{"$type++$org"} ) )
-  {
+  if ( not exists( $self->{categories}->{"$type++$org"} ) ) {
+
     # MySQL considers some characters as equal, e.g. e and é.
     # Trying to insert both anime and animé will give an error-message
     # from MySql. Therefore, I try to lookup the new entry before adding
     # it to see if MySQL thinks it already exists. I should probably
     # normalize the strings before inserting them instead...
-    my $data = $self->Lookup( "trans_cat", 
-                              { type => $type, original => $org } );
-    if( defined( $data ) )
-    {
-      $self->{categories}->{ $type . "++" . $org}
-        = [$data->{program_type}, $data->{category} ];
+    my $data =
+      $self->Lookup( "trans_cat", { type => $type, original => $org } );
+    if ( defined($data) ) {
+      $self->{categories}->{ $type . "++" . $org } =
+        [ $data->{program_type}, $data->{category} ];
     }
-    else
-    {
+    else {
       $self->AddCategory( $type, $org );
     }
   }
 
-  if( defined( $self->{categories}->{"$type++$org"} ) )
-  {
-    return @{($self->{categories}->{"$type++$org"})};
+  if ( defined( $self->{categories}->{"$type++$org"} ) ) {
+    return @{ ( $self->{categories}->{"$type++$org"} ) };
   }
-  else
-  {
-    return (undef,undef);
+  else {
+    return ( undef, undef );
   }
-        
+
 }
 
 =item Reset
@@ -558,13 +531,11 @@ the next import.
 
 =cut
 
-sub Reset
-{
+sub Reset {
   my $self = shift;
 
-  if( defined( $self->{currbatch} ) ) 
-  {
-    $self->EndBatch( 0 );
+  if ( defined( $self->{currbatch} ) ) {
+    $self->EndBatch(0);
   }
 }
 
@@ -583,8 +554,7 @@ reverted.
 sub StartTransaction {
   my $self = shift;
 
-
-  $self->{sa}->DoSql( "START TRANSACTION" );
+  $self->{sa}->DoSql("START TRANSACTION");
 }
 
 =item EndTransaction
@@ -596,49 +566,49 @@ the transaction shall be committed (true) or reverted (false).
 
 sub EndTransaction {
   my $self = shift;
-  my( $commit ) = @_;
+  my ($commit) = @_;
 
-  if( $commit ) {
-    $self->{sa}->DoSql( "COMMIT" );
+  if ($commit) {
+    $self->{sa}->DoSql("COMMIT");
   }
   else {
-    $self->{sa}->DoSql( "ROLLBACK" );
+    $self->{sa}->DoSql("ROLLBACK");
   }
 }
 
-
-sub LoadCategories
-{
+sub LoadCategories {
   my $self = shift;
 
   my $d = {};
 
   my $sth = $self->{sa}->Iterate( 'trans_cat', {} );
-  if( not defined( $sth ) )
-  {
+  if ( not defined($sth) ) {
     $self->{categories} = {};
-    error( "No categories found in database." );
+    error("No categories found in database.");
     return;
   }
 
-  while( my $data = $sth->fetchrow_hashref() )
-  {
-    $d->{$data->{type} . "++" . $data->{original}} = [$data->{program_type},
-                                                      $data->{category} ];
+  while ( my $data = $sth->fetchrow_hashref() ) {
+    $d->{ $data->{type} . "++" . $data->{original} } =
+      [ $data->{program_type}, $data->{category} ];
   }
   $sth->finish();
 
   $self->{categories} = $d;
 }
 
-sub AddCategory
-{
+sub AddCategory {
   my $self = shift;
-  my( $type, $org ) = @_;
+  my ( $type, $org ) = @_;
 
-  $self->{sa}->Add( 'trans_cat', { type => $type,
-                             original => $org } );
-  $self->{categories}->{"$type++$org"} = [undef,undef];
+  $self->{sa}->Add(
+    'trans_cat',
+    {
+      type     => $type,
+      original => $org
+    }
+  );
+  $self->{categories}->{"$type++$org"} = [ undef, undef ];
 }
 
 =back 
