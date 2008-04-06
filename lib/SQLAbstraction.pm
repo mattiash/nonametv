@@ -84,11 +84,17 @@ sub DESTROY {
 
 =over 4
 
+=item Connect 
+
+  $sa->Connect();
+
+=cut
 
 sub Connect {
   my $self = shift();
 
-  $self->{dbh} = 1;
+  die "You need to override Connect()";
+
 }
 
 =over 4

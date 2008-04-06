@@ -43,9 +43,8 @@ sub Connect {
 
   my $host = $self->{dbhost};
   my $database = $self->{dbname};
-  my $driver = 'mysql';
   
-  my $dsn = "DBI:$driver:database=$database;host=$host";
+  my $dsn = "DBI:mysql:database=$database;host=$host";
   
   $self->{dbh} = UTF8DBI->connect($dsn, $self->{dbuser}, $self->{dbpassword})
       or die "Cannot connect: " . $DBI::errstr;
@@ -59,7 +58,8 @@ sub Connect {
 sub last_inserted_id {
   my SQLAbstraction::mysql $self = shift;
   
-  return $self->{dbh}->{’mysql_insertid’};
+  return $self->{dbh}->{'mysql_insertid'};
 }
+
 1;
 

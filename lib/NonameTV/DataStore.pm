@@ -4,8 +4,9 @@ use strict;
 
 use NonameTV qw/FixProgrammeData/;
 use NonameTV::Log qw/info progress error logdie/;
+use SQLAbstraction::mysql;
+
 use Carp qw/confess/;
-use UTF8DBI;
 
 use Storable qw/dclone/;
 use Encode qw/decode_utf8/;
@@ -67,31 +68,20 @@ sub new
   defined( $self->{username} ) or die "You must specify username";
   defined( $self->{password} ) or die "You must specify password";
 
-  my $host = $self->{dbhost};
-  my $database = $self->{dbname};
-  my $driver = 'mysql';
-  
-  my $dsn = "DBI:$driver:database=$database;host=$host";
-  
-  $self->{dbh} = UTF8DBI->connect($dsn, $self->{username}, $self->{password})
-      or die "Cannot connect: " . $DBI::errstr;
+  $self->{sa} = SQLAbstraction::mysql->new( 
+    {
+      dbhost => $self->{dbhost},
+      dbname => $self->{dbname},
+      dbuser => $self->{username},
+      dbpassword => $self->{password},
+    } );
 
-
-  $self->{dbh}->do("set character set utf8");
-  $self->{dbh}->do("set names utf8");
+  $self->{sa}->Connect();
 
   $self->{SILENCE_END_START_OVERLAP} = 0;
   $self->{SILENCE_DUPLICATE_SKIP} = 0;
 
   return $self;
-}
-
-sub DESTROY
-{
-  my $self = shift;
-
-  $self->{dbh}->disconnect() 
-    if defined( $self->{dbh} );
 }
 
 =item Creating a new batch
@@ -120,17 +110,17 @@ sub StartBatch
   confess( "Nested calls to StartBatch" )
     if( defined( $self->{currbatch} ) );
   
-  my $id = $self->Lookup( 'batches', { name => $batchname }, 'id' );
+  my $id = $self->{sa}->Lookup( 'batches', { name => $batchname }, 'id' );
 
   if( defined( $id ) )
   {
-    $self->DoSql( "START TRANSACTION" );
-    $self->Delete( 'programs', { batch_id => $id } );
+    $self->{sa}->DoSql( "START TRANSACTION" );
+    $self->{sa}->Delete( 'programs', { batch_id => $id } );
   }
   else
   {
-    $id = $self->Add( 'batches', { name => $batchname } );
-    $self->DoSql( "START TRANSACTION" );
+    $id = $self->{sa}->Add( 'batches', { name => $batchname } );
+    $self->{sa}->DoSql( "START TRANSACTION" );
   }
     
   $self->{last_start} = "1970-01-01 00:00:00";
@@ -191,7 +181,7 @@ sub EndBatch
 
   if( $success == 0 or $self->{batcherror} )
   {
-    $self->DoSql("Rollback");
+    $self->{sa}->DoSql("Rollback");
     error( $self->{currbatchname} . ": Rolling back changes" );
 
     if( defined( $log ) )
@@ -201,17 +191,17 @@ sub EndBatch
   }
   elsif( $success==1 )
   {
-    $self->Update( 'batches', { id => $self->{currbatch} }, 
+    $self->{sa}->Update( 'batches', { id => $self->{currbatch} }, 
                    { last_update => time(),
                      message => $log,
                      abort_message => "",
                    } );
 
-    $self->DoSql("Commit");
+    $self->{sa}->DoSql("Commit");
   }
   elsif( $success == -1 )
   {
-    $self->DoSql("Rollback");
+    $self->{sa}->DoSql("Rollback");
   }
   else
   {
@@ -225,7 +215,7 @@ sub SetBatchAbortMessage {
   my $self = shift;
   my( $batch, $message ) = @_;
 
-  $self->Update( 'batches', { id => $batch },
+  $self->{sa}->Update( 'batches', { id => $batch },
 		 { abort_message => $message } );
 }
 
@@ -394,12 +384,12 @@ sub AddProgrammeRaw
     $data->{description} =~ s/\s+$//;
   }
 
-  if( $self->Add( 'programs', $data, 0 ) == -1 )
+  if( $self->{sa}->Add( 'programs', $data, 0 ) == -1 )
   {
     my $err = $self->{dbh_errstr};
 
     # Check for common error-conditions
-    my $data_org = $self->Lookup( "programs", 
+    my $data_org = $self->{sa}->Lookup( "programs", 
                                   { 
                                     channel_id => $data->{channel_id},
                                     start_time => $data->{start_time}
@@ -413,14 +403,14 @@ sub AddProgrammeRaw
         error( $self->{currbatchname} . ": Replacing end-of-transmission " .
                "for $data->{channel_id}-$data->{start_time}" );
 
-        $self->Delete( "programs", 
+        $self->{sa}->Delete( "programs", 
                                   { 
                                     channel_id => $data->{channel_id},
                                     start_time => $data->{start_time}
                                   }
                        );
 
-        if( $self->Add( 'programs', $data, 0 ) == -1 )
+        if( $self->{sa}->Add( 'programs', $data, 0 ) == -1 )
         {
           error( $self->{currbatchname} . ": " . $self->{dbh_errstr} );
           $self->{batcherror} = 1;
@@ -461,7 +451,7 @@ sub ClearChannel {
   my $self = shift;
   my( $chid ) = @_;
 
-  my $deleted = $self->Delete( 'programs', 
+  my $deleted = $self->{sa}->Delete( 'programs', 
 			       { channel_id => $chid } );
 
   return $deleted;
@@ -482,7 +472,7 @@ sub FindGrabberChannels {
 
   my @result;
 
-  my $sth = $self->Iterate( 'channels', { grabber => $grabber } )
+  my $sth = $self->{sa}->Iterate( 'channels', { grabber => $grabber } )
       or logdie( "$grabber: Failed to fetch grabber data" );
 
   while( my $data = $sth->fetchrow_hashref ) {
@@ -594,7 +584,7 @@ sub StartTransaction {
   my $self = shift;
 
 
-  $self->DoSql( "START TRANSACTION" );
+  $self->{sa}->DoSql( "START TRANSACTION" );
 }
 
 =item EndTransaction
@@ -609,10 +599,10 @@ sub EndTransaction {
   my( $commit ) = @_;
 
   if( $commit ) {
-    $self->DoSql( "COMMIT" );
+    $self->{sa}->DoSql( "COMMIT" );
   }
   else {
-    $self->DoSql( "ROLLBACK" );
+    $self->{sa}->DoSql( "ROLLBACK" );
   }
 }
 
@@ -623,7 +613,7 @@ sub LoadCategories
 
   my $d = {};
 
-  my $sth = $self->Iterate( 'trans_cat', {} );
+  my $sth = $self->{sa}->Iterate( 'trans_cat', {} );
   if( not defined( $sth ) )
   {
     $self->{categories} = {};
@@ -646,317 +636,12 @@ sub AddCategory
   my $self = shift;
   my( $type, $org ) = @_;
 
-  $self->Add( 'trans_cat', { type => $type,
+  $self->{sa}->Add( 'trans_cat', { type => $type,
                              original => $org } );
   $self->{categories}->{"$type++$org"} = [undef,undef];
 }
 
 =back 
-
-=head1 SQL-like interface
-
-TBD. Should this interface really be public?
-
-=cut
-
-=over 4
-
-=item Count( $table, $args )
-
-Return the number of records in table $table matching $args. $table should
-be a string containing the name of a table, $args should be a hash-reference
-with field-names and values.
-
-=cut
-
-sub Count
-{
-  my $self = shift;
-  my( $table, $args ) = @_;
-
-  my $dbh=$self->{dbh};
-
-  my @where = ("(1)");
-  my @values = ();
-
-  map { push @where, "($_ = ?)"; push @values, $args->{$_}; }
-      sort keys %{$args};
-
-  my $where = join " and ", @where;
-  my $sql = "select count(*) from $table where $where";
-
-  my $sth = $dbh->prepare( $sql )
-      or die "Prepare failed. $sql\nError: " . $dbh->errstr;
-
-  $sth->execute( @values ) 
-      or die "Execute failed. $sql\nError: " . $dbh->errstr;
-
-  my $aref=$sth->fetchrow_arrayref;
-  my $res=$aref->[0];
-  $sth->finish;
-  return $res;
-}
-
-=item Delete( $table, $args )
-
-Delete all records in table $table matching $args. $table should
-be a string containing the name of a table, $args should be a hash-reference
-with field-names and values. Returns the number of deleted records.
-
-=cut
-
-sub Delete
-{
-  my $self = shift;
-  my( $table, $args ) = @_;
-
-  my $dbh=$self->{dbh};
-
-  my @where = ("(1)");
-  my @values = ();
-
-  map { push @where, "($_ = ?)"; push @values, $args->{$_}; }
-      sort keys %{$args};
-
-  my $where = join " and ", @where;
-  my $sql = "delete from $table where $where";
-
-  my $sth = $dbh->prepare_cached( $sql )
-      or die "Prepare failed. $sql\nError: " . $dbh->errstr;
-
-  my $res = $sth->execute( @values );
-  $sth->finish;
-
-  return $res;
-}
-
-=item Add( $table, $values, $die_on_error )
-
-Add a new record to a table. $table should be a string containing the name 
-of a table, $values should be a hash-reference with field-names and values.
-$die_on_error defaults to 1.
-Returns the primary key assigned to the new record or -1 if the Add failed.
-
-=cut 
-
-sub Add
-{
-  my $self = shift;
-  my( $table, $args, $die_on_error ) = @_;
-
-  $die_on_error = 1 unless defined( $die_on_error );
-
-  my $dbh=$self->{dbh};
-
-  my @fields = ();
-  my @values = ();
-
-  map { push @fields, "$_ = ?"; push @values, $args->{$_}; }
-      sort keys %{$args};
-
-  my $fields = join ", ", @fields;
-  my $sql = "insert into $table set $fields";
-
-  my $sth = $dbh->prepare_cached( $sql )
-      or die "Prepare failed. $sql\nError: " . $dbh->errstr;
-
-  $sth->{PrintError} = 0;
-
-  if( not $sth->execute( @values ) )
-  {
-    if( $die_on_error ) 
-    {
-      die "Execute failed. $sql\nError: " . $dbh->errstr;
-    }
-    else
-    {
-      $self->{dbh_errstr} = $dbh->errstr;
-      $sth->finish();
-      return -1;
-    }
-  }
-  
-  $sth->finish();
-
-  return $sth->{'mysql_insertid'};
-}
-
-=item Update( $table, $args, $new_values )
-
-Update all records matching $args. $table should be a string containing the name of a table, $args and $new_values should be a hash-reference with field-names and values. Returns the number of updated records.
-
-Example:
-    $ds->Update( "users", { uid => 1 }, 
-		 { lastname => "Holmlund", 
-		   firstname => "Mattias" } );
-
-=cut
-
-sub Update
-{
-  my $self = shift;
-  my( $table, $args, $new_values ) = @_;
-
-  my $dbh=$self->{dbh};
-
-  my @where = ("(1)");
-  my @values = ();
-
-  map { push @where, "($_ = ?)"; push @values, $args->{$_}; }
-      sort keys %{$args};
-
-  my $where = join " and ", @where;
-
-  my @set = ();
-  my @setvalues = ();
-  map { push @set, "$_ = ?"; push @setvalues, $new_values->{$_}; }
-      sort keys %{$new_values};
-
-  my $setexpr = join ", ", @set;
-
-  my $sql = "UPDATE $table SET $setexpr WHERE $where";
-
-  my $sth = $dbh->prepare( $sql )
-      or die "Prepare failed. $sql\nError: " . $dbh->errstr;
-
-  my $res = $sth->execute( @setvalues, @values ) 
-      or die "Execute failed. $sql\nError: " . $dbh->errstr;
-
-  $sth->finish();
-
-  return $res;
-}
-
-=item Lookup( $table, $args [, $field] )
-
-Retrieve values from a record. $table should be a string containing the name 
-of a table, $args should be a hash-reference with field-names and values. 
-If $field is specified, it should be the name of a field in the record and
-Lookup will then return the contents of that field. If $field is undef, 
-a hash-reference with all fields and values in the record is returned.
-
-If $args fails to identify one unique record, undef is returned. 
-
-=cut
-
-sub Lookup
-{
-  my $self = shift;
-  my( $table, $args, $field ) = @_;
-
-  my $dbh=$self->{dbh};
-
-  my @where = ("(1)");
-  my @values = ();
-
-  map { push @where, "($_ = ?)"; push @values, $args->{$_}; }
-      sort keys %{$args};
-
-  my $where = join " and ", @where;
-
-  my $sql;
-
-  if( defined $field )
-  {
-    $sql = "SELECT $field FROM $table WHERE $where";
-  }
-  else
-  {
-    $sql = "SELECT * FROM $table WHERE $where";
-  }
-
-  my $sth = $dbh->prepare_cached( $sql )
-      or die "Prepare failed. $sql\nError: " . $dbh->errstr;
-
-  my $res = $sth->execute( @values ) 
-      or die "Execute failed. $sql\nError: " . $dbh->errstr;
-  
-  my $row = $sth->fetchrow_hashref;
-
-  if( not defined( $row ) ) {
-    $sth->finish();
-    return undef;
-  }
-
-  my $row2 = $sth->fetchrow_hashref;
-  $sth->finish();
-
-  die "More than one record returned by $sql (" . join( ", ", @values) . ")"
-      if( defined $row2 );
-
-  return $row->{$field} if defined $field;
-  return $row;
-}
-
-=item Iterate
-
-Same as Lookup, but returns a dbi statement handle that can be used
-as an iterator. Can also take several field-arguments.
-
-=cut 
-
-sub Iterate
-{
-  my $self = shift;
-  my( $table, $args, @fields ) = @_;
-
-  my $dbh=$self->{dbh};
-
-  my @where = ("(1)");
-  my @values = ();
-
-  map { push @where, "($_ = ?)"; push @values, $args->{$_}; }
-      sort keys %{$args};
-
-  my $where = join " and ", @where;
-
-  my $sql;
-
-  if( scalar( @fields ) > 0 )
-  {
-    $sql = "SELECT " . join(",", @fields ) . " FROM $table WHERE $where";
-  }
-  else
-  {
-    $sql = "SELECT * FROM $table WHERE $where";
-  }
-
-  my $sth = $dbh->prepare( $sql )
-      or die "Prepare failed. $sql\nError: " . $dbh->errstr;
-
-  my $res = $sth->execute( @values ) 
-      or die "Execute failed. $sql\nError: " . $dbh->errstr;
-  
-  return undef if $res == 0;
-
-  return $sth;
-}
-
-sub Sql
-{
-  my $self = shift;
-  my( $sqlexpr, $values ) = @_;
-
-  my $dbh=$self->{dbh};
-
-  my $sth = $dbh->prepare( $sqlexpr )
-      or die "Prepare failed. $sqlexpr\nError: " . $dbh->errstr;
-
-  my $res = $sth->execute( @{$values} ) 
-      or die "Execute failed. $sqlexpr\nError: " . $dbh->errstr;
-
-  return ($res, $sth);
-}
-
-sub DoSql
-{
-  my $self = shift;
-  my( $sqlexpr, $values ) = @_;
-
-  my( $res, $sth ) = $self->Sql( $sqlexpr, $values );
-
-  $sth->finish();
-}
 
 =head1 COPYRIGHT
 
