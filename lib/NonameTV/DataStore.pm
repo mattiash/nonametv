@@ -611,6 +611,18 @@ sub AddCategory {
   $self->{categories}->{"$type++$org"} = [ undef, undef ];
 }
 
+=item sa
+
+Returns the SQLAbstraction object to give direct access to the database.
+
+=cut
+
+sub sa {
+  my $self = shift;
+
+  return $self->{sa};
+}
+
 =back 
 
 =head1 COPYRIGHT

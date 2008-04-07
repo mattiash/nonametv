@@ -28,8 +28,8 @@ sub LoadLanguage
 
   my $lng;
 
-  my $sth = $ds->Iterate( 'languagestrings', 
-                          { language => $lang, module => $module } );
+  my $sth = $ds->sa->Iterate( 'languagestrings', 
+                              { language => $lang, module => $module } );
   if( not defined( $sth ) )
   {
      logdie( "No strings found in database for language $lang, " .

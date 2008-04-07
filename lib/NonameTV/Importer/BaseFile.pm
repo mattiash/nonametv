@@ -75,15 +75,15 @@ sub Import {
       # Ignore emacs backup-files.
       next if $file =~ /~$/;
       my $md5 = md5sum( "$dir/$file" );
-      my $fdata = $ds->Lookup( "files", { channelid => $data->{id},
-                                          filename => $file } );
+      my $fdata = $ds->sa->Lookup( "files", { channelid => $data->{id},
+                                              filename => $file } );
       
       if( defined( $fdata ) and ($fdata->{md5sum} ne $md5) ) {
         # The file has changed since we last saw it. 
         # Treat it as a new file.
 
-        $ds->Delete( "files", { channelid => $data->{id},
-                                filename => $file } );
+        $ds->sa->Delete( "files", { channelid => $data->{id},
+                                    filename => $file } );
       
         $fdata = undef;
       }
@@ -91,14 +91,14 @@ sub Import {
       if( defined( $fdata ) ) {
         # We have seen this file before
         next unless $p->{'force-update'};
-        $ds->Delete( "files", { channelid => $data->{id},
-                                filename => $file } );
+        $ds->sa->Delete( "files", { channelid => $data->{id},
+                                    filename => $file } );
       }
 
-      $ds->Add( "files", { channelid => $data->{id},
-                           filename => $file,
-                           'md5sum' => $md5,
-                         } );
+      $ds->sa->Add( "files", { channelid => $data->{id},
+                               filename => $file,
+                               'md5sum' => $md5,
+                    } );
       
       $self->DoImportContentFile( "$file", $data );
     }
@@ -132,24 +132,24 @@ sub DoImportContentFile {
   if( $highest > 3 ) {
     $ds->EndTransaction( 0 );
 
-    $ds->Update( "files", 
-                 { channelid => $data->{id},
-                   filename => $file, },
-                 { successful => 0,
-                   message => $message, } );
+    $ds->sa->Update( "files", 
+                     { channelid => $data->{id},
+                       filename => $file, },
+                     { successful => 0,
+                       message => $message, } );
     
   }
   else { 
     $ds->EndTransaction( 1 );
   
-    $ds->Update( "files", 
-                 { channelid => $data->{id},
-                   filename => $file, },
-                 { successful => 1,
-                   message => $message,
-                   earliestdate => $self->{earliestdate},
-                   latestdate => $self->{latestdate},
-                 } );
+    $ds->sa->Update( "files", 
+                     { channelid => $data->{id},
+                       filename => $file, },
+                     { successful => 1,
+                       message => $message,
+                       earliestdate => $self->{earliestdate},
+                       latestdate => $self->{latestdate},
+                     } );
   
   }
 }  
@@ -171,7 +171,7 @@ sub RemoveMissing {
   my $self = shift;
   my( $ds, $chd ) = @_;
 
-  my $sth = $ds->Iterate( 'files', { channelid => $chd->{id} } );
+  my $sth = $ds->sa->Iterate( 'files', { channelid => $chd->{id} } );
 
   my $dir = $self->{conf}->{FileStore} . "/" . $chd->{xmltvid};
 
@@ -179,7 +179,7 @@ sub RemoveMissing {
 
     if( not -f( $dir . "/" . $data->{filename} ) ) {
       progress( "Removing " . $dir . "/" . $data->{filename} );
-      $ds->Delete( 'files', { id => $data->{id} } );
+      $ds->sa->Delete( 'files', { id => $data->{id} } );
     }
   }
 }
