@@ -139,7 +139,7 @@ sub FindAll {
 
   my $ds = $self->{datastore};
 
-  my ( $res, $channels ) = $ds->Sql( 
+  my ( $res, $channels ) = $ds->sa->Sql( 
        "select id from channels where export=1");
 
   my $last_date = DateTime->today->add( days => $self->{MaxDays} -1 );
@@ -161,7 +161,7 @@ sub FindUpdated {
 
   my $ds = $self->{datastore};
  
-  my ( $res, $update_batches ) = $ds->Sql( << 'EOSQL'
+  my ( $res, $update_batches ) = $ds->sa->Sql( << 'EOSQL'
     select channel_id, batch_id, 
            min(start_time)as min_start, max(start_time) as max_start
     from programs 
@@ -202,7 +202,7 @@ sub FindUnexportedDays {
     my $last_date = DateTime->today->add( days => $self->{MaxDays} -1 );
     my $first_date = $last_date->clone->subtract( days => $days-1 ); 
 
-    my ( $res, $channels ) = $ds->Sql( 
+    my ( $res, $channels ) = $ds->sa->Sql( 
        "select id from channels where export=1");
     
     while( my $data = $channels->fetchrow_hashref() ) {
@@ -253,7 +253,7 @@ sub WriteState {
 
   my $ds = $self->{datastore};
 
-  $ds->Update( 'state', { name => "json_last_update" }, 
+  $ds->sa->Update( 'state', { name => "json_last_update" }, 
                { value => $update_started } );
 }
 
@@ -321,7 +321,7 @@ sub ExportFile {
   my $startdate = $date;
   my $enddate = create_dt( $date, 'UTC' )->add( days => 1 )->ymd('-');
 
-  my( $res, $sth ) = $self->{datastore}->Sql( "
+  my( $res, $sth ) = $self->{datastore}->sa->Sql( "
         SELECT * from programs
         WHERE (channel_id = ?) 
           and (start_time >= ?)
@@ -615,7 +615,7 @@ sub ExportChannelList
 
   my $channels = {};
 
-  my( $res, $sth ) = $ds->Sql( "
+  my( $res, $sth ) = $ds->sa->Sql( "
       SELECT * from channels 
       WHERE export=1
       ORDER BY xmltvid" );
