@@ -234,7 +234,7 @@ sub ExportData {
   my $ds = $self->{datastore};
 
   foreach my $channel (keys %{$todo}) {
-    my $chd = $ds->Lookup( "channels", { id => $channel } );
+    my $chd = $ds->sa->Lookup( "channels", { id => $channel } );
 
     foreach my $date (sort keys %{$todo->{$channel}}) {
       $self->ExportFile( $chd, $date );
@@ -247,7 +247,7 @@ sub ReadState {
 
   my $ds = $self->{datastore};
  
-  my $last_update = $ds->Lookup( 'state', { name => "xmltv_last_update" },
+  my $last_update = $ds->sa->Lookup( 'state', { name => "xmltv_last_update" },
                                  'value' );
 
   if( not defined( $last_update ) )
