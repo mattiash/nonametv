@@ -171,7 +171,7 @@ sub process_parts
     close(FH);
 
     my $md5 = md5sum( $filename );
-    my $oldmd5 = $ds->Lookup( 'files', { channelid => $chd->{id},
+    my $oldmd5 = $ds->sa->Lookup( 'files', { channelid => $chd->{id},
                                          filename => $name }, 'md5sum' );
 
     # Check if the file exists even though there was no record in the db.
@@ -182,7 +182,7 @@ sub process_parts
     }
 
     if( (not defined $oldmd5) or ($md5 ne $oldmd5) ) {
-      $ds->Delete( 'files', { channelid => $chd->{id},
+      $ds->sa->Delete( 'files', { channelid => $chd->{id},
                               filename => $name } );
       move( $filename, "$dir/$name" );
       sleep(1); # File-times have a one-second resolution...
