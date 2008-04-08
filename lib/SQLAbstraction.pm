@@ -258,21 +258,10 @@ sub Update {
   return $res;
 }
 
-=item Lookup( $table, $args [, $field] )
 
-Retrieve values from a record. $table should be a string containing the name 
-of a table, $args should be a hash-reference with field-names and values. 
-If $field is specified, it should be the name of a field in the record and
-Lookup will then return the contents of that field. If $field is undef, 
-a hash-reference with all fields and values in the record is returned.
-
-If $args fails to identify one unique record, undef is returned. 
-
-=cut
-
-sub Lookup {
+sub _BuildLookup {
   my $self = shift;
-  my ( $table, $args, $field ) = @_;
+  my ( $table, $args, $field, $order ) = @_;
 
   my $dbh = $self->{dbh};
 
@@ -293,11 +282,36 @@ sub Lookup {
     $sql = "SELECT * FROM $table WHERE $where";
   }
 
+  if( defined( $order ) and ( scalar( @{$order} ) > 0 ) ) {
+    $sql .= " ORDER BY " . join( ", ", @{$order} );
+  }
+
   my $sth = $dbh->prepare_cached($sql)
     or die "Prepare failed. $sql\nError: " . $dbh->errstr;
 
   my $res = $sth->execute(@values)
     or die "Execute failed. $sql\nError: " . $dbh->errstr;
+
+  return $sth;
+}
+
+=item Lookup( $table, $args [, $field] )
+
+Retrieve values from a record. $table should be a string containing the name 
+of a table, $args should be a hash-reference with field-names and values. 
+If $field is specified, it should be the name of a field in the record and
+Lookup will then return the contents of that field. If $field is undef, 
+a hash-reference with all fields and values in the record is returned.
+
+If $args fails to identify one unique record, undef is returned. 
+
+=cut
+
+sub Lookup {
+  my $self = shift;
+  my ( $table, $args, $field ) = @_;
+
+  my $sth = $self->_BuildLookup( $table, $args, $field );
 
   my $row = $sth->fetchrow_hashref;
 
@@ -309,11 +323,37 @@ sub Lookup {
   my $row2 = $sth->fetchrow_hashref;
   $sth->finish();
 
-  die "More than one record returned by $sql (" . join( ", ", @values ) . ")"
-    if ( defined $row2 );
+  die "More than one record returned from $table"
+      if ( defined $row2 );
 
   return $row->{$field} if defined $field;
   return $row;
+}
+
+=item LookupMany( $table, $args[, $order,  $limit] )
+
+Retrieve values from several records. $table should be a string
+containing the name of a table, $args should be a hash-reference with
+field-names and values.  Returns a reference to an array containing
+hashrefs for each record.
+
+$order is an arrayref containing expressions to sort on.
+
+$limit can be used to limit the number of records returned. Defaults to
+using no limit.
+
+=cut
+
+sub LookupMany {
+  my $self = shift;
+  my ( $table, $args, $order, $limit ) = @_;
+
+  my $sth = $self->_BuildLookup( $table, $args, undef, $order );
+
+  my $res = $sth->fetchall_arrayref( {}, $limit );
+
+  $sth->finish();
+  return $res;
 }
 
 =item Iterate
