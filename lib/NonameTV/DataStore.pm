@@ -504,7 +504,7 @@ sub LookupCat {
     # it to see if MySQL thinks it already exists. I should probably
     # normalize the strings before inserting them instead...
     my $data =
-      $self->Lookup( "trans_cat", { type => $type, original => $org } );
+      $self->{sa}->Lookup( "trans_cat", { type => $type, original => $org } );
     if ( defined($data) ) {
       $self->{categories}->{ $type . "++" . $org } =
         [ $data->{program_type}, $data->{category} ];
