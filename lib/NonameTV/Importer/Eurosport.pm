@@ -20,6 +20,8 @@ use NonameTV::DataStore::Helper;
 use NonameTV::Log qw/info progress error logdie 
                      log_to_string log_to_string_result/;
 
+use NonameTV::Config qw/ReadConfig/;
+
 use NonameTV::Importer::BaseFile;
 
 use base 'NonameTV::Importer::BaseFile';
@@ -34,6 +36,10 @@ sub new {
 
   defined( $self->{FtpRoot} ) or die "You must specify FtpRoot";
   defined( $self->{Filename} ) or die "You must specify Filename";
+  
+  my $conf = ReadConfig();
+
+  $self->{FileStore} = $conf->{FileStore};
 
   return $self;
 }
@@ -117,7 +123,7 @@ sub UpdateFiles {
     my $xmltvid = $data->{xmltvid};
 
     ftp_get( $self->{FtpRoot} . $dir . '/' . $self->{Filename},
-             $NonameTV::Conf->{FileStore} . '/' . 
+             $self->{FileStore} . '/' . 
              $xmltvid . '/' . $self->{Filename} );
   }  
 }
