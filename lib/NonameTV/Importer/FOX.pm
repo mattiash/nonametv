@@ -90,12 +90,7 @@ sub ImportContentFile {
 
       # now after we got the next time_slot
       # we do the update
-#print "$start_dt\n";
-#print "$end_dt\n";
-#print "8\n";
-      if( defined($start_dt) and defined($end_dt) ) {
-
-#        $etime =~ s/^(\d+:\d+).*/$1/;
+      if( defined($start_dt) and defined($end_dt) and $cro_title ) {
 
         #$end_dt = $self->to_utc( $date, $etime );
 
@@ -113,8 +108,10 @@ sub ImportContentFile {
           end_time => $end_dt->ymd('-') . " " . $end_dt->hms(':'),
         };
     
-        my($program_type, $category ) = $ds->LookupCat( "FOX", $genre );
-        #AddCategory( $ce, $program_type, $category );
+        if( $genre ){
+          my($program_type, $category ) = $ds->LookupCat( "FOX", $genre );
+          #AddCategory( $ce, $program_type, $category );
+        }
 
         $ds->AddProgramme( $ce );
 
@@ -123,14 +120,11 @@ sub ImportContentFile {
       # save the current endtime as the start
       # of the next show
       $start_dt = $end_dt;
-#print "start_dt: $start_dt\n";
-#print "1\n";
 
       # EN Title
       $oWkC = $oWkS->{Cells}[$iR][1];
       if( $oWkC ){
         $en_title = $oWkC->Value;
-#print "en_title: $en_title\n";
       }
 
       # Croatian Title
