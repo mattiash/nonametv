@@ -124,7 +124,7 @@ sub StartDate
     $self->CommitPrograms();
   }
 
-#  print "StartDate: $date\n";
+  #print "StartDate: $date\n";
   my( $year, $month, $day ) = split( '-', $date );
   $self->{curr_date} = DateTime->new( 
                                       year   => $year,
