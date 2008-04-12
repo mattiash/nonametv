@@ -20,7 +20,7 @@ use Spreadsheet::ParseExcel;
 use NonameTV::DataStore::Helper;
 use NonameTV::Log qw/info progress error logdie 
                      log_to_string log_to_string_result/;
-#use NonameTV qw/AddCategory norm/;
+use NonameTV qw/AddCategory/;
 
 use NonameTV::Importer::BaseFile;
 
@@ -109,8 +109,8 @@ sub ImportContentFile {
         };
     
         if( $genre ){
-          my($program_type, $category ) = $ds->LookupCat( "FOX", $genre );
-          #AddCategory( $ce, $program_type, $category );
+          my($program_type, $category ) = $ds->LookupCat( 'FOX', $genre );
+          AddCategory( $ce, $program_type, $category );
         }
 
         $ds->AddProgramme( $ce );
