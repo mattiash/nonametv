@@ -18,7 +18,7 @@ use DateTime;
 use XML::LibXML;
 #use Text::Capitalize qw/capitalize_title/;
 
-use NonameTV qw/MyGet Wordfile2Xml Htmlfile2Xml norm/;
+use NonameTV qw/MyGet Wordfile2Xml Htmlfile2Xml norm AddCategory/;
 use NonameTV::DataStore::Helper;
 use NonameTV::Log qw/info progress error logdie 
                      log_to_string log_to_string_result/;
@@ -58,6 +58,7 @@ sub ImportContentFile
   my $xmltvid=$chd->{xmltvid};
   my $channel_id = $chd->{id};
   my $dsh = $self->{datastorehelper};
+  my $ds = $self->{datastore};
 
   
   my $doc;
@@ -113,8 +114,10 @@ sub ImportContentFile
 
     }
     elsif( $text =~ /^(\d+)\.(\d+) (\S+)/ ) {
+
       my( $starttime, $title, $genre ) = ParseShow( $text , $date );
-#progress("NovaTV: TIME: $starttime TITLE: $title GENRE: $genre");
+
+      progress("NovaTV: $starttime : $title");
 
       my $ce = {
         channel_id   => $chd->{id},
@@ -122,9 +125,9 @@ sub ImportContentFile
 	title => $title,
       };
 
-      if( defined( $genre ) and length( $genre ) ){
-        #my($program_type, $category ) = $dsh->LookupCat( "NovaTV", $genre );
-        #AddCategory( $ce, $program_type, $category );
+      if( $genre ){
+        my($program_type, $category ) = $ds->LookupCat( 'NovaTV', $genre );
+        AddCategory( $ce, $program_type, $category );
       }
 
       $dsh->AddProgramme( $ce );
