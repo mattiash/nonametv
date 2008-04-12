@@ -110,16 +110,18 @@ sub ImportContent
     #
     # episode number
     #
-    my $ep_nr = int( $sc->getElementsByTagName( 'episode-num' ) );
-    my $ep_se = 0;
     my $episode = undef;
-    if( ($ep_nr > 0) and ($ep_se > 0) )
-    {
-      $episode = sprintf( "%d . %d .", $ep_se-1, $ep_nr-1 );
-    }
-    elsif( $ep_nr > 0 )
-    {
-      $episode = sprintf( ". %d .", $ep_nr-1 );
+    if( $sc->getElementsByTagName( 'episode-num' ) ){
+      my $ep_nr = int( $sc->getElementsByTagName( 'episode-num' ) );
+      my $ep_se = 0;
+      if( ($ep_nr > 0) and ($ep_se > 0) )
+      {
+        $episode = sprintf( "%d . %d .", $ep_se-1, $ep_nr-1 );
+      }
+      elsif( $ep_nr > 0 )
+      {
+        $episode = sprintf( ". %d .", $ep_nr-1 );
+      }
     }
 
     # The director and actor info are children of 'credits'
@@ -131,6 +133,8 @@ sub ImportContent
     my $presenters = $sc->getElementsByTagName( 'presenter' );
     my $commentators = $sc->getElementsByTagName( 'commentator' );
     my $guests = $sc->getElementsByTagName( 'guest' );
+
+    progress("HRT: $start - $title");
 
     my $ce = {
       channel_id   => $chd->{id},
