@@ -356,6 +356,36 @@ sub LookupMany {
   return $res;
 }
 
+=item LookupManySql( $sql[, $argarray] )
+
+Lookup possibly may records using an SQL expression. $sql should be a
+string that can be sent to $dbh->prepare(). $argarray can be a
+reference to an array of arguments that matches $sql.
+
+Returns a reference to an array containing hashrefs for each record.
+
+=cut
+
+sub LookupManySql {
+  my $self = shift;
+  my ( $sql, $argarray ) = @_;
+
+  $argarray = [] if not defined $argarray;
+
+  my $dbh = $self->{dbh};
+
+  my $sth = $dbh->prepare_cached($sql)
+    or die "Prepare failed. $sql\nError: " . $dbh->errstr;
+
+  my $res = $sth->execute(@{$argarray})
+    or die "Execute failed. $sql\nError: " . $dbh->errstr;
+
+  $res = $sth->fetchall_arrayref( {} );
+
+  $sth->finish();
+  return $res;
+}
+
 =item Iterate
 
 Same as Lookup, but returns a dbi statement handle that can be used
