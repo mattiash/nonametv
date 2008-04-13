@@ -52,7 +52,7 @@ if( $opt->{rebuild} ) {
   
   my @commands = split( /\s*;\s*/, $commands );
   foreach my $command (@commands) {
-    $ds->Sql( $command );
+    $ds->sa->Sql( $command );
   }
 }
 
@@ -65,7 +65,7 @@ sub populate_table {
 
   print "Populating table $table from file $file\n";
 
-  $ds->Delete( $table, {} );
+  $ds->sa->Delete( $table, {} );
 
   my $in = new IO::File( "< $file" ) 
       or die "Failed to read from $file";
@@ -83,7 +83,7 @@ sub populate_table {
     if( not defined( $sth ) ) {
       my $params = join( ",", split( "", "?" x scalar( @{$row} ) ) );
 
-      $sth = $ds->{dbh}->prepare( "insert into $table values ($params)" )
+      $sth = $ds->sa->{dbh}->prepare( "insert into $table values ($params)" )
 	  or die "Prepare failed.\nError: " . $ds->{dbh}->errstr;
     }
     

@@ -15,7 +15,7 @@ my $conf = ReadConfig();
 my $ds = NonameTV::DataStore->new( $conf->{DataStore} );
 
 print "Clearing all listings from database\n";
-$ds->Delete( "batches", {} );
-$ds->Delete( "programs", {} );
-$ds->Delete( "state", {} );
+$ds->sa->Delete( "batches", {} );
+$ds->sa->Delete( "programs", {} );
+$ds->sa->Delete( "state", {} );
 

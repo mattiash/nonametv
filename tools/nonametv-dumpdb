@@ -92,7 +92,7 @@ sub dump_table {
 
   my $csv = Text::CSV_XS->new({eol=> "\n", 'binary' => 1});
 
-  my $sth = $ds->Iterate( $table, {} );
+  my $sth = $ds->sa->Iterate( $table, {} );
 
   while( my $row = $sth->fetchrow_arrayref ) {
     foreach (@{$row}) {

@@ -62,7 +62,7 @@ my $imp = eval "use NonameTV::Importer::$imp_type;
 
 my( $xmltvid ) = ($batch_id =~ /(.*)_/); 
 
-my $data = $ds->Lookup( 'channels', { xmltvid => $xmltvid } );
+my $data = $ds->sa->Lookup( 'channels', { xmltvid => $xmltvid } );
 
 my $file = "/var/local/nonametv/override/new/$batch_id.org";
 

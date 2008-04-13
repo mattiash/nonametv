@@ -19,7 +19,7 @@ my $ds = NonameTV::DataStore->new( $conf->{DataStore} );
 
 my $iconroot = $conf->{Exporters}->{Xmltv}->{IconRootUrl};
 
-my $sth = $ds->Iterate( 'channels' );
+my $sth = $ds->sa->Iterate( 'channels' );
 
 while( my $entry = $sth->fetchrow_hashref() )
 {
@@ -33,7 +33,7 @@ while( my $entry = $sth->fetchrow_hashref() )
   {
     if( not $logo )
     {
-      $ds->Update( 'channels', { xmltvid => $xmltvid }, { logo => 1 } );
+      $ds->sa->Update( 'channels', { xmltvid => $xmltvid }, { logo => 1 } );
       print "Added icon for $xmltvid\n";
     }
   }
@@ -41,7 +41,7 @@ while( my $entry = $sth->fetchrow_hashref() )
   {
     if( $logo )
     {
-      $ds->Update( 'channels', { xmltvid => $xmltvid }, { logo => 0 } );
+      $ds->sa->Update( 'channels', { xmltvid => $xmltvid }, { logo => 0 } );
       print "Removed icon for $xmltvid\n";
     }
   }
