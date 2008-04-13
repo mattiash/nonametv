@@ -57,6 +57,8 @@ sub ImportContent
   # Find all "programme"-entries.
   my $ns = $doc->find( "//programme" );
   
+  my( $description , $episode , $production_year , $duration , $directors , $actors );
+
   foreach my $sc ($ns->get_nodelist)
   {
     
@@ -103,11 +105,6 @@ sub ImportContent
     my $url = $sc->getElementsByTagName( 'url' );
 
     #
-    # production year
-    #
-    #my $production_year = $sc->getElementsByTagName( 'date' );
-
-    #
     # episode number
     #
     #my $ep_nr = int( $sc->getElementsByTagName( 'episode-num' ) );
@@ -132,6 +129,18 @@ sub ImportContent
     #my $commentators = $sc->getElementsByTagName( 'commentator' );
     #my $guests = $sc->getElementsByTagName( 'guest' );
 
+    # parse $desc field
+    if( $desc ){
+      ( $description , $episode , $production_year , $duration , $directors , $actors ) = $self->ParseDescField( norm($desc) );
+#progress("===EPIZODA: $episode") if defined $episode ;
+#progress("===GODINA:  $production_year") if defined $production_year ;
+#progress("===TRAJANJE:  $duration") if defined $duration ;
+#progress("===DIRECTORS:  $directors") if defined $directors ;
+#progress("===ACTORS:  $actors") if defined $actors ;
+    }
+
+    #progress("RTLTV: $start - $title");
+
     my $ce = {
       channel_id   => $chd->{id},
       title        => norm($title),
@@ -140,8 +149,8 @@ sub ImportContent
       start_time   => $start->ymd("-") . " " . $start->hms(":"),
       end_time     => $end->ymd("-") . " " . $end->hms(":"),
       #aspect       => $sixteen_nine ? "16:9" : "4:3", 
-      #directors    => norm($directors),
-      #actors       => norm($actors),
+      directors    => norm($directors),
+      actors       => norm($actors),
       #writers      => norm($writers),
       #adapters     => norm($adapters),
       #producers    => norm($producers),
@@ -151,20 +160,19 @@ sub ImportContent
       url          => norm($url),
     };
 
-    #if( defined( $episode ) and ($episode =~ /\S/) )
-    #{
-      #$ce->{episode} = norm($episode);
-      #$ce->{program_type} = 'series';
-    #}
+    if( defined( $episode ) and ($episode =~ /\S/) )
+    {
+      $ce->{episode} = norm($episode);
+      $ce->{program_type} = 'series';
+    }
 
-    #print "Category: $genre\n";
     my($program_type, $category ) = $ds->LookupCat( "RTLTV", $genre );
     AddCategory( $ce, $program_type, $category );
 
-    #if( defined( $production_year ) and ($production_year =~ /(\d\d\d\d)/) )
-    #{
-      #$ce->{production_date} = "$1-01-01";
-    #}
+    if( defined( $production_year ) and ($production_year =~ /(\d\d\d\d)/) )
+    {
+      $ce->{production_date} = "$1-01-01";
+    }
 
     $ds->AddProgramme( $ce );
   }
@@ -210,6 +218,60 @@ sub create_dt
   $dt->set_time_zone( "UTC" );
   
   return $dt;
+}
+
+sub ParseDescField
+{
+  my $self = shift;
+  my( $d ) = @_;
+
+  my $episode = undef;
+  my $prodyear = undef;
+  my $duration = undef;
+  my $directors = undef;
+  my $actors = undef;
+
+  my $tmps = $d;
+
+  # extract episode
+  if( $tmps =~ m/^Epizoda:/ )
+  {
+    my $ep_nr = 0;
+    my $ep_se = 0;
+
+    ( $ep_nr , $ep_se ) = ( $tmps =~ /^Epizoda: (\d+)\/(\d+)/ );
+
+    if( ($ep_nr > 0) and ($ep_se > 0) )
+    {
+      $episode = sprintf( "%d . %d .", $ep_se-1, $ep_nr-1 );
+    }
+    elsif( $ep_nr > 0 )
+    {
+      $episode = sprintf( ". %d .", $ep_nr-1 );
+    }
+  }
+
+  $tmps = $d;
+  if( $tmps =~ /Godina: (\d+)/ ){
+    $prodyear = $1;
+  }
+
+  $tmps = $d;
+  if( $tmps =~ /Trajanje: (\d+)/ ){
+    $duration = $1;
+  }
+
+  $tmps = $d;
+  if( $tmps =~ /Redatelj:(.*?)Uloge:/ ){
+    $directors = $1;
+  }
+
+  $tmps = $d;
+  if( $tmps =~ /Uloge:(.*?)$/ ){
+    $actors = $1;
+  }
+
+  return( $d , $episode , $prodyear , $duration , $directors , $actors );
 }
 
 sub FetchDataFromSite
