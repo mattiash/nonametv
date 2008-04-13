@@ -72,7 +72,7 @@ sub ReadConfig {
   return $Conf if defined $Conf;
 
   my $file;
-  if (-e "$ENV{HOME}/.nonametv.conf") {
+  if (defined( $ENV{HOME} ) and (-e "$ENV{HOME}/.nonametv.conf")) {
   	$file = "$ENV{HOME}/.nonametv.conf";
   } elsif (-e "/etc/nonametv.conf") {
   	$file = "/etc/nonametv.conf";
