@@ -139,7 +139,10 @@ sub ImportContent
 #progress("===ACTORS:  $actors") if defined $actors ;
     }
 
-    #progress("RTLTV: $start - $title");
+    my $stereo = 'stereo';
+    my $sixteen_nine = 0;
+
+    progress("RTLTV: $start - $title");
 
     my $ce = {
       channel_id   => $chd->{id},
@@ -148,7 +151,8 @@ sub ImportContent
       description  => norm($desc),
       start_time   => $start->ymd("-") . " " . $start->hms(":"),
       end_time     => $end->ymd("-") . " " . $end->hms(":"),
-      #aspect       => $sixteen_nine ? "16:9" : "4:3", 
+      stereo       => $stereo,
+      aspect       => $sixteen_nine ? "16:9" : "4:3", 
       directors    => norm($directors),
       actors       => norm($actors),
       #writers      => norm($writers),
@@ -278,14 +282,6 @@ sub FetchDataFromSite
 {
   my $self = shift;
   my( $batch_id, $data ) = @_;
-
-  my( $year, $week ) = ($batch_id =~ /_(\d+)-(\d+)/);
-
-  # Find the first day in the given week.
-  # Copied from
-  # http://www.nntp.perl.org/group/perl.datetime/5417?show_headers=1 
-  #my $dt = DateTime->new( year=>$year, day => 4 );
-  #$dt->add( days => $week * 7 - $dt->day_of_week - 6 );
 
   my $url = $self->{UrlRoot};
   progress("RTLTV: fetching data from $url");

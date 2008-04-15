@@ -86,10 +86,18 @@ sub ImportContentFile
   my $currdate = undef;
   my $nowyear = DateTime->today->year();
   my $date;
+  my @ces;
+  my $targetshow;
+  my $description;
+  my $subtitle;
+  my $directors;
+  my $actors;
 
   foreach my $div ($ns->get_nodelist) {
+
     my( $text ) = norm( $div->findvalue( '.' ) );
-#progress("TEXT: $text") if $text;
+
+    #print "> $text\n";
 
     if( $text eq "" ) {
       # blank line
@@ -97,7 +105,8 @@ sub ImportContentFile
     elsif( $text =~ /^PROGRAM NOVE TV za/i ) {
       progress("NovaTV: OK, this is the file with the schedules: $file");
     }
-    elsif( $text =~ /^(\S+) (\d+)\.(\d+)/ ) {
+    elsif( $text =~ /^(\S+) (\d+)\.(\d+)/ ) { # the line with the date in format 'MONDAY 12.4.'
+
       $date = ParseDate( $text , $nowyear );
 
       if( defined $date ) {
@@ -112,12 +121,27 @@ sub ImportContentFile
         $currdate = $date;
       }
 
+      # save last day if we have it in memory
+      if( @ces ){
+        foreach my $element (@ces) {
+
+          progress("NovaTV: $element->{start_time} : $element->{title}");
+
+          $dsh->AddProgramme( $element );
+        }
+      }
+
+      # empty last day array
+      undef @ces;
+      undef $targetshow;
+      undef $description;
+      undef $subtitle;
+      undef $directors;
+      undef $actors;
     }
-    elsif( $text =~ /^(\d+)\.(\d+) (\S+)/ ) {
+    elsif( $text =~ /^(\d+)\.(\d+) (\S+)/ ) { # the line with the show in format '19.30 Show title, genre'
 
       my( $starttime, $title, $genre ) = ParseShow( $text , $date );
-
-      progress("NovaTV: $starttime : $title");
 
       my $ce = {
         channel_id   => $chd->{id},
@@ -130,11 +154,64 @@ sub ImportContentFile
         AddCategory( $ce, $program_type, $category );
       }
 
-      $dsh->AddProgramme( $ce );
+      # add the programme to the array
+      # as we have to add description later
+      push( @ces , $ce );
 
     }
+    elsif( isCroUcase( $text ) ) { # the line with description title in format 'ALL IN CAPS'
+
+      # if we have something in the description buffer
+      # then this is for the last targetshow
+      if( $targetshow and $description ){
+        $targetshow->{description} = $description if defined $description;
+        $targetshow->{subtitle} = $subtitle if defined $subtitle;
+        $targetshow->{directors} = $directors if defined $directors;
+        $targetshow->{actors} = $actors if defined $actors;
+        undef $description;
+        undef $subtitle;
+        undef $directors;
+        undef $actors;
+      }
+
+      my $utext = utf8ucase( $text );
+
+      # find if we have the show with that name
+      foreach my $element (@ces) {
+        my $utitle = utf8ucase( $element->{title} );
+
+
+        if( $utext eq $utitle ){
+          $targetshow = $element;
+          last;
+        }
+      }
+    }
     else {
-      #error( "Ignoring $text" );
+
+      # if we know the target show then this is the description
+      if( $targetshow ){
+
+        $description .= $text;
+
+        # subtitle if present in the first description line
+        if( $text =~ /^\(.*\)/ ){
+          $subtitle = $text;
+        }
+
+        # subtitle if present in one text line
+        if( $text =~ s/^Redatelj: // ){
+          $directors = $text;
+        }
+
+        # actor if present in the one text line
+        if( $text =~ s/^Glume: // ){
+          $actors = $text;
+        }
+
+      } else {
+        #error( "Ignoring $text" );
+      }
     }
   }
 
@@ -180,6 +257,31 @@ sub ParseShow {
   my $sdt = $date->clone()->add( hours => $hour , minutes => $min );
 
   return( $sdt , $title , $genre );
+}
+
+sub utf8ucase {
+  my( $str ) = @_;
+  my $newstr = $str;
+
+  $newstr =~ s/\xC4\x8D/\xC4\x8C/;	# tvrdo c
+  $newstr =~ s/\xC4\x87/\xC4\x86/;	# meko c
+  $newstr =~ s/\xC4\x91/\xC4\x90/;      # d
+  $newstr =~ s/\xC5\xA1/\xC5\xA0/;      # s
+  $newstr =~ s/\xC5\xBE/\xC5\xBD/;      # z
+
+  $newstr = uc($newstr);
+
+  return( $newstr );
+}
+
+sub isCroUcase {
+  my( $str ) = @_;
+
+  if( $str =~ /[:lower:]/ ){
+    return 0;
+  }
+
+  return 1;
 }
 
 1;
