@@ -55,6 +55,7 @@ my $filestore = $conf->{FileStore};
 
 my @folders = qw(/home/mattias/Maildir/.Projects.xmltv-data
                  /home/mattias/Maildir/.Projects.NonameTV-Data.Discovery
+                 /home/mattias/Maildir/.Projects.NonameTV-Data.Disney
                  /home/mattias/Maildir/.Projects.NonameTV-Data.Expressen
                  /home/mattias/Maildir/.Projects.NonameTV-Data.Aftonbladet
                  /home/mattias/Maildir/.Projects.NonameTV-Data.Kanal9
@@ -203,6 +204,21 @@ sub guess_channel
 
   if( $dir =~ /Expressen/ and $filename =~ /\.doc$/i ) {
     return "sport.expressen.se";
+  }
+
+  if( $dir =~ /Disney/ ) {
+    if( $filename =~ /xml/i ) {
+      if( $filename =~ /\btoon/i ) {
+	return "toon.disneychannel.se";
+      }
+      elsif( $filename =~ /playhouse/i ) {
+	return "playhouse.disneychannel.se";
+      }
+      elsif( $filename =~ /disney channel/i ) {
+	return "disneychannel.se";
+      }
+      return undef;
+    }
   }
 
   if( $dir =~ /Aftonbladet/ ) {

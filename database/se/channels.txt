@@ -73,3 +73,7 @@
 85,"CANAL+ Comedy",comedy.canalplus.se,,CanalPlus,1,17,1,movie,Movies,sv,0,\N
 86,MTV2,mtv2.mtve.com,,Mtve,1,2,0,,,en,0,\N
 87,"TV4 Science Fiction",sf.tv4.se,,TV4,1,11,0,,,sv,0,
+88,"Discovery World",world.discovery.com,,Discovery_xml,1,DWSWE,0,,,sv,0,
+89,"Disney Channel",disneychannel.se,,DisneyChannel,1,,0,,,sv,0,
+90,"Toon Disney",toon.disneychannel.se,,DisneyChannel,1,,0,,,sv,0,
+91,"Playhouse Disney",playhouse.disneychannel.se,,DisneyChannel,1,,0,,,sv,0,
