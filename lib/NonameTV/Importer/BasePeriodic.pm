@@ -186,7 +186,8 @@ sub Import {
       }
       elsif( defined $error ) {
         error( "$batch_id: $error" );
-        $ds->SetBatchAbortMessage( $error );
+        $dsh->StartBatch( $batch_id, $data->{id} );
+        $dsh->EndBatch( 0, $error );
       }
       else {
         # Nothing has changed.
