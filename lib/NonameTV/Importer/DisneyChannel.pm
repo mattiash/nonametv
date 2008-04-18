@@ -123,17 +123,31 @@ sub ImportContentFile {
       next;
     }
 
-    my $date = norm( $row->findvalue( $column->{Date} ) );
-    my $starttime = norm( $row->findvalue( $column->{Time} ) );
+    my $orgdate = norm( $row->findvalue( $column->{Date} ) );
+    my $orgstarttime = norm( $row->findvalue( $column->{Time} ) );
     my $title = norm( $row->findvalue( $column->{"(SWE) Title"} ) );
     my $synopsis = norm( $row->findvalue( $column->{SYNOPSIS} ) );
 
+    my( $year, $month, $day ) = ParseDate( $orgdate );
+    if( not defined $day ) {
+      error( "DisneyChannel $file: Invalid date $orgdate" );
+      next;
+    }
+    my $date = sprintf( "%4d-%02d-%02d", $year, $month, $day );
+
+    my( $hour, $minute ) = ParseTime( $orgstarttime );
+    if( not defined $minute ) {
+      error( "DisneyChannel $file: Invalid time $orgstarttime" );
+      next;
+    }
+    my $starttime = sprintf( "%02d:%02d", $hour, $minute );
+      
     if( $date ne $currdate ) {
       if( $currdate ne "x" ) {
 	$ds->EndBatch( 1 );
       }
 
-      my $batch_id = $xmltvid . "_" . join( '-', ParseDate( $date ) );
+      my $batch_id = $xmltvid . "_" . $date;
       $ds->StartBatch( $batch_id );
       $currdate = $date;
     }
@@ -171,7 +185,6 @@ sub ParseDate {
   }
 
   if( not defined( $year ) ) {
-    error( "DisneyChannel: Unknown date $text" );
     return undef;
   }
 
@@ -189,7 +202,6 @@ sub ParseTime {
   }
   
   if( not defined( $minute ) ) {  
-    error( "DisneyChannel: Unknown date $text" );
     return undef;
   }
 
@@ -200,19 +212,9 @@ sub to_utc {
   my $self = shift;
   my( $date, $time ) = @_;
 
-  my( $year, $month, $day ) = ParseDate( $date );
+  my( $year, $month, $day ) = split( "-", $date );
   
-  if( not defined( $day ) ) {
-    error( "DisneyChannel: Unknown date $date" );
-    return undef;
-  }
-
-  my( $hour, $minute ) = ParseTime( $time );
-
-  if( not defined( $minute ) ) {
-    error( "DisneyChannel: Unknown time $time" );
-    return undef;
-  }
+  my( $hour, $minute ) = split( ":", $time );
 
   my $dt;
 
