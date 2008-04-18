@@ -52,35 +52,42 @@ sub ImportContentFile {
   my $channel_id = $chd->{id};
   my $ds = $self->{datastore};
 
-  my $zip = Archive::Zip->new( $file );
-  if( not defined $zip ) {
-    error( "DisneyChannel $file: Failed to read zip." );
-    return;
+  my $datafile;
+
+  if( $file =~ /\.xml$/i ) {
+    $datafile = $file;
   }
+  elsif( $file =~ /\.zip$/i ) {
+    my $zip = Archive::Zip->new( $file );
+    if( not defined $zip ) {
+      error( "DisneyChannel $file: Failed to read zip." );
+      return;
+    }
 
-  my @swedish_files;
+    my @swedish_files;
+    
+    my @members = $zip->members();
+    foreach my $member (@members) {
+      push( @swedish_files, $member->{fileName} ) 
+	  if $member->{fileName} =~ /swed.*xml$/i;
+    }
+    
+    my $numfiles = scalar( @swedish_files );
+    if( $numfiles != 1 ) {
+      error( "DisneyChannel $file: Found $numfiles matching files, expected 1." );
+      return;
+    }
 
-  my @members = $zip->members();
-  foreach my $member (@members) {
-    push( @swedish_files, $member->{fileName} ) 
-	if $member->{fileName} =~ /swed.*xml$/i;
+    progress( "Using file $swedish_files[0]" );
+
+    (undef, $datafile) = tempfile();
+    
+    $zip->extractMember( $swedish_files[0], $datafile );
   }
-
-  my $numfiles = scalar( @swedish_files );
-  if( $numfiles != 1 ) {
-    error( "DisneyChannel $file: Found $numfiles matching files, expected 1." );
-    return;
-  }
-
-  progress( "Using file $swedish_files[0]" );
-
-  my($fh, $filename) = tempfile();
-
-  $zip->extractMember( $swedish_files[0], $filename );
 
   my $doc;
   my $xml = XML::LibXML->new;
-  eval { $doc = $xml->parse_file($filename); };
+  eval { $doc = $xml->parse_file($datafile); };
 
   if( not defined( $doc ) ) {
     error( "DisneyChannel $file: Failed to parse xml" );
