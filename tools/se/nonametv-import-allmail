@@ -14,6 +14,6 @@ getmail -q -rdr.rc
 perl -I lib tools/se/nonametv-parse-maildir
 perl -I lib tools/nonametv-import Kanal5_mail
 perl -I lib tools/nonametv-import KanalLokal
-perl -I lib tools/nonametv-import DisnyChannel
+perl -I lib tools/nonametv-import DisneyChannel
 
 
