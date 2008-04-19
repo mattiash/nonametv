@@ -39,18 +39,19 @@ Options:
     Recreate all output files, not only the ones where data has
     changed.
 
-  --channel-group
+  --channel-group <groupname>
     Export data only for the channel group specified.
 
 =cut 
 
-our $OptionSpec     = [ qw/export-channels remove-old force-export channel-group
+our $OptionSpec     = [ qw/export-channels remove-old force-export 
+			   channel-group=s
                            verbose help/ ];
 our %OptionDefaults = ( 
                         'export-channels' => 0,
                         'remove-old' => 0,
                         'force-export' => 0,
-                        'channel-group' => 0,
+                        'channel-group' => "",
                         'help' => 0,
                         'verbose' => 0,
                         );
@@ -92,7 +93,7 @@ sub new {
 sub Export
 {
   my( $self, $p ) = @_;
-  my $channelgroup = "";
+  my $channelgroup = $p->{'channel-group'};
 
   if( $p->{'help'} )
   {
@@ -112,7 +113,7 @@ Options:
     Export all data. Default is to only export data for batches that
     have changed since the last export.
 
-  --channel-group
+  --channel-group <groupname>
     Export data only for the channel group specified.
 
 EOH
@@ -121,11 +122,6 @@ EOH
   }
 
   NonameTV::Log::verbose( $p->{verbose} );
-
-  if( $p->{'channel-group'} )
-  {
-    $channelgroup = $ARGV[0];
-  }
 
   if( $p->{'export-channels'} )
   {
@@ -265,7 +261,7 @@ sub ReadState {
 
   if( not defined( $last_update ) )
   {
-    $ds->Add( 'state', { name => "xmltv_last_update", value => 0 } );
+    $ds->sa->Add( 'state', { name => "xmltv_last_update", value => 0 } );
     $last_update = 0;
   }
 
