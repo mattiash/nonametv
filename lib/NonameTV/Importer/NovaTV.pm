@@ -46,7 +46,7 @@ sub ImportContentFile
   my $self = shift;
   my( $file, $chd ) = @_;
 
-  if( $file !~ /program/i  and $file !~ /\.doc/ ) {
+  if( $file !~ /program/i and $file !~ /izmjena/i and $file !~ /\.doc/ ) {
     progress( "NovaTV: Skipping unknown file $file" );
     return;
   }
@@ -105,6 +105,7 @@ sub ImportContentFile
     elsif( $text =~ /^PROGRAM NOVE TV za/i ) {
       progress("NovaTV: OK, this is the file with the schedules: $file");
     }
+    #elsif( $text =~ /^([[:upper:]]+) (\d+)\.(\d+)/ ) { # the line with the date in format 'MONDAY 12.4.'
     elsif( $text =~ /^(\S+) (\d+)\.(\d+)/ ) { # the line with the date in format 'MONDAY 12.4.'
 
       $date = ParseDate( $text , $nowyear );
@@ -117,7 +118,7 @@ sub ImportContentFile
 
         my $batch_id = "${xmltvid}_" . $date->ymd();
         $dsh->StartBatch( $batch_id, $channel_id );
-        $dsh->StartDate( $date->ymd("-") , "06:00" ); 
+        $dsh->StartDate( $date->ymd("-") , "07:00" ); 
         $currdate = $date;
       }
 
@@ -146,7 +147,7 @@ sub ImportContentFile
       my $ce = {
         channel_id   => $chd->{id},
 	start_time => $starttime->hms(":"),
-	title => $title,
+	title => norm($title),
       };
 
       if( $genre ){
@@ -178,8 +179,8 @@ sub ImportContentFile
 
       # find if we have the show with that name
       foreach my $element (@ces) {
-        my $utitle = utf8ucase( $element->{title} );
 
+        my $utitle = utf8ucase( $element->{title} );
 
         if( $utext eq $utitle ){
           $targetshow = $element;
@@ -214,7 +215,6 @@ sub ImportContentFile
       }
     }
   }
-
   $dsh->EndBatch( 1 );
     
   return;
@@ -223,6 +223,7 @@ sub ImportContentFile
 sub ParseDate {
   my( $text, $year ) = @_;
 
+  #my( $dayname, $day, $month ) = ($text =~ /([[:upper:]]+) (\d+)\.(\d+)/);
   my( $dayname, $day, $month ) = ($text =~ /(\S+) (\d+)\.(\d+)/);
   
   my $dt = DateTime->new( year   => $year,
@@ -277,7 +278,7 @@ sub utf8ucase {
 sub isCroUcase {
   my( $str ) = @_;
 
-  if( $str =~ /[:lower:]/ ){
+  if( $str =~ /[[:lower:]]/ ){
     return 0;
   }
 

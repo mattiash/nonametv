@@ -39,14 +39,18 @@ Options:
     Recreate all output files, not only the ones where data has
     changed.
 
+  --channel-group
+    Export data only for the channel group specified.
+
 =cut 
 
-our $OptionSpec     = [ qw/export-channels remove-old force-export 
+our $OptionSpec     = [ qw/export-channels remove-old force-export channel-group
                            verbose help/ ];
 our %OptionDefaults = ( 
                         'export-channels' => 0,
                         'remove-old' => 0,
                         'force-export' => 0,
+                        'channel-group' => 0,
                         'help' => 0,
                         'verbose' => 0,
                         );
@@ -88,6 +92,7 @@ sub new {
 sub Export
 {
   my( $self, $p ) = @_;
+  my $channelgroup = "";
 
   if( $p->{'help'} )
   {
@@ -107,6 +112,9 @@ Options:
     Export all data. Default is to only export data for batches that
     have changed since the last export.
 
+  --channel-group
+    Export data only for the channel group specified.
+
 EOH
 
     return;
@@ -114,9 +122,14 @@ EOH
 
   NonameTV::Log::verbose( $p->{verbose} );
 
+  if( $p->{'channel-group'} )
+  {
+    $channelgroup = $ARGV[0];
+  }
+
   if( $p->{'export-channels'} )
   {
-    $self->ExportChannelList();
+    $self->ExportChannelList( $channelgroup );
     return;
   }
 
@@ -666,7 +679,9 @@ sub WriteEntry
 #
 sub ExportChannelList
 {
-  my( $self ) = @_;
+  my( $self ) = shift;
+  my( $channelgroup ) = @_;
+
   my $ds = $self->{datastore};
 
   my $result = "";
@@ -676,10 +691,13 @@ sub ExportChannelList
   $root->setAttribute( 'generator-info-name', 'nonametv' );
   $odoc->setDocumentElement($root);
 
-  my( $res, $sth ) = $ds->sa->Sql( "
-      SELECT * from channels 
-      WHERE export=1
-      ORDER BY xmltvid" );
+  my $query = "SELECT * from channels WHERE export=1 ";
+  if( $channelgroup )
+  {
+    $query .= "AND chgroup=\'$channelgroup\' ";
+  }
+  $query .= "ORDER BY xmltvid";
+  my( $res, $sth ) = $ds->sa->Sql( $query );
 
   while( my $data = $sth->fetchrow_hashref() )
   {
@@ -705,9 +723,17 @@ sub ExportChannelList
     $root->appendChild( $ch );
   }
 
-  open( my $fh, '>:encoding(' . $self->{Encoding} . ')', 
-	"$self->{Root}channels.xml" )
-    or logdie( "Xmltv: cannot write to $self->{Root}channels.xml" );
+  my $outfile;
+  if( $channelgroup )
+  {
+    $outfile = "$self->{Root}channels-$channelgroup.xml";
+  }
+  else
+  {
+    $outfile = "$self->{Root}channels.xml";
+  }
+  open( my $fh, '>:encoding(' . $self->{Encoding} . ')', $outfile )
+    or logdie( "Xmltv: cannot write to $outfile" );
 
   $odoc->toFH( $fh, 1 );
   close( $fh );
@@ -716,10 +742,10 @@ sub ExportChannelList
 #      or logdie( "Xmltv: cannot write to $self->{Root}channels.xml" );
 
   if( $self->{KeepXml} ){
-    progress( "Keeping $self->{Root}channels.xml" );
-    system("gzip -c -f -n $self->{Root}channels.xml > $self->{Root}channels.xml.gz");
+    progress( "Keeping $outfile" );
+    system("gzip -c -f -n $outfile > $outfile.gz");
   } else {
-    system("gzip -f -n $self->{Root}channels.xml");
+    system("gzip -f -n $outfile");
   }
 }
 
