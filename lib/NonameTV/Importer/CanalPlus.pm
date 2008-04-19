@@ -9,7 +9,10 @@ Importer for data from Canal+.
 One file per channel and week downloaded from their site.
 The downloaded file is in xml-format.
 
-Features:
+Note that grabber_info can be either '6' or '20&g=2'. It seems that
+g=2 is used to select a different set of channels. When g=2 is used,
+data for all channels in that group is returned. The unwanted data is
+filtered out in FilterContent.
 
 =cut
 
@@ -17,7 +20,7 @@ use DateTime;
 use XML::LibXML;
 use HTTP::Date;
 
-use NonameTV qw/MyGet norm AddCategory/;
+use NonameTV qw/ParseXml norm AddCategory/;
 use NonameTV::Log qw/info progress error logdie/;
 
 use NonameTV::Importer::BaseWeekly;
@@ -41,6 +44,67 @@ sub new {
     # Therefore, I have included HTTP::Date and modified it slightly.
 
     return $self;
+}
+
+sub Object2Url {
+  my $self = shift;
+  my( $objectname, $chd ) = @_;
+
+  my( $year, $week ) = ( $objectname =~ /(\d+)-(\d+)$/ );
+ 
+  # Find the first day in the given week.
+  # Copied from
+  # http://www.nntp.perl.org/group/perl.datetime/5417?show_headers=1 
+  my $ds = DateTime->new( year=>$year, day => 4 );
+  $ds->add( days => $week * 7 - $ds->day_of_week - 6 );
+  
+  my $de=$ds->clone->add( days => 6 );
+  my $url = $self->{UrlRoot} .
+    'ds=' . $ds->ymd("-") . '&' . 
+    'de=' . $de->ymd('-') . '&' . 
+    'c=' . $chd->{grabber_info};
+
+  return( $url, undef );
+}
+
+sub FilterContent {
+  my $self = shift;
+  my( $cref, $chd ) = @_;
+
+  my( $chid ) = ($chd->{grabber_info} =~ /^(\d+)/);
+
+  my $doc = ParseXml( $cref );
+  
+  if( not defined $doc ) {
+    return (undef, "ParseXml failed" );
+  } 
+
+  # Find all "Schedule"-entries.
+  my $ns = $doc->find( "//Channel" );
+
+  if( $ns->size() == 0 ) {
+    error( "No channels found" );
+    return 0;
+  }
+  
+  foreach my $ch ($ns->get_nodelist) {
+    my $currid = $ch->findvalue( '@Id' );
+    if( $currid != $chid ) {
+      $ch->unbindNode();
+    }
+  }
+
+  my $str = $doc->toString( 1 );
+
+  return( \$str, undef );
+}
+
+sub ContentExtension {
+  return 'xml';
+}
+
+sub FilteredExtension {
+  return 'xml';
 }
 
 sub ImportContent
@@ -293,32 +357,6 @@ sub create_dt
   $dt->set_time_zone( "UTC" );
   
   return $dt;
-}
-
-sub FetchDataFromSite
-{
-  my $self = shift;
-  my( $batch_id, $data ) = @_;
-
-  my( $year, $week ) = ($batch_id =~ /_(\d+)-(\d+)/);
-
-  # Find the first day in the given week.
-  # Copied from
-  # http://www.nntp.perl.org/group/perl.datetime/5417?show_headers=1 
-#  print STDERR "DBG: $batch_id, $year, $week\n";
-  my $ds = DateTime->new( year=>$year, day => 4 );
-  $ds->add( days => $week * 7 - $ds->day_of_week - 6 );
-  
-  my $de=$ds->clone->add( days => 6 );
-#  print STDERR "DBG: " . $ds->ymd() . " " . $ds->ymd() . "\n";
-#http://grids.canalplus.se/Export.aspx?f=xml&c=0&ds=2006-09-25&de=2006-10-01&l=SE
-  my $url = $self->{UrlRoot} .
-    'ds=' . $ds->ymd("-") . '&' . 
-    'de=' . $de->ymd('-') . '&' . 
-    'c=' . $data->{grabber_info};
-
-  my( $content, $code ) = MyGet( $url );
-  return( $content, $code );
 }
 
 sub extract_extra_info
