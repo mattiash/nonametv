@@ -32,7 +32,6 @@
 34,"MTV Nordic",nordic.mtve.com,,Mtve,1,1,1,,,en,0,\N
 35,Kunskapskanalen,kunskapskanalen.svt.se,,Svt,1,Kunskapskanalen,1,,,sv,0,\N
 36,SVT24,svt24.svt.se,,Svt,1,24,1,,,sv,0,\N
-40,"Discovery Civilisation",nordic.civilisation.discovery.com,,Discovery_xml,1,CISWE,1,,,sv,0,
 41,"Discovery Travel & Living",nordic.travel.discovery.com,,Discovery_xml,1,TLSWE,1,,,sv,0,
 42,"Discovery Science",nordic.science.discovery.com,,Discovery_xml,1,SCSWE,1,,,sv,0,
 43,"Discovery Mix",nordic.mix.discovery.com,,Combiner,1,,0,,,sv,0,\N
