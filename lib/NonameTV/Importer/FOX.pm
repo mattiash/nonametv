@@ -46,6 +46,9 @@ sub ImportContentFile {
   my( $date, $firstdate , $lastdate );
   my( $oBook, $oWkS, $oWkC );
 
+  # Only process .xls files.
+  return if $file !~  /\.xls$/i;
+
   progress( "FOX: Processing $file" );
   
   $self->{fileerror} = 0;
