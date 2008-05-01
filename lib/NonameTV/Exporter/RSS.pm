@@ -159,7 +159,7 @@ sub FindAll {
 
   my $ds = $self->{datastore};
 
-  my ( $res, $channels ) = $ds->Sql("select id from channels where export=1");
+  my ( $res, $channels ) = $ds->sa->Sql("select id from channels where export=1");
 
   my $first_date = DateTime->today; 
   my $last_date = $first_date->clone();
@@ -180,7 +180,7 @@ sub FindUpdated {
 
   my $ds = $self->{datastore};
  
-  my ( $res, $update_batches ) = $ds->Sql( << 'EOSQL'
+  my ( $res, $update_batches ) = $ds->sa->Sql( << 'EOSQL'
     select channel_id, batch_id, 
            min(start_time)as min_start, max(start_time) as max_start
     from programs 
@@ -211,7 +211,7 @@ sub ExportData {
   my $ds = $self->{datastore};
 
   foreach my $channel (keys %{$todo}) {
-    my $chd = $ds->Lookup( "channels", { id => $channel } );
+    my $chd = $ds->sa->Lookup( "channels", { id => $channel } );
 
     foreach my $date (sort keys %{$todo->{$channel}}) {
       $self->ExportFile( $chd, $date );
@@ -224,7 +224,7 @@ sub ReadState {
 
   my $ds = $self->{datastore};
  
-  my $last_update = $ds->Lookup( 'state', { name => "xmltv_last_update" },
+  my $last_update = $ds->sa->Lookup( 'state', { name => "xmltv_last_update" },
                                  'value' );
 
   if( not defined( $last_update ) )
@@ -242,7 +242,7 @@ sub WriteState {
 
   my $ds = $self->{datastore};
 
-  $ds->Update( 'state', { name => "xmltv_last_update" }, 
+  $ds->sa->Update( 'state', { name => "xmltv_last_update" }, 
                { value => $update_started } );
 }
 
@@ -312,7 +312,7 @@ sub ExportFile {
 
   $self->{filename} =  "todayon-" . $chd->{xmltvid} . ".xml";
 
-  my( $res, $sth ) = $self->{datastore}->Sql( "
+  my( $res, $sth ) = $self->{datastore}->sa->Sql( "
         SELECT * from programs
         WHERE (channel_id = ?) 
           and (start_time >= ?)
@@ -457,7 +457,7 @@ sub ExportNowOnGroup
   ## one file per each channel group
   ## each item is the channel that belongs to that channel group
 
-  my( $res, $sth ) = $ds->Sql( "
+  my( $res, $sth ) = $ds->sa->Sql( "
       SELECT * from channelgroups
       WHERE 1
       ORDER BY abr" );
@@ -480,7 +480,7 @@ sub ExportNowOnGroup
       webMaster      => $self->{AdminEmail},
     );
   
-    my( $cres, $csth ) = $ds->Sql( "
+    my( $cres, $csth ) = $ds->sa->Sql( "
         SELECT * from channels
         WHERE `chgroup`='$gdata->{abr}'
         AND export=1
@@ -516,7 +516,7 @@ sub ExportTodayOnGroup
   ## one file per each channel group
   ## each item is the channel that belongs to that channel group
 
-  my( $res, $sth ) = $ds->Sql( "
+  my( $res, $sth ) = $ds->sa->Sql( "
       SELECT * from channelgroups
       WHERE 1
       ORDER BY abr" );
@@ -539,7 +539,7 @@ sub ExportTodayOnGroup
       webMaster      => $self->{AdminEmail},
     );
   
-    my( $cres, $csth ) = $ds->Sql( "
+    my( $cres, $csth ) = $ds->sa->Sql( "
         SELECT * from channels
         WHERE `chgroup`='$gdata->{abr}'
         AND export=1

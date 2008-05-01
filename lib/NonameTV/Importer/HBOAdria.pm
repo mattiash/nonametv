@@ -232,7 +232,7 @@ sub ImportContent
 
     if( defined $nowday ){
 
-      progress("HBOAdria: $start_dt - $end_dt : $title ($stereo,$rating)");
+      progress("HBOAdria: $chd->{xmltvid}: $start_dt - $title ($stereo,$rating)");
 
       my $ce = {
                channel_id   => $chd->{id},

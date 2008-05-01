@@ -147,6 +147,8 @@ sub ImportContent
     my $production_year = $sc->getElementsByTagName( 'year' );
 #print "$production_year\n";
 
+    progress("Bleb: $chd->{xmltvid}: $start - $title");
+
     my $ce = {
       channel_id   => $chd->{id},
       #title        => norm($title) || norm($subtitle),

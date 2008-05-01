@@ -175,7 +175,8 @@ sub FetchDataFromSite
   my $nowyear = DateTime->today->year();
 
   #my $url = $self->{UrlRoot} . "/" . $data->{grabber_info} .  $nowmonth . "_" . $nowyear .  ".xls";
-  my $url = $self->{UrlRoot} . "/d18/" . "Grid_EPG_April_2008_HotBird-Yamal.xls";
+  #my $url = $self->{UrlRoot} . "/d18/" . "Grid_EPG_April_2008_HotBird-Yamal.xls";
+  my $url = $self->{UrlRoot} . "/d18/" . "Grid-EPGMay_2008Hotbird-Yamal.xls";
 
   progress("Fetching xls file from $url");
 

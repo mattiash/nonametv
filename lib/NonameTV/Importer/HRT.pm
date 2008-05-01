@@ -134,7 +134,7 @@ sub ImportContent
     my $commentators = $sc->getElementsByTagName( 'commentator' );
     my $guests = $sc->getElementsByTagName( 'guest' );
 
-    progress("HRT: $start - $title");
+    progress("HRT: $chd->{xmltvid}: $start - $title");
 
     my $ce = {
       channel_id   => $chd->{id},

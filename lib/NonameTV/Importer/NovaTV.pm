@@ -14,6 +14,7 @@ Features:
 
 use utf8;
 
+use POSIX;
 use DateTime;
 use XML::LibXML;
 #use Text::Capitalize qw/capitalize_title/;
@@ -46,7 +47,8 @@ sub ImportContentFile
   my $self = shift;
   my( $file, $chd ) = @_;
 
-  if( $file !~ /program/i and $file !~ /izmjena/i and $file !~ /\.doc/ ) {
+  #if( $file !~ /program/i and $file !~ /izmjena/i and $file !~ /\.doc/ ) {
+  if( $file !~ /program/i and $file !~ /\.doc/ ) {
     progress( "NovaTV: Skipping unknown file $file" );
     return;
   }
@@ -105,8 +107,7 @@ sub ImportContentFile
     elsif( $text =~ /^PROGRAM NOVE TV za/i ) {
       progress("NovaTV: OK, this is the file with the schedules: $file");
     }
-    #elsif( $text =~ /^([[:upper:]]+) (\d+)\.(\d+)/ ) { # the line with the date in format 'MONDAY 12.4.'
-    elsif( $text =~ /^(\S+) (\d+)\.(\d+)/ ) { # the line with the date in format 'MONDAY 12.4.'
+    elsif( isDate( $text ) ) { # the line with the date in format 'MONDAY 12.4.'
 
       $date = ParseDate( $text , $nowyear );
 
@@ -123,14 +124,7 @@ sub ImportContentFile
       }
 
       # save last day if we have it in memory
-      if( @ces ){
-        foreach my $element (@ces) {
-
-          progress("NovaTV: $element->{start_time} : $element->{title}");
-
-          $dsh->AddProgramme( $element );
-        }
-      }
+      FlushDayData( $dsh , @ces );
 
       # empty last day array
       undef @ces;
@@ -215,16 +209,46 @@ sub ImportContentFile
       }
     }
   }
+  # save last day if we have it in memory
+  FlushDayData( $dsh , @ces );
+
   $dsh->EndBatch( 1 );
     
   return;
 }
 
+sub FlushDayData {
+  my ( $dsh , @data ) = @_;
+
+    if( @data ){
+      foreach my $element (@data) {
+
+        progress("NovaTV: $element->{start_time} : $element->{title}");
+
+        $dsh->AddProgramme( $element );
+      }
+    }
+}
+
+sub isDate {
+  my ( $text ) = @_;
+
+  return 1 if( $text =~ /^SUBOTA (\d+)\.(\d+)/ );
+  return 1 if( $text =~ /^NEDJELJA (\d+)\.(\d+)/ );
+  return 1 if( $text =~ /^PONEDJELJAK (\d+)\.(\d+)/ );
+  return 1 if( $text =~ /^UTORAK (\d+)\.(\d+)/ );
+  return 1 if( $text =~ /^SRIJEDA (\d+)\.(\d+)/ );
+  return 1 if( $text =~ /^[[:upper:]]ETVRTAK (\d+)\.(\d+)/ );	# \x{268}ETVRTAK
+  return 1 if( $text =~ /^PETAK (\d+)\.(\d+)/ );
+
+  return 0;
+}
+
 sub ParseDate {
   my( $text, $year ) = @_;
 
-  #my( $dayname, $day, $month ) = ($text =~ /([[:upper:]]+) (\d+)\.(\d+)/);
-  my( $dayname, $day, $month ) = ($text =~ /(\S+) (\d+)\.(\d+)/);
+  my( $dayname, $day, $month ) = ($text =~ /^([[:upper:]]+) (\d+)\.(\d+)/);
+  #my( $dayname, $day, $month ) = ($text =~ /(\S+) (\d+)\.(\d+)/);
   
   my $dt = DateTime->new( year   => $year,
                           month  => $month,

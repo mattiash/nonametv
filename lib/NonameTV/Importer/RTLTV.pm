@@ -142,7 +142,7 @@ sub ImportContent
     my $stereo = 'stereo';
     my $sixteen_nine = 0;
 
-    progress("RTLTV: $start - $title");
+    progress("RTLTV: $chd->{xmltvid}: $start - $title");
 
     my $ce = {
       channel_id   => $chd->{id},
