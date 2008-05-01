@@ -83,8 +83,7 @@ sub FilterContent {
   my $ns = $doc->find( "//Channel" );
 
   if( $ns->size() == 0 ) {
-    error( "No channels found" );
-    return 0;
+    return (undef, "No channels found" );
   }
   
   foreach my $ch ($ns->get_nodelist) {
