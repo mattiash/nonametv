@@ -223,7 +223,7 @@ sub FlushDayData {
     if( @data ){
       foreach my $element (@data) {
 
-        progress("NovaTV: $element->{start_time} : $element->{title}");
+        progress("NovaTV: $element->{start_time} - $element->{title}");
 
         $dsh->AddProgramme( $element );
       }

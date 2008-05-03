@@ -51,11 +51,13 @@ sub ImportContentFile {
   my( $kada, $newtime, $lasttime );
   my( $title, $newtitle , $lasttitle , $newdescription , $lastdescription );
   my( $hour , $min );
+  my $currdate;
+  my $today = DateTime->today();
 
   # Only process .xls files.
   return if $file !~  /\.xls$/i;
 
-  progress( "SportKlub: Processing $file" );
+  progress( "SportKlub: $chd->{xmltvid}: Processing $file" );
 
   $self->{fileerror} = 0;
 
@@ -64,17 +66,13 @@ sub ImportContentFile {
   my $dsh = $self->{datastorehelper};
   my $ds = $self->{datastore};
 
-  my $batch_id = "${xmltvid}_" . DateTime->now();
-  $dsh->StartBatch( $batch_id, $channel_id );
-  $dsh->StartDate( DateTime->today->ymd("-") , "05:00" );
-
   my $oBook = Spreadsheet::ParseExcel::Workbook->Parse( $file );
 
   for(my $iSheet=0; $iSheet < $oBook->{SheetCount} ; $iSheet++) {
 
     my $oWkS = $oBook->{Worksheet}[$iSheet];
 
-    progress( "SportKlub: Processing worksheet: $oWkS->{Name}" );
+    progress( "SportKlub: $chd->{xmltvid}: Processing worksheet: $oWkS->{Name}" );
 
     # The name of the sheet is the date in format DD.M.YYYY.
     my ( $date ) = ParseDate( $oWkS->{Name} );
@@ -82,14 +80,21 @@ sub ImportContentFile {
     if( defined $date ) {
 
       # skip the days in the past
-      my $past = DateTime->compare_ignore_floating( $date, DateTime->today() );
+      my $past = DateTime->compare( $date, $today );
       if( $past < 0 ){
-        progress("SportKlub: Skipping date $date");
+        progress("SportKlub: $chd->{xmltvid}: Skipping date $date");
         next;
       } else {
-        progress("SportKlub: Processing date $date");
+        progress("SportKlub: $chd->{xmltvid}: Processing date $date");
       }
     }
+
+    $dsh->EndBatch( 1 ) if defined $currdate;
+
+    my $batch_id = "${xmltvid}_" . $date->ymd("-");
+    $dsh->StartBatch( $batch_id, $channel_id );
+    $dsh->StartDate( $date->ymd("-") , "05:00" );
+    $currdate = $date;
 
     for(my $iR = $oWkS->{MinRow} ; defined $oWkS->{MaxRow} && $iR <= $oWkS->{MaxRow} ; $iR++) {
 
@@ -112,7 +117,7 @@ sub ImportContentFile {
 
       my $starttime = create_dt( $date , $showtime );
 
-      progress("SportKlub: $chd->{xmltvid}: $starttime : $title");
+      progress("SportKlub: $chd->{xmltvid}: $starttime - $title");
 
       my $ce = {
         channel_id   => $chd->{id},
@@ -139,6 +144,9 @@ sub ParseDate
   $dinfo =~ s/[ ]//g;
 
   my( $day, $mon, $yea ) = ( $dinfo =~ /(\d+)\.(\d+)\.(\d+)/ );
+
+  # there is an error in the file, so fix it
+  $yea = 2008 if( $yea eq 3008 );
 
   my $dt = DateTime->new( year   => $yea,
                           month  => $mon,

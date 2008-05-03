@@ -89,7 +89,6 @@ sub ImportContent
       error( "$batch_id: Invalid title '" . $sc->findvalue( './@title' ) . "'. Skipping." );
       next;
     }
-#print "TITLE: $title\n";
     
     #
     # subtitle
@@ -158,50 +157,35 @@ sub ImportContent
 
     if( defined( $subtitle ) and length( $subtitle ) )
     {
-#print "SUBTITLE: $subtitle\n";
       $ce->{subtitle} = norm($subtitle);
     }
 
     if( defined( $desc ) and length( $desc ) )
     {
-#print "DESC: $desc\n";
       $ce->{description} = norm($desc);
     }
 
     if( defined( $genre ) and length( $genre ) )
     {
-#print "GENRE: $genre\n";
       my($program_type, $category ) = $ds->LookupCat( "Phazer", $genre );
       AddCategory( $ce, $program_type, $category );
     }
 
     if( defined( $url ) and length( $url ) )
     {
-#print "URL: $url\n";
       $ce->{url} = norm($url);
     }
 
     if( defined( $production_year ) and ($production_year =~ /(\d\d\d\d)/) )
     {
-#print "YEAR: $production_year\n";
       $ce->{production_date} = "$1-01-01";
     }
 
     if( defined( $episode ) and ($episode =~ /\S/) )
     {
-#print "EPISODE: $episode\n";
       $ce->{episode} = norm($episode);
       $ce->{program_type} = 'series';
     }
-
-#print "------------------------------------------------------------------\n";
-#print "CHANNEL ID: $ce->{channel_id}\n";
-#print "START     : $ce->{start_time}\n";
-#print "END       : $ce->{end_time}\n";
-#print "TITLE     : $ce->{title}\n";
-#print "DESC      : $ce->{description}\n";
-#print "CATEGORY  : $ce->{category}\n";
-#print "------------------------------------------------------------------\n";
 
     $ds->AddProgramme( $ce );
 
@@ -257,7 +241,6 @@ sub FetchDataFromSite
   #$dt->add( days => $week * 7 - $dt->day_of_week - 6 );
 
   my $url = $self->{UrlRoot} . $data->{grabber_info};
-#print "url: $url\n";
 
   my( $content, $code ) = MyGet( $url );
   return( $content, $code );
