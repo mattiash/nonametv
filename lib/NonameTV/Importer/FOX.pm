@@ -5,8 +5,8 @@ use warnings;
 
 =pod
 
-Import data from Excel-files delivered via e-mail.
-Each file is for one week.
+Import data from Xml-files delivered via e-mail.  Each
+day is handled as a separate batch.
 
 Features:
 
@@ -15,12 +15,15 @@ Features:
 use utf8;
 
 use DateTime;
-use Spreadsheet::ParseExcel;
+use XML::LibXML;
+use Archive::Zip;
+use Data::Dumper;
+use File::Temp qw/tempfile/;
 
+use NonameTV qw/norm/;
 use NonameTV::DataStore::Helper;
 use NonameTV::Log qw/info progress error logdie 
                      log_to_string log_to_string_result/;
-use NonameTV qw/AddCategory/;
 
 use NonameTV::Importer::BaseFile;
 
@@ -34,217 +37,202 @@ sub new {
 
   $self->{grabber_name} = "FOX";
 
+  my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore} );
+  $self->{datastorehelper} = $dsh;
+
   return $self;
 }
 
 sub ImportContentFile {
   my $self = shift;
   my( $file, $chd ) = @_;
-  my( $time_slot, $etime );
-  my( $en_title, $cro_title , $genre );
-  my( $start_dt, $end_dt );
-  my( $date, $firstdate , $lastdate );
-  my( $oBook, $oWkS, $oWkC );
 
-  # Only process .xls files.
-  return if $file !~  /\.xls$/i;
-
-  progress( "FOX: Processing $file" );
-  
   $self->{fileerror} = 0;
 
   my $xmltvid=$chd->{xmltvid};
   my $channel_id = $chd->{id};
+  my $dsh = $self->{datastorehelper};
   my $ds = $self->{datastore};
-  $ds->{SILENCE_END_START_OVERLAP}=1;
 
-  $oBook = Spreadsheet::ParseExcel::Workbook->Parse( $file );
+  # there is no date information in the document
+  # the first and last dates are known from the file name
+  # which is in format 'FOX Crime schedule 28 Apr - 04 May CRO.xml'
+  # as each day is in one worksheet, other days are
+  # calculated as the offset from the first one
+  my $dayoff = 0;
+  my $year = DateTime->today->year();
 
-  # the date is to be extracted from file name
-  ( $firstdate , $lastdate ) = ParseDates( $file );
-  $date = $firstdate;
+  return if( $file !~ /\.xml$/i );
+  progress( "FOX: $xmltvid: Processing $file" );
+  
+  my( $month, $firstday ) = ExtractDate( $file );
+  if( not defined $firstday ) {
+    error( "FOX $file: Unable to extract date from file name" );
+    next;
+  }
 
-  for(my $iSheet=0; $iSheet < $oBook->{SheetCount} ; $iSheet++) {
+  my $doc;
+  my $xml = XML::LibXML->new;
+  eval { $doc = $xml->parse_file($file); };
 
-    $oWkS = $oBook->{Worksheet}[$iSheet];
+  if( not defined( $doc ) ) {
+    error( "FOX $file: Failed to parse xml" );
+    return;
+  }
+  my $wksheets = $doc->findnodes( "//ss:Worksheet" );
+  
+  if( $wksheets->size() == 0 ) {
+    error( "FOX $file: No Worksheets found" ) ;
+    return;
+  }
 
-    progress( "FOX: Processing worksheet: $oWkS->{Name} - $date" );
+  my $batch_id;
 
-    my $batch_id = $xmltvid . "_" . $date;
-    $ds->StartBatch( $batch_id , $channel_id );
+  my $currdate = "x";
+  my $column;
 
-    #for($iR = $oWkS->{MinRow} ; defined $oWkS->{MaxRow} && $iR <= $oWkS->{MaxRow} ; $iR++) {
-    for(my $iR = 1 ; defined $oWkS->{MaxRow} && $iR <= $oWkS->{MaxRow} ; $iR++) {
+  # find the rows in the worksheet
+  foreach my $wks ($wksheets->get_nodelist) {
 
-      # Time Slot
-      $oWkC = $oWkS->{Cells}[$iR][0];
-      if( $oWkC ){
-        $time_slot = $oWkC->Value;
-      }
+    # the name of the worksheet
+    my $dayname = $wks->getAttribute('ss:Name');
+    progress("FOX: $xmltvid: found worksheet named '$dayname'");
 
-      if( $time_slot ){
-        $etime = $time_slot;
-        $end_dt = $self->to_utc( $date, $etime );
-      } else {
-        $end_dt = $start_dt->clone->add( hours => 2 );
-      }
+    # the path should point exactly to one worksheet
+    my $rows = $wks->findnodes( ".//ss:Row" );
+  
+    if( $rows->size() == 0 ) {
+      error( "FOX $xmltvid: No Rows found in Worksheet '$dayname'" ) ;
+      return;
+    }
 
-      # NOTICE: we miss the last show of the day
+    foreach my $row ($rows->get_nodelist) {
 
-      # now after we got the next time_slot
-      # we do the update
-      if( defined($start_dt) and defined($end_dt) and $cro_title ) {
-
-        #$end_dt = $self->to_utc( $date, $etime );
-
-        if( $start_dt gt $end_dt ) {
-          $end_dt->add( days => 1 );
+      # the column names are stored in the first row
+      # so read them and store their column positions
+      # for further findvalue() calls
+      if( not defined( $column ) ) {
+        my $cells = $row->findnodes( ".//ss:Cell" );
+        my $i = 1;
+        $column = {};
+        foreach my $cell ($cells->get_nodelist) {
+	  my $v = $cell->findvalue( "." );
+	  $column->{$v} = "ss:Cell[$i]";
+	  $i++;
         }
 
-        progress( "FOX: from $start_dt to $end_dt : $en_title" );
+        # Check that we found the necessary columns.
 
-        my $ce = {
-          channel_id => $channel_id,
-          title => $cro_title,
-          subtitle => $en_title,
-          start_time => $start_dt->ymd('-') . " " . $start_dt->hms(':'),
-          end_time => $end_dt->ymd('-') . " " . $end_dt->hms(':'),
-        };
+        next;
+      }
+
+      my $timeslot = norm( $row->findvalue( $column->{'Time Slot'} ) );
+      my $title = norm( $row->findvalue( $column->{'EN Title'} ) );
+      my $crotitle = norm( $row->findvalue( $column->{'Croatian Title'} ) );
+      my $genre = norm( $row->findvalue( $column->{'Genre'} ) );
+
+      if( ! $timeslot ){
+        next;
+      }
+
+      my $starttime = create_dt( $year , $month , $firstday , $dayoff , $timeslot );
+
+      my $date = $starttime->ymd('-');
+
+      if( $date ne $currdate ) {
+        if( $currdate ne "x" ) {
+	  $dsh->EndBatch( 1 );
+        }
+
+        my $batch_id = $xmltvid . "_" . $date;
+        $dsh->StartBatch( $batch_id , $channel_id );
+        $dsh->StartDate( $date , "06:00" );
+        $currdate = $date;
+      }
+
+      if( not defined( $starttime ) ) {
+        error( "Invalid start-time '$date' '$starttime'. Skipping." );
+        next;
+      }
+
+      progress( "FOX: $xmltvid: $starttime - $title" );
+
+      my $ce = {
+        channel_id => $channel_id,
+        title => $crotitle,
+        subtitle => $title,
+        start_time => $starttime->hms(':'),
+      };
+
+      #if( $genre ){
+        #my($program_type, $category ) = $ds->LookupCat( 'FOX', $genre );
+        #AddCategory( $ce, $program_type, $category );
+      #}
     
-        if( $genre ){
-          my($program_type, $category ) = $ds->LookupCat( 'FOX', $genre );
-          AddCategory( $ce, $program_type, $category );
-        }
+      $dsh->AddProgramme( $ce );
 
-        $ds->AddProgramme( $ce );
+    } # next row
 
-      }
-
-      # save the current endtime as the start
-      # of the next show
-      $start_dt = $end_dt;
-
-      # EN Title
-      $oWkC = $oWkS->{Cells}[$iR][1];
-      if( $oWkC ){
-        $en_title = $oWkC->Value;
-      }
-
-      # Croatian Title
-      $oWkC = $oWkS->{Cells}[$iR][2];
-      if( $oWkC ){
-        $cro_title = $oWkC->Value;
-      }
-
-      # Genre
-      $oWkC = $oWkS->{Cells}[$iR][3];
-      if( $oWkC ){
-        $genre = $oWkC->Value;
-      }
-
-    } # next show
-
-    #
-    # increment the date we are processing
-    #
-    my $dt = ParseDate( $date );
-    $dt->add( days => 1 );
-    $date = $dt->ymd("-");
-
-    $ds->EndBatch( 1 );
+    $column = undef;
+    $dayoff++;
 
   } # next worksheet
+
+  $dsh->EndBatch( 1 );
 
   return;
 }
 
-sub ParseDate {
-  my( $text ) = @_;
+sub ExtractDate {
+  my( $fn ) = @_;
+  my $month;
 
-  my( $year, $month, $day ) = split( '-', $text );
-
-  my $dt = DateTime->new(
-			 year => $year,
-			 month => $month,
-			 day => $day );
-
-  return $dt;
-}
-
-sub FindWeek {
-  my( $text ) = @_;
-
-  my $dt = ParseDate( $text );
-
-  my( $week_year, $week_num ) = $dt->week;
-
-  return "$week_year-$week_num";
-}
-
-sub ParseDates {
-  my( $fname ) = @_;
-
-  my $mnumb;
-
-  my $year = DateTime->today->year();
-
-  my( $fday , $lday ) = ($fname =~ m/(\d+)/g );
-
-  my $mname = $fname;
-  $mname =~ s/.* (\d+) - (\d+) //;
-  $mname =~ s/ .*//;
-
-  $year = 2008;
-
-  if( $fname =~ /January/ or $fname =~ /Jan/ ){
-    $mnumb = 1;
-  } elsif( $fname =~ /February/ or $fname =~ /Feb/ ){
-    $mnumb = 2;
-  } elsif( $fname =~ /March/ or $fname =~ /Mar/ ){
-    $mnumb = 3;
-  } elsif( $fname =~ /April/ or $fname =~ /Apr/ ){
-    $mnumb = 4;
-  } elsif( $fname =~ /May/ or $fname =~ /May/ ){
-    $mnumb = 5;
-  } elsif( $fname =~ /June/ or $fname =~ /Jun/ ){
-    $mnumb = 6;
-  } elsif( $fname =~ /July/ or $fname =~ /Jul/ ){
-    $mnumb = 7;
-  } elsif( $fname =~ /August/ or $fname =~ /Aug/ ){
-    $mnumb = 8;
-  } elsif( $fname =~ /September/ or $fname =~ /Sep/ ){
-    $mnumb = 9;
-  } elsif( $fname =~ /October/ or $fname =~ /Oct/ ){
-    $mnumb = 10;
-  } elsif( $fname =~ /November/ or $fname =~ /Nov/ ){
-    $mnumb = 11;
-  } elsif( $fname =~ /December/ or $fname =~ /Dec/ ){
-    $mnumb = 12;
+  # 'FOX Crime schedule 28 Apr - 04 May CRO.xml'
+  my( $day , $monname ) = ($fn =~ m/\s(\d\d)\s(\S+)\s/ );
+  
+  if( not defined( $day ) ) {
+    return undef;
   }
 
-  return( $year."-".$mnumb."-".$fday , $year."-".$mnumb."-".$lday );
+  $month = 1 if( $monname eq 'Jan' );
+  $month = 2 if( $monname eq 'Feb' );
+  $month = 3 if( $monname eq 'Mar' );
+  $month = 4 if( $monname eq 'Apr' );
+  $month = 5 if( $monname eq 'May' );
+  $month = 6 if( $monname eq 'Jun' );
+  $month = 7 if( $monname eq 'Jul' );
+  $month = 8 if( $monname eq 'Aug' );
+  $month = 9 if( $monname eq 'Sep' );
+  $month = 10 if( $monname eq 'Oct' );
+  $month = 11 if( $monname eq 'Nov' );
+  $month = 12 if( $monname eq 'Dec' );
+
+  return ($month,$day);
 }
 
-sub to_utc {
-  my $self = shift;
-  my( $date, $time ) = @_;
+sub create_dt {
+  my ( $yr , $mn , $fd , $doff , $timeslot ) = @_;
 
-  my( $year, $month, $day ) = split( '-', $date );
-  my( $hour, $minute ) = split( ":", $time );
+  my ( $hour, $minute ) = ( $timeslot =~ /^\d{4}-\d{2}-\d{2}T(\d\d):(\d\d):/ );
 
-  my $dt = DateTime->new( year   => $year,
-                          month  => $month,
-                          day    => $day,
+  my $dt = DateTime->new( year   => $yr,
+                          month  => $mn,
+                          day    => $fd,
                           hour   => $hour,
                           minute => $minute,
+                          second => 0,
+                          nanosecond => 0,
                           time_zone => 'Europe/Zagreb',
-                          );
-  
-  $dt->set_time_zone( "UTC" );
-  
+  );
+
+  # add dayoffset number of days
+  $dt->add( days => $doff );
+
+  #$dt->set_time_zone( "UTC" );
+
   return $dt;
 }
-  
+
 1;
 
 ### Setup coding system
