@@ -187,9 +187,19 @@ sub ExtractDate {
   my( $fn ) = @_;
   my $month;
 
+  # format of the file name could be
   # 'FOX Crime schedule 28 Apr - 04 May CRO.xml'
+  # or
+  # 'Life Programa 05 - 11 May 08 CRO.xml'
+
+  # try the first format
   my( $day , $monname ) = ($fn =~ m/\s(\d\d)\s(\S+)\s/ );
   
+  # try the second if the first failed
+  if( not defined( $monname ) or ( $monname eq '-' ) ) {
+    ( $day , $monname ) = ($fn =~ m/\s(\d\d)\s\-\s\d\d\s(\S+)\s/ );
+  }
+
   if( not defined( $day ) ) {
     return undef;
   }

@@ -87,7 +87,7 @@ sub ImportContentFile
 
   my $currdate = undef;
   my $nowyear = DateTime->today->year();
-  my $date;
+  my $date = undef;
   my @ces;
   my $targetshow;
   my $description;
@@ -114,17 +114,20 @@ sub ImportContentFile
       if( defined $date ) {
         progress("NovaTV: Date $date");
 
+      if( defined $currdate ){
+
+        # save last day if we have it in memory
+        FlushDayData( $dsh , @ces );
+
         $dsh->EndBatch( 1 )
-          if defined $currdate;
+
+      }
 
         my $batch_id = "${xmltvid}_" . $date->ymd();
         $dsh->StartBatch( $batch_id, $channel_id );
-        $dsh->StartDate( $date->ymd("-") , "07:00" ); 
+        $dsh->StartDate( $date->ymd("-") , "06:30" ); 
         $currdate = $date;
       }
-
-      # save last day if we have it in memory
-      FlushDayData( $dsh , @ces );
 
       # empty last day array
       undef @ces;
