@@ -163,8 +163,14 @@ sub GetContent {
     # We need to do this before comparing md5sums, since otherwise errors
     # from the filter would never be reported if the content filter fails
     # and the content never changes after that.
+    my $cref = $res->content_ref;
+    if( (not defined $cref) or (not defined $$cref) ) {
+      my $empty = "";
+      $cref = \$empty;
+    }
+
     my( $filtered_ref, $filter_error ) = 
-	$co->FilterContent( $res->content_ref, $data );
+	$co->FilterContent( $cref, $data );
 
     if( not defined $filtered_ref ) {
       return (undef,
@@ -172,7 +178,7 @@ sub GetContent {
     }
 
     # Calculate md5sum of content
-    my $contentmd5 = $self->CalculateMD5( $res->content_ref );
+    my $contentmd5 = $self->CalculateMD5( $cref );
 
     # Compare md5sum with stored md5sum
     if( $contentmd5 eq $state->{contentmd5} ) {
@@ -182,7 +188,7 @@ sub GetContent {
 
     $self->WriteReference( $self->Filename( $objectname, "content",
                            $co->ContentExtension() ), 
-			   $res->content_ref );
+			   $cref );
 
     $currstate->{contentmd5} = $contentmd5;
 
