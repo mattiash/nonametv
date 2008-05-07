@@ -76,3 +76,15 @@
 89,"Disney Channel",disneychannel.se,,DisneyChannel,1,,0,,,sv,0,
 90,"Toon Disney",toon.disneychannel.se,,DisneyChannel,1,,0,,,sv,0,
 91,"Playhouse Disney",playhouse.disneychannel.se,,DisneyChannel,1,,0,,,sv,0,
+92,"Canal+ PPV1",ppv1.canalplus.se,,CanalPlus,1,20&g=2,0,,,,0,\N
+93,"Canal+ PPV2",ppv2.canalplus.se,,CanalPlus,1,21&g=2,0,,,,0,\N
+94,"Canal+ PPV3",ppv3.canalplus.se,,CanalPlus,1,22&g=2,0,,,,0,\N
+95,"Canal+ PPV4",ppv4.canalplus.se,,CanalPlus,1,23&g=2,0,,,,0,\N
+96,"Canal+ PPV5",ppv5.canalplus.se,,CanalPlus,1,24&g=2,0,,,,0,\N
+97,"Canal+ PPV6",ppv6.canalplus.se,,CanalPlus,1,28&g=2,0,,,,0,\N
+98,"Canal+ PPV7",ppv7.canalplus.se,,CanalPlus,1,29&g=2,0,,,,0,\N
+99,"Canal+ PPV8",ppv8.canalplus.se,,CanalPlus,1,30&g=2,0,,,,0,\N
+100,"Canal+ PPV Sport 1",ppvsport1.canalplus.se,,CanalPlusPPV,1,"PPV Sport 1",0,,,,0,\N
+101,"Canal+ PPV Sport 2",ppvsport2.canalplus.se,,CanalPlusPPV,1,"PPV Sport 2",0,,,,0,\N
+102,"Canal+ PPV Sport 3",ppvsport3.canalplus.se,,CanalPlusPPV,1,"PPV Sport 3",0,,,,0,\N
+103,"Canal+ PPV Sport 4",ppvsport4.canalplus.se,,CanalPlusPPV,1,"PPV Sport 4",0,,,,0,\N
