@@ -54,10 +54,7 @@ my $ds = NonameTV::DataStore->new( $conf->{DataStore} );
 my $filestore = $conf->{FileStore};
 
 my @folders = qw(/home/mattias/Maildir/.Projects.xmltv-data
-                 /home/mattias/Maildir/.Projects.NonameTV-Data.Discovery
                  /home/mattias/Maildir/.Projects.NonameTV-Data.Disney
-                 /home/mattias/Maildir/.Projects.NonameTV-Data.Expressen
-                 /home/mattias/Maildir/.Projects.NonameTV-Data.Aftonbladet
                  /home/mattias/Maildir/.Projects.NonameTV-Data.Kanal9
                  /home/mattias/Maildir/.Projects.NonameTV-Data.NationalGeographic
                  /home/mattias/Maildir/.Projects.NonameTV-Data.KanalLokal
@@ -227,10 +224,6 @@ sub guess_channel
     }
   }
 
-  if( $dir =~ /Discovery/ ) {
-    return guess_channel_discovery( $from, $subject, $filename );
-  }
-
   if( $dir =~ /Kanal9/ and $filename =~ /\.doc$/i ) {
     return "kanal9.se";
   }
@@ -260,53 +253,6 @@ sub guess_channel
 
   return undef;
 }
-
-sub guess_channel_discovery
-{
-  my( $from, $subject, $filename ) = @_;
-
-  return undef if $filename eq "noname";
-
-  # Discovery
-
-  my( $fnid, $fnlang, $fntype, $ext ) = 
-    ( $filename =~ /([A-Z]+[\. ]+[A-Z]+)[\. ]
-      (\S+).*?
-      (\S+\s*[ ()0-9]*)\.
-      ([^\.]+)$/x );
-  
-  if( not defined( $ext ) )
-  {
-    error( "Unknown Discovery-filename $filename" );
-    return undef;
-  }
-  
-  $fnid =~ tr/ /./;
-  
-  if( $fntype =~ /^high/i )
-  {
-    # Ignore highlights-files.
-    return undef;
-  }
-  
-  my %channels = (
-                  "DC.NO" => "nordic.discovery.com",
-                  "AP.NO" => "nordic.animalplanet.discovery.com",
-                  "CI.EU" => "nordic.civilisation.discovery.com",
-                  "TL.EU" => "nordic.travel.discovery.com",
-                  "SC.EU" => "nordic.science.discovery.com",
-                  "DC.HD" => "hd.discovery.com",
-                  );
-  
-  if( exists( $channels{$fnid} ) ) {
-    return $channels{$fnid};
-  }
-  else {
-    error( "Unknown Discovery-channel $fnid" );
-    return undef;
-  }
-}
-
 
 sub md5sum {
   my( $file ) = @_;
