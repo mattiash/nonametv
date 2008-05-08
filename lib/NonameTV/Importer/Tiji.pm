@@ -14,11 +14,11 @@ Features:
 use utf8;
 
 use DateTime;
+use Text::CSV;
 use Data::Dumper;
 use File::Temp qw/tempfile/;
-use Text::CSV;
 
-use NonameTV qw/norm/;
+use NonameTV qw/norm AddCategory/;
 use NonameTV::DataStore::Helper;
 use NonameTV::Log qw/info progress error logdie 
                      log_to_string log_to_string_result/;
@@ -55,14 +55,11 @@ sub ImportContentFile {
   return if( $file !~ /\.csv$/i );
   progress( "Tiji: $xmltvid: Processing $file" );
 
-  my $tod = DateTime->today();
-  my $batch_id = $xmltvid . "_" . $tod->ymd("-");
-  $dsh->StartBatch( $batch_id , $channel_id );
-
   my $date;
   my $time;
   my $title;
   my $episode;
+  my $currdate = "x";
 
   open my $CSVFILE, "<", $file or die $!;
 
@@ -83,7 +80,17 @@ sub ImportContentFile {
 
       $date = ParseDate( $row->{'DATE'} );
 
-      $dsh->StartDate( $date->ymd("-") , "04:00" );
+      if( $date ne $currdate ){
+
+        if( $currdate ne "x" ) {
+          $dsh->EndBatch( 1 );
+        }
+
+        my $batch_id = $xmltvid . "_" . $date;
+        $dsh->StartBatch( $batch_id , $channel_id );
+        $dsh->StartDate( $date , "04:00" );
+        $currdate = $date;
+      }
     }
 
     if( $row->{'HEURE'} ) {
@@ -120,8 +127,9 @@ sub ImportContentFile {
     }
 
     if( $row->{'FORMAT'} ) {
-      #my($program_type, $category ) = $ds->LookupCat( "Tiji", $row->{'FORMAT'} );
-      #AddCategory( $ce, $program_type, $category );
+      my $genre = norm($row->{'FORMAT'});
+      my($program_type, $category ) = $ds->LookupCat( "Tiji", $genre );
+      AddCategory( $ce, $program_type, $category );
     }
 
     if( $row->{'EPISODE'} ) {
@@ -140,8 +148,12 @@ sub ImportContentFile {
       $ce->{episode} = norm($episode);
     }
 
+    if( $row->{'PRESENTATEUR'} ){
+      $ce->{presenters} = norm($row->{'PRESENTATEUR'});
+    }
+
     if( $row->{'SYNOPSIS/CONCEPT'} ){
-      $ce->{description} = $row->{'SYNOPSIS/CONCEPT'};
+      $ce->{description} = norm($row->{'SYNOPSIS/CONCEPT'});
     }
 
     $dsh->AddProgramme( $ce );
@@ -174,7 +186,7 @@ sub ParseDate {
                             time_zone => 'Europe/Paris',
   );
 
-  return $date;
+  return $date->ymd("-");
 }
 
 1;

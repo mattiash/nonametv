@@ -83,7 +83,7 @@ sub ImportContentFile {
         $dateinfo = $oWkC->Value;
       }
       next if ( ! $dateinfo );
-      next if( $dateinfo !~ /\S.*\S/ );
+      next if( $dateinfo !~ /\S+\s+\d\d\.\d\d/ );
 
       ( $day , $month , $year ) = ParseDate( $dateinfo );
 
@@ -99,7 +99,7 @@ sub ImportContentFile {
 
         # next if kada is empty
         next if ( ! $kada );
-        next if( $kada !~ /\S.*\S/ );
+        next if( $kada !~ /\d\d:\d\d/ );
 
         # Title
         $oWkC = $oWkS->{Cells}[$iR][$iC];
@@ -109,7 +109,7 @@ sub ImportContentFile {
 
         # next if title is empty as it spreads across more cells
         next if ( ! $title );
-        next if( $title !~ /\S.*\S/ );
+        next if( $title !~ /\S+/ );
 
         # create the time
         $newtime = create_dt( $day , $month , $year , $kada );
@@ -150,6 +150,10 @@ sub ImportContentFile {
 
       } # next row (next show)
 
+      $dateinfo = undef;
+      $kada = undef;
+      $title = undef;
+
     } # next column (next day)
 
     $ds->EndBatch( 1 );
@@ -163,7 +167,7 @@ sub ParseDate
 {
   my ( $dinfo ) = @_;
 
-  my( $d, $m ) = ( $dinfo =~ /(\d+)\.(\d+)/ );
+  my( $d, $m ) = ( $dinfo =~ /(\d{2})\.(\d{2})/ );
 
   my $y = DateTime->today()->year;
 

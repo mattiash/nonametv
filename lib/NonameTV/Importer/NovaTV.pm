@@ -47,8 +47,7 @@ sub ImportContentFile
   my $self = shift;
   my( $file, $chd ) = @_;
 
-  #if( $file !~ /program/i and $file !~ /izmjena/i and $file !~ /\.doc/ ) {
-  if( $file !~ /program/i and $file !~ /\.doc/ ) {
+  if( ( $file !~ /program/i and $file !~ /izmjena/i ) and $file !~ /\.doc/ ) {
     progress( "NovaTV: Skipping unknown file $file" );
     return;
   }

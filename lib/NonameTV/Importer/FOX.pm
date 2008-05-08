@@ -20,7 +20,7 @@ use Archive::Zip;
 use Data::Dumper;
 use File::Temp qw/tempfile/;
 
-use NonameTV qw/norm/;
+use NonameTV qw/norm AddCategory/;
 use NonameTV::DataStore::Helper;
 use NonameTV::Log qw/info progress error logdie 
                      log_to_string log_to_string_result/;
@@ -164,10 +164,10 @@ sub ImportContentFile {
         start_time => $starttime->hms(':'),
       };
 
-      #if( $genre ){
-        #my($program_type, $category ) = $ds->LookupCat( 'FOX', $genre );
-        #AddCategory( $ce, $program_type, $category );
-      #}
+      if( $genre ){
+        my($program_type, $category ) = $ds->LookupCat( 'FOX', $genre );
+        AddCategory( $ce, $program_type, $category );
+      }
     
       $dsh->AddProgramme( $ce );
 
