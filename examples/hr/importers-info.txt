@@ -1,0 +1,131 @@
+
+Here is the short info about which importer is used for which channel
+
+Importer:	HRT
+Channels:	HTV1, HTV2, HTV Plus, HR1, HR2, HR3, Glas Hrvatske...
+Provider:	Croatian Radio Television (national radio television)
+Location:	Zagreb, Croatia
+Web site:	www.hrt.hr
+
+---------------------------------------------------------------------
+
+Importer:	RTLTV
+Channels:	RTL Televizija
+Provider:	Croatian RTL
+Location:	Zagreb, Croatia
+Web site:	www.rtl.hr
+
+---------------------------------------------------------------------
+
+Importer:	NovaTV
+Channels:	Nova TV
+Provider:	Nova TV
+Location:	Zagreb, Croatia
+Web site:	www.novatv.hr
+
+---------------------------------------------------------------------
+
+Importer:	OTV
+Channels:	OTV
+Provider:	OTV
+Location:	Zagreb, Croatia
+Web site:	www.otv.hr
+
+---------------------------------------------------------------------
+
+Importer:	NetTV
+Channels:	NET TV
+Provider:	NET TV
+Location:	Kutina, Croatia
+Web site:	www.net-tv.hr
+
+---------------------------------------------------------------------
+
+Importer:	Phazer
+Channels:	many channels
+Provider:	Phazer/TVprofil
+Location:	Zagreb, Croatia
+Web site:	www.tvprofil.net
+
+---------------------------------------------------------------------
+
+Importer:	Tiji
+Channels:	Tiji
+Provider:	Tiji TV
+Location:	France
+Web site:	www.tiji.tv
+
+---------------------------------------------------------------------
+
+Importer:	FTV
+Channels:	FTV
+Provider:	Fashion television
+Location:	-
+Web site:	www.ftv.com
+
+---------------------------------------------------------------------
+
+Importer:	ExtremeSports
+Channels:	ExtremeSports
+Provider:	Zone Pressroom
+Location:	-
+Web site:	www.extreme.com
+
+---------------------------------------------------------------------
+
+Importer:	Motors
+Channels:	Motors TV
+Provider:	Motors TV
+Location:	-
+Web site:	www.motorstv.com
+
+---------------------------------------------------------------------
+
+Importer:	HBOAdria
+Channels:	HBO Adria, HBO Comedy
+Provider:	HBO Croatia
+Location:	Zagreb, Croatia
+Web site:	www.hbo.hr
+
+---------------------------------------------------------------------
+
+Importer:	Bleb
+Channels:	many channels
+Provider:	Bleb
+Location:	UK
+Web site:	www.bleb.org
+
+---------------------------------------------------------------------
+
+Importer:	FOX
+Channels:	FOX Crime, FOX Life
+Provider:	FOX
+Location:	-
+Web site:	www.fox.com
+
+---------------------------------------------------------------------
+
+Importer:	SportKlub
+Channels:	SportKlub, SportKlub Plus
+Provider:	SportKlub
+Location:	-
+Web site:	www.sportklub.info
+
+---------------------------------------------------------------------
+
+Importer:	KapNet
+Channels:	Kapital Network
+Provider:	Kapital Network
+Location:	Zagreb, Croatia
+Web site:	www.kapital.biz.hr
+
+---------------------------------------------------------------------
+
+Importer:	PlayboyTV
+Channels:	PlayboyTV
+Provider:	PlayboyTV
+Location:	-
+Web site:	www.playboy.com/playboytv
+
+---------------------------------------------------------------------
+
