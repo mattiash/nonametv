@@ -119,11 +119,10 @@ sub ImportContentFile
       #my $cod = Locale::Recode->new( from => 'ISO-8859-2' , to => 'UTF-8' );
       #$cod->recode( $text );
 
+#print "TEXT: $text\n";
+
       if( $text eq "" ) {
         # blank line
-      }
-      elsif( $text =~ /^RASPORED PROGRAMA OTVORENE TELEVIZIJE/i ) {
-        progress("OTV: OK, this is the file with the schedules: $file");
       }
       elsif( isDate( $text ) ) { # the token with the date in format 'MONDAY 12.4.'
 

@@ -47,10 +47,9 @@ sub ImportContentFile {
   my $self = shift;
   my( $file, $chd ) = @_;
 
-  my( $dateinfo );
-  my( $kada, $newtime, $lasttime );
-  my( $title, $newtitle , $lasttitle , $newdescription , $lastdescription );
-  my( $hour , $min );
+  my $showtime = undef;
+  my $title = undef;
+  my $descr  = undef;
   my $currdate;
   my $today = DateTime->today();
 
@@ -101,19 +100,19 @@ sub ImportContentFile {
       # the show start time is in row1
       my $oWkC = $oWkS->{Cells}[$iR][1];
       next if not $oWkC;
-      my $showtime = $oWkC->Value;
-
+      $showtime = $oWkC->Value;
       next if ( $showtime !~ /^(\d+)\:(\d+)$/ );
 
       # the show title is in row2
       $oWkC = $oWkS->{Cells}[$iR][2];
       next if not $oWkC;
-      my $title = $oWkC->Value;
+      $title = $oWkC->Value;
 
       # the show description is in row3
       $oWkC = $oWkS->{Cells}[$iR][3];
-      #next if not $oWkC;
-      my $descr = $oWkC->Value;
+      if( $oWkC ){
+        $descr = $oWkC->Value;
+      }
 
       my $starttime = create_dt( $date , $showtime );
 
@@ -128,7 +127,11 @@ sub ImportContentFile {
 
       $dsh->AddProgramme( $ce );
 
-    } # next column
+      $showtime = undef;
+      $title = undef;
+      $descr = undef;
+
+    } # next row
 
   } # next worksheet
 

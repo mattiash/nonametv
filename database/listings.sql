@@ -97,4 +97,5 @@ CREATE TABLE IF NOT EXISTS `channelgroups` (
   `abr` varchar(24) NOT NULL,
   `display_name` varchar(100) NOT NULL,
   `sortby` varchar(32) NOT NULL
+  `hidden` tinyint(1) NOT NULL default '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
