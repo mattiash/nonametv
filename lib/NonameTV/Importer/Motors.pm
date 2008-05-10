@@ -89,6 +89,9 @@ sub ImportContentFile {
           $dsh->StartBatch( $batch_id, $channel_id );
           $dsh->StartDate( $date , "05:00" );
           $currdate = $date;
+
+          progress("Motors: Date is $date");
+
           next;
         }
       }
