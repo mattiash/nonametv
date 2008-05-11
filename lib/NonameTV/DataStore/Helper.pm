@@ -15,6 +15,20 @@ Alternative interface to the datastore for NonameTV. Usable for Importers
 that receive data where each programme entry does not contain a stop-time
 and a date.
 
+The typical calling-sequence is
+
+  StartBatch
+
+  StartDate
+  AddProgramme
+  AddProgramme
+
+  StartDate
+  AddProgramme
+  AddProgramme
+
+  EndBatch
+
 =head1 METHODS
 
 =over 4
@@ -63,12 +77,12 @@ sub DESTROY
 
 =item StartBatch
   
-  Called by an importer to signal the start of a batch of updates.
-  Takes two parameters: one containing a string that uniquely identifies
-  a set of programmes (a batch_id) and the channel_id for the channel
-  that this data is for. The channel_id is a numeric index into the
-  channels-table.
-  
+Called by an importer to signal the start of a batch of updates.
+Takes two parameters: one containing a string that uniquely identifies
+a set of programmes (a batch_id) and the channel_id for the channel
+that this data is for. The channel_id is a numeric index into the
+channels-table.
+
 =cut
 
 sub StartBatch
@@ -114,6 +128,27 @@ sub EndBatch
 
   $self->{ds}->EndBatch( $success, $log );
 }
+
+=item StartDate
+
+Signal the start of a new day. Takes two parameters, a date in the
+format "yyyy-mm-dd" and an optional time in the format "hh:mm".
+
+The time is used to signal the earliest possible starttime of the
+first programme of the day. If the first programme added via
+AddProgramme after StartDate has a time that is earlier than the time
+in StartDate, then it is assumed that the programme actually starts a
+day later. E.g.:
+
+    $dsh->StartDate( "2008-01-01", "06:00" );
+    $dsh->AddProgramme( {  
+      start_time => "01:45", 
+      ...
+    } );
+
+The program in the example will get start-time "2008-01-02 01:45".
+
+=cut
 
 sub StartDate
 {
@@ -163,6 +198,10 @@ about the programme. The hashref does NOT need to contain an end_time.
     title       => "Morgon-tv",
     description => "Morgon i TV-soffan",
   } );
+
+If the start_time is less than the end_time of the last programme (or
+the start_time if no end_time was specified), AddProgramme assumes that
+the date should be increased by one day.
 
 =cut
 
