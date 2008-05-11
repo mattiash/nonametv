@@ -6,14 +6,14 @@ CREATE TABLE `batches` (
   `message` text NOT NULL,
   `abort_message` text NOT NULL,
   PRIMARY KEY  (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=626 DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `channels`;
 CREATE TABLE `channels` (
   `id` int(11) NOT NULL auto_increment,
   `display_name` varchar(100) NOT NULL default '',
   `xmltvid` varchar(100) NOT NULL default '',
-  `chgroup` varchar(100) NOT NULL default '',
+  `chgroup` varchar(100) NOT NULL,
   `grabber` varchar(20) NOT NULL default '',
   `export` tinyint(1) NOT NULL default '0',
   `grabber_info` varchar(100) NOT NULL default '',
@@ -24,6 +24,14 @@ CREATE TABLE `channels` (
   `empty_ok` tinyint(1) NOT NULL default '0',
   `url` varchar(100) default NULL,
   PRIMARY KEY  (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=1006 DEFAULT CHARSET=utf8;
+
+DROP TABLE IF EXISTS `channelgroups`;
+CREATE TABLE `channelgroups` (
+  `abr` varchar(24) character set latin1 NOT NULL,
+  `display_name` varchar(100) character set latin1 NOT NULL,
+  `sortby` varchar(32) NOT NULL,
+  `hidden` tinyint(1) NOT NULL default '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `files`;
@@ -37,7 +45,7 @@ CREATE TABLE `files` (
   `latestdate` datetime default NULL,
   `md5sum` varchar(33) NOT NULL default '',
   PRIMARY KEY  (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=376 DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `programs`;
 CREATE TABLE `programs` (
@@ -93,9 +101,3 @@ CREATE TABLE `languagestrings` (
   `language` varchar(4) NOT NULL default ''
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE IF NOT EXISTS `channelgroups` (
-  `abr` varchar(24) NOT NULL,
-  `display_name` varchar(100) NOT NULL,
-  `sortby` varchar(32) NOT NULL
-  `hidden` tinyint(1) NOT NULL default '0'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;

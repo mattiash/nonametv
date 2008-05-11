@@ -91,6 +91,7 @@ sub ImportContent
       next;
     }
     my $start = $self->create_dt( $starttime );
+    next if( ! $start );
 
     #
     # end time
@@ -102,6 +103,7 @@ sub ImportContent
       next;
     }
     my $end = $self->create_dt( $endtime );
+    next if( ! $end );
 
 #print "$starttime -> $start\n";
 #print "$endtime -> $end\n";
@@ -119,6 +121,8 @@ sub ImportContent
     # title, subtitle
     #
     my $title = $sc->getElementsByTagName('title');
+    next if( ! $title );
+
     my $subtitle = $sc->getElementsByTagName('subtitle');
 #print "$title\n";
 #print "$subtitle\n";
@@ -151,22 +155,22 @@ sub ImportContent
 
     my $ce = {
       channel_id   => $chd->{id},
-      #title        => norm($title) || norm($subtitle),
       title        => norm($title),
-      #subtitle     => norm($subtitle),
-      description  => norm($desc),
       start_time   => $start->ymd("-") . " " . $start->hms(":"),
       end_time     => $end->ymd("-") . " " . $end->hms(":"),
-      url          => norm($url),
     };
+
+      #subtitle     => norm($subtitle),
+      #description  => norm($desc),
+      #url          => norm($url),
 
     my($program_type, $category ) = $ds->LookupCat( "Bleb", $type );
     AddCategory( $ce, $program_type, $category );
     
-    if( defined( $production_year ) and ($production_year =~ /(\d\d\d\d)/) )
-    {
-      $ce->{production_date} = "$1-01-01";
-    }
+#    if( defined( $production_year ) and ($production_year =~ /(\d\d\d\d)/) )
+#    {
+#      $ce->{production_date} = "$1-01-01";
+#    }
 
     $ds->AddProgramme( $ce );
   }
