@@ -1,0 +1,10 @@
+HRV,"Hrvatski programi",id,0
+SPORT,"Sportski programi",display_name,0
+NEWS,Vijesti,display_name,0
+FILM,"Filmski programi",display_name,0
+MUSIC,"Glazbeni programi",display_name,0
+CHILD,"Programi za djecu",display_name,0
+ADULT,"Programi za odrasle",display_name,0
+MISC,"Razni programi",display_name,0
+RADIO,"Radijski kanali",id,0
+TEST,"Testni kanali",id,1

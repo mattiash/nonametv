@@ -1,33 +1,3 @@
-exporter-xmltv,episode_part,part,en
-exporter-xmltv,episode_number,episode,en
-exporter-xmltv,episode_season,season,en
-exporter-xmltv,of,of,en
-listchannels,title,"This is the title of your channel listing page.",en
-listchannels,headertext,"Put whatever you want here. It will be displayed on the top of the channel list.",en
-listchannels,channel,Channel,en
-listchannels,xmltvid,"XMLTV ID",en
-listchannels,datasource,Source,en
-listchannels,footertext,"Put whatever you want here. It will be displayed on the bottom of the channel list.",en
-exporter-xmltv,episode_part,Part,sv
-exporter-xmltv,episode_number,Del,sv
-exporter-xmltv,episode_season,"sÃ¤song",sv
-exporter-xmltv,of,av,sv
-listchannels,title,"This is the title of your channel listing page.",sv
-listchannels,headertext,"Put whatever you want here. It will be displayed on the top of the channel list.",sv
-listchannels,channel,Channel,sv
-listchannels,xmltvid,"XMLTV ID",sv
-listchannels,datasource,Source,sv
-listchannels,footertext,"Put whatever you want here. It will be displayed on the bottom of the channel list.",sv
-exporter-xmltv,episode_part,dio,hr
-exporter-xmltv,episode_number,epizoda,hr
-exporter-xmltv,episode_season,sezona,hr
-exporter-xmltv,of,od,hr
-listchannels,title,"Kanali za koje goNIX ima raspored emitiranja",hr
-listchannels,headertext,"Rasporedi programa svih navedenih kanala nalaze se u <a href=""/xmltv/"">XMLTV</a> direktoriju. Za svaki dan i svaki kanal kreira se po jedan file.",hr
-listchannels,channel,Kanal,hr
-listchannels,xmltvid,"XMLTV ID",hr
-listchannels,datasource,Izvor,hr
-listchannels,footertext,,hr
 exporter-rss,nowonchgroup,"Trenutno na kanalima u grupi",hr
 exporter-rss,nowonchgroup,"Now on channels in group",en
 exporter-rss,todayonchgroup,"Danas na kanalima u grupi",hr
@@ -36,3 +6,79 @@ exporter-rss,nowon,"Trenutno na",hr
 exporter-rss,nowon,"Now on",en
 exporter-rss,todayon,"Danas na",hr
 exporter-rss,todayon,"Today on",en
+exporter-xmltv,episode_part,part,en
+exporter-xmltv,episode_number,episode,en
+exporter-xmltv,episode_season,season,en
+exporter-xmltv,of,of,en
+exporter-xmltv,episode_part,Part,sv
+exporter-xmltv,episode_number,Del,sv
+exporter-xmltv,episode_season,"sÃ¤song",sv
+exporter-xmltv,of,av,sv
+exporter-xmltv,episode_part,dio,hr
+exporter-xmltv,episode_number,epizoda,hr
+exporter-xmltv,episode_season,sezona,hr
+exporter-xmltv,of,od,hr
+listchannels,title,"This is the title of your channel listing page.",en
+listchannels,headertext,"Put whatever you want here. It will be displayed on the top of the channel list.",en
+listchannels,channel,Channel,en
+listchannels,xmltvid,"XMLTV ID",en
+listchannels,datasource,Source,en
+listchannels,footertext,"Put whatever you want here. It will be displayed on the bottom of the channel list.",en
+listchannels,title,"This is the title of your channel listing page.",sv
+listchannels,headertext,"Put whatever you want here. It will be displayed on the top of the channel list.",sv
+listchannels,channel,Channel,sv
+listchannels,xmltvid,"XMLTV ID",sv
+listchannels,datasource,Source,sv
+listchannels,footertext,"Put whatever you want here. It will be displayed on the bottom of the channel list.",sv
+listchannels,title,"Kanali za koje goNIX ima raspored emitiranja",hr
+listchannels,headertext,"Rasporedi programa svih navedenih kanala nalaze se u <a href=""/xmltv/"">XMLTV</a> direktoriju. Za svaki dan i svaki kanal kreira se po jedan file.",hr
+listchannels,channel,Kanal,hr
+listchannels,xmltvid,"XMLTV ID",hr
+listchannels,datasource,Izvor,hr
+listchannels,footertext,,hr
+nowshowing,title,"Now showing",en
+nowshowing,title,"Trenutno na programu",hr
+nowshowing,headertext,"Put whatever you want here. This will be shown on the top of the NowShowing page.",en
+nowshowing,headertext,,hr
+nowshowing,categories,categories,en
+nowshowing,categories,kategorije,hr
+nowshowing,nodata,"No data...",en
+nowshowing,nodata,"Nema podataka...",hr
+nowshowing,nodatadesc,"No data found for this period.",en
+nowshowing,nodatadesc,"Nema podataka za ovaj period.",hr
+programdetails,prgtitle,Title,en
+programdetails,prgtitle,Naslov,hr
+programdetails,prgdescription,Description,en
+programdetails,prgdescription,Opis,hr
+programdetails,nochanspecified,"No channel specified",en
+programdetails,nochanspecified,"Nije određen kanal",hr
+programdetails,notimespecified,"No time specified",en
+programdetails,notimespecified,"Nije određeno vrijeme",hr
+programdetails,invchanid,"Invalid channel id",en
+programdetails,invchanid,"Neispravan id kanala",hr
+programdetails,noprogstartingat,"No program starting at",en
+programdetails,noprogstartingat,"Nema programa koji pocinje u",hr
+programdetails,progdetailsfor,"Program details for",en
+programdetails,progdetailsfor,"Detalji o programu za",hr
+programdetails,at,at,en
+programdetails,at,u,hr
+programdetails,prgsubtitle,Subtitle,en
+programdetails,prgsubtitle,Podnaslov,hr
+programdetails,prgcategory,Category,en
+programdetails,prgcategory,Kategorija,hr
+programdetails,prgdirectors,Directors,en
+programdetails,prgdirectors,Redatelji,hr
+programdetails,prgactors,Actors,en
+programdetails,prgactors,Glumci,hr
+programdetails,prgwriters,Writers,en
+programdetails,prgwriters,Pisci,hr
+programdetails,prgadapters,Adapters,en
+programdetails,prgadapters,Adapteri,hr
+programdetails,prgproducers,Producers,en
+programdetails,prgproducers,Producenti,hr
+programdetails,prgpresenters,Presenters,en
+programdetails,prgpresenters,Voditelji,hr
+programdetails,prgcommentators,Commentators,en
+programdetails,prgcommentators,Komentatori,hr
+programdetails,prgguests,Guests,en
+programdetails,prgguests,Gosti,hr
