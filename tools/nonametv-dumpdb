@@ -99,15 +99,16 @@ sub dump_table {
 
   my $sth = $ds->sa->Iterate( $table, {} );
 
-  while( my $row = $sth->fetchrow_arrayref ) {
-    foreach (@{$row}) {
-      $_='\N' if not defined( $_ );
+  if( defined( $sth ) ) {
+    while( my $row = $sth->fetchrow_arrayref ) {
+      foreach (@{$row}) {
+	$_='\N' if not defined( $_ );
+      }
+      $csv->print( $out, $row );
     }
 
-    $csv->print( $out, $row );
+    $sth->finish();
   }
-
-  $sth->finish();
 
   $out->close();
 }
