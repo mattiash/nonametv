@@ -1,11 +1,11 @@
-package NonameTV::Importer::SportKlub;
+package NonameTV::Importer::Croatel;
 
 use strict;
 use warnings;
 
 =pod
 
-channel: SportKlub and SportKlub2
+channels: SportKlub, SportKlub2, DoQ
 country: Croatia
 
 Import data from Excel-files delivered via e-mail.
@@ -35,7 +35,7 @@ sub new {
   my $self  = $class->SUPER::new( @_ );
   bless ($self, $class);
 
-  $self->{grabber_name} = "SportKlub";
+  $self->{grabber_name} = "Croatel";
 
   my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore} );
   $self->{datastorehelper} = $dsh;
@@ -56,7 +56,7 @@ sub ImportContentFile {
   # Only process .xls files.
   return if $file !~  /\.xls$/i;
 
-  progress( "SportKlub: $chd->{xmltvid}: Processing $file" );
+  progress( "Croatel: $chd->{xmltvid}: Processing $file" );
 
   $self->{fileerror} = 0;
 
@@ -71,7 +71,7 @@ sub ImportContentFile {
 
     my $oWkS = $oBook->{Worksheet}[$iSheet];
 
-    progress( "SportKlub: $chd->{xmltvid}: Processing worksheet: $oWkS->{Name}" );
+    progress( "Croatel: $chd->{xmltvid}: Processing worksheet: $oWkS->{Name}" );
 
     # The name of the sheet is the date in format DD.M.YYYY.
     my ( $date ) = ParseDate( $oWkS->{Name} );
@@ -81,10 +81,10 @@ sub ImportContentFile {
       # skip the days in the past
       my $past = DateTime->compare( $date, $today );
       if( $past < 0 ){
-        progress("SportKlub: $chd->{xmltvid}: Skipping date $date");
+        progress("Croatel: $chd->{xmltvid}: Skipping date $date");
         next;
       } else {
-        progress("SportKlub: $chd->{xmltvid}: Processing date $date");
+        progress("Croatel: $chd->{xmltvid}: Processing date $date");
       }
     }
 
@@ -116,7 +116,7 @@ sub ImportContentFile {
 
       my $starttime = create_dt( $date , $showtime );
 
-      progress("SportKlub: $chd->{xmltvid}: $starttime - $title");
+      progress("Croatel: $chd->{xmltvid}: $starttime - $title");
 
       my $ce = {
         channel_id   => $chd->{id},

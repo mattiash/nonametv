@@ -105,9 +105,9 @@ Web site:	www.fox.com
 
 ---------------------------------------------------------------------
 
-Importer:	SportKlub
-Channels:	SportKlub, SportKlub Plus
-Provider:	SportKlub
+Importer:	Croatel
+Channels:	SportKlub, SportKlub Plus, DoQ
+Provider:	Croatel
 Location:	-
 Web site:	www.sportklub.info
 
