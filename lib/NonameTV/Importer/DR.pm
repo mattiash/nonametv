@@ -125,7 +125,7 @@ sub ImportContent {
       $ce->{description} = [];
     }
     elsif( $columns[0] eq "U" ) {
-      push @{$ce->{description}}, $columns[1];
+      push @{$ce->{description}}, $columns[2];
     }
     elsif( $columns[0] eq "P" ) {
       # Ignore
@@ -160,13 +160,22 @@ sub finish_programme {
     $ce->{episode} = " . " . ($ep-1) . "/" . $eps . " . ";
     $ce->{title} =~ s/\(\d+:\d+\)//;
   }
+  else {
+    ( $ep ) = ($ce->{title} =~ m/\((\d+)\)/);
+    if( defined( $ep ) ) {
+      $ce->{episode} = " . " . ($ep-1) . " . ";
+      $ce->{title} =~ s/\(\d+\)//;
+    }
+  }
 
   $ce->{title} =~ s/16:9//;
   $ce->{title} =~ s/UTXT//;
+  $ce->{title} =~ s/Surround//;
+ 
 
   $ce->{title} = norm( $ce->{title} );
 
-  $ce->{description} = join( " ", @{$ce->{description}} );
+  $ce->{description} = norm( join( " ", @{$ce->{description}} ) );
   $dsh->AddProgramme( $ce );
 }
 
