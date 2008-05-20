@@ -88,3 +88,5 @@
 101,"Canal+ PPV Sport 2",ppvsport2.canalplus.se,,CanalPlusPPV,1,"PPV Sport 2",0,,,,0,\N
 102,"Canal+ PPV Sport 3",ppvsport3.canalplus.se,,CanalPlusPPV,1,"PPV Sport 3",0,,,,0,\N
 103,"Canal+ PPV Sport 4",ppvsport4.canalplus.se,,CanalPlusPPV,1,"PPV Sport 4",0,,,,0,\N
+104,DR1,dr1.dr.dk,,DR,1,DR1,0,,,,0,\N
+105,DR2,dr2.dr.dk,,DR,1,DR2,0,,,,0,\N
