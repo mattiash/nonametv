@@ -1,0 +1,63 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+use FindBin;
+use lib "$FindBin::Bin/../../lib";
+
+use Mail::Box;
+use Mail::Box::Manager;
+
+my $maildir = "/home/mattias/Maildir";
+my $infoldername = ".Projects.xmltv-data-in";
+my $targetprefix = ".Projects.NonameTV-Data.";
+
+my $folders;
+
+my $mgr = Mail::Box::Manager->new();
+
+my $rootfolder = $mgr->open( type => 'maildir', folder => $maildir );
+#my @subs = $rootfolder->listSubFolders();
+#print join "\n", @subs;
+
+my $infolder = $rootfolder->openSubFolder( $infoldername, access => 'rw' );
+
+foreach my $msg ($infolder->messages) {
+  next if $msg->isDeleted();
+  my @from = $msg->from;
+  my $fromaddr = $from[0]->format;
+  if( $fromaddr =~ /\@dr.dk/ ) {
+    MoveMessage( $msg, "DR" );
+  }
+  elsif( $fromaddr =~ /\@millenniumgroup.se/ ) {
+    MoveMessage( $msg, "Nonstop" );
+  }
+  elsif( $fromaddr =~ /\@voicetv.se/ ) {
+    MoveMessage( $msg, "TheVoice" );
+  }
+  elsif( $fromaddr =~ /\@kanallokal.tv/ ) {
+    MoveMessage( $msg, "KanalLokal" );
+  }
+  elsif( $fromaddr =~ /\@mtvne.com/ ) {
+    MoveMessage( $msg, "MTV" );
+  }
+  elsif( $fromaddr =~ /\@tv7games.se/ ) {
+    MoveMessage( $msg, "TV7" );
+  }
+  elsif( $fromaddr =~ /\@tv3.se/ ) {
+    MoveMessage( $msg, "Viasat" );
+  }
+
+}
+
+sub MoveMessage {
+  my( $msg, $foldername ) = @_;
+
+  if( not exists $folders->{$foldername} ) {
+    $folders->{$foldername} = 
+	$rootfolder->openSubFolder( $targetprefix . $foldername, 
+				    access => 'rw' );
+  }
+
+  $msg->moveTo( $folders->{$foldername} );
+}

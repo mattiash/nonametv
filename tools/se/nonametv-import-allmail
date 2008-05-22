@@ -11,9 +11,10 @@ getmail -q -rexpressen.rc
 getmail -q -rkanal9.rc
 getmail -q -rngcsverige.rc
 getmail -q -rdr.rc
-perl -I lib tools/se/nonametv-parse-maildir
-perl -I lib tools/nonametv-import Kanal5_mail
-perl -I lib tools/nonametv-import KanalLokal
-perl -I lib tools/nonametv-import DisneyChannel
+tools/se/nonametv-filter-mail
+tools/se/nonametv-parse-maildir
+tools/nonametv-import Kanal5_mail
+tools/nonametv-import KanalLokal
+tools/nonametv-import DisneyChannel
 
 
