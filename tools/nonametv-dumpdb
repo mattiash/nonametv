@@ -50,7 +50,8 @@ dump_structure( "$datadir/listings.sql" );
 
 dump_table( $ds, "channels", "$datadir/$country/channels.txt" );
 dump_table( $ds, "channelgroups", "$datadir/$country/channelgroups.txt" );
-dump_table( $ds, "trans_cat", "$datadir/$country/trans_cat.txt" );
+dump_table( $ds, "trans_cat", "$datadir/$country/trans_cat.txt",
+	    "not (program_type='' and category='')" );
 dump_table( $ds, "languagestrings", "$datadir/languagestrings.txt" );
 
 sub dump_structure {
@@ -88,7 +89,7 @@ sub dump_structure {
 }
 
 sub dump_table {
-  my( $ds, $table, $file ) = @_;
+  my( $ds, $table, $file, $where ) = @_;
 
   print "Dumping table $table to file $file\n";
 
@@ -97,7 +98,12 @@ sub dump_table {
 
   my $csv = Text::CSV_XS->new({eol=> "\n", 'binary' => 1});
 
-  my $sth = $ds->sa->Iterate( $table, {} );
+  my $sql = "SELECT * from $table";
+  if( defined $where ) {
+    $sql .= " WHERE $where";
+  }
+
+  my( $res, $sth ) = $ds->sa->Sql( $sql );
 
   if( defined( $sth ) ) {
     while( my $row = $sth->fetchrow_arrayref ) {
