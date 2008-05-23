@@ -83,6 +83,11 @@ sub dump_structure {
   $output =~ s(^\n*)();
   $output =~ s(\n\n\n)(\n\n)g;
 
+  # Remove AUTO_INCREMENT specification. It seems to be added
+  # on some systems but not on others and it messes up
+  # real changes.
+  $output =~ s( AUTO_INCREMENT=\d+)()gm;
+
   open( OUT, "> $outfile" ) or die "Failed to write to $outfile";
   print OUT $output;
   close( OUT );
