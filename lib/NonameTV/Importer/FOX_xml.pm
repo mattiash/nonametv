@@ -1,4 +1,4 @@
-package NonameTV::Importer::FOX;
+package NonameTV::Importer::FOX_xml;
 
 use strict;
 use warnings;
@@ -35,7 +35,7 @@ sub new {
   my $self  = $class->SUPER::new( @_ );
   bless ($self, $class);
 
-  $self->{grabber_name} = "FOX";
+  $self->{grabber_name} = "FOX_xml";
 
   my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore} );
   $self->{datastorehelper} = $dsh;
@@ -63,11 +63,11 @@ sub ImportContentFile {
   my $year = DateTime->today->year();
 
   return if( $file !~ /\.xml$/i );
-  progress( "FOX: $xmltvid: Processing $file" );
+  progress( "FOX_xml: $xmltvid: Processing $file" );
   
   my( $month, $firstday ) = ExtractDate( $file );
   if( not defined $firstday ) {
-    error( "FOX $file: Unable to extract date from file name" );
+    error( "FOX_xml $file: Unable to extract date from file name" );
     next;
   }
 
@@ -76,13 +76,13 @@ sub ImportContentFile {
   eval { $doc = $xml->parse_file($file); };
 
   if( not defined( $doc ) ) {
-    error( "FOX $file: Failed to parse xml" );
+    error( "FOX_xml $file: Failed to parse xml" );
     return;
   }
   my $wksheets = $doc->findnodes( "//ss:Worksheet" );
   
   if( $wksheets->size() == 0 ) {
-    error( "FOX $file: No Worksheets found" ) ;
+    error( "FOX_xml $file: No Worksheets found" ) ;
     return;
   }
 
@@ -96,13 +96,13 @@ sub ImportContentFile {
 
     # the name of the worksheet
     my $dayname = $wks->getAttribute('ss:Name');
-    progress("FOX: $xmltvid: found worksheet named '$dayname'");
+    progress("FOX_xml: $xmltvid: found worksheet named '$dayname'");
 
     # the path should point exactly to one worksheet
     my $rows = $wks->findnodes( ".//ss:Row" );
   
     if( $rows->size() == 0 ) {
-      error( "FOX $xmltvid: No Rows found in Worksheet '$dayname'" ) ;
+      error( "FOX_xml $xmltvid: No Rows found in Worksheet '$dayname'" ) ;
       return;
     }
 
@@ -155,7 +155,7 @@ sub ImportContentFile {
         next;
       }
 
-      progress( "FOX: $xmltvid: $starttime - $title" );
+      progress( "FOX_xml: $xmltvid: $starttime - $title" );
 
       my $ce = {
         channel_id => $channel_id,
