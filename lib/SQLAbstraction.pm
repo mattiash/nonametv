@@ -170,7 +170,7 @@ sub Delete {
 
 Add a new record to a table. $table should be a string containing the name 
 of a table, $values should be a hash-reference with field-names and values.
-$die_on_error defaults to 1.
+$die_on_error defaults to $self->{die_on_error}.
 Returns the primary key assigned to the new record or -1 if the Add failed.
 
 =cut 
@@ -179,7 +179,7 @@ sub Add {
   my $self = shift;
   my ( $table, $args, $die_on_error ) = @_;
 
-  $die_on_error = 1 unless defined($die_on_error);
+  $die_on_error = $self->{die_on_error} unless defined($die_on_error);
 
   my $dbh = $self->{dbh};
 
@@ -198,7 +198,7 @@ sub Add {
   $sth->{PrintError} = 0;
 
   if ( not $sth->execute(@values) ) {
-    if ( $self->{die_on_error} ) {
+    if ( $die_on_error ) {
       die "Execute failed. $sql\nError: " . $dbh->errstr;
     }
     else {
