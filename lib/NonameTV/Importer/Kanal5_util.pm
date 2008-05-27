@@ -130,20 +130,21 @@ sub ParseData
 
       $type = T_DATE;
     }
-    elsif( ($start, $stop) = ( $text =~ /^(\d+:\d+)\s*\-\s*(\d+:\d+)$/ ) )
+    elsif( ($start, $stop) = 
+	   ( $text =~ /^(\d+[:\.]\d+)\s*\-\s*(\d+[:\.]\d+)$/ ) )
     {
       $type = T_TIME;
     }
-    elsif( ( $start ) = ( $text =~ /^(\d+:\d+)$/ ) )
+    elsif( ( $start ) = ( $text =~ /^(\d+[:\.]\d+)$/ ) )
     {
       $type = T_TIME;
     }
     elsif( ($start, $stop, $text2) = 
-           ( $text =~ /^(\d+:\d+)\s*\-\s*(\d+:\d+)\s+(.*)$/ ) )
+           ( $text =~ /^(\d+[:\.]\d+)\s*\-\s*(\d+[\.]:\d+)\s+(.*)$/ ) )
     {
       $type = T_TIME_TITLE;
     }
-    elsif( ( $start, $text2 ) = ( $text =~ /^(\d+:\d+)\s+(.*)$/ ) )
+    elsif( ( $start, $text2 ) = ( $text =~ /^(\d+[:\.]\d+)\s+(.*)$/ ) )
     {
       $type = T_TIME_TITLE;
     }
@@ -256,6 +257,11 @@ sub extract_extra_info
   my( $dsh, $ce, $cat, $ctag ) = @_;
 
   my $ds = $dsh->{ds};
+
+  $ce->{start_time} =~ tr/\./:/;
+  if( exists $ce->{end_time} ) {
+    $ce->{end_time} =~ tr/\./:/;
+  }
 
   # Try to remove any prefix such as "SERIESTART:" from the title.
   # These prefixes are only available in the doc-data, not in the
