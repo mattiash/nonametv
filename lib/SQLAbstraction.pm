@@ -16,7 +16,7 @@ SQLAbstraction - Simplified interface to DBI.
 
 =cut
 
-use fields qw/die_on_error dbh/;
+use fields qw/die_on_error dbh dbh_errstr/;
 
 sub new {
   my SQLAbstraction $self = shift;
