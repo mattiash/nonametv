@@ -6,7 +6,7 @@ CREATE TABLE `batches` (
   `message` text NOT NULL,
   `abort_message` text NOT NULL,
   PRIMARY KEY  (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=946 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `channels`;
 CREATE TABLE `channels` (
@@ -24,7 +24,7 @@ CREATE TABLE `channels` (
   `empty_ok` tinyint(1) NOT NULL default '0',
   `url` varchar(100) default NULL,
   PRIMARY KEY  (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=1006 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `channelgroups`;
 CREATE TABLE `channelgroups` (
@@ -45,7 +45,7 @@ CREATE TABLE `files` (
   `latestdate` datetime default NULL,
   `md5sum` varchar(33) NOT NULL default '',
   PRIMARY KEY  (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=504 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `programs`;
 CREATE TABLE `programs` (
