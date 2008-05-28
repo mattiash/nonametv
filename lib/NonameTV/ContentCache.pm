@@ -92,12 +92,8 @@ sub new {
   my $ua = LWP::UserAgent->new( agent => $self->{useragent}, 
 				cookie_jar => {} );
 
-  if( defined $self->{credentials} ) {
-    foreach my $cred (keys %{$self->{credentials}}) {
-      my( $host_port, $realm ) = split( "::",  $cred );
-      my( $user, $pass ) = split( "::", $self->{credentials}->{$cred} );
-      $ua->credentials( $host_port, $realm, $user, $pass );
-    }
+  if( not defined $self->{credentials} ) {
+    $self->{credentials} = {};
   }
 
   $self->{ua} = $ua;
@@ -146,7 +142,15 @@ sub GetContent {
 	    $self->ReportError( $objectname, $error, $force ) );
    }
 
-  my $res = $self->{ua}->get( $url );
+  my $surl = $url;
+  my( $host )  = ($surl =~ m%://(.*?)/%);
+  if( defined( $self->{credentials}->{$host} ) ) {
+    my $cred = $self->{credentials}->{$host};
+    
+    $surl =~ s%://(.*?)/%://$cred\@$1/%;
+  }
+
+  my $res = $self->{ua}->get( $surl );
 
   if( $res->is_success ) {
     $self->TouchState( $objectname );
