@@ -5,12 +5,8 @@ use strict;
 use FindBin;
 use lib "$FindBin::Bin/../lib";
 
-use NonameTV;
-use NonameTV::Config qw/ReadConfig/;
-use NonameTV::Log;
-use NonameTV::DataStore;
-use NonameTV::DataStore::Dummy;
-use HTTP::Cache::Transparent;
+use NonameTV::Factory qw/CreateDataStore CreateDataStoreDummy 
+                         CreateImporter InitLog InitHttpCache/;
 
 use Getopt::Long;
 
@@ -20,7 +16,7 @@ if( scalar( @ARGV ) == 0 )
 nonametv-import [test] [Importer] [Importer-options] [Filename]
 
 Import data into the database. [Importer] is the name of an entry under
-the Importers-section in /etc/nonametv.conf.
+the Importers-section in the nonametv configuration.
 
 The keyword "test" means that NonameTV::DataStore::Dummy is used. 
 
@@ -39,54 +35,35 @@ EOHELP
   exit 1;
 }
 
-my $conf = ReadConfig();
-
-NonameTV::Log::init( $conf );
+InitLog();
 
 my $run_test = 0;
 
 my $imp_name = shift @ARGV;
-if( $imp_name eq "test" )
-{
+if( $imp_name eq "test" ) {
   $run_test = 1;
   $imp_name = shift @ARGV;
-}
-
-if( not exists( $conf->{Importers}->{$imp_name} ) )
-{
-  print STDERR "No such importer $imp_name\n";
-  exit 1;
 }
 
 # Create Datastore
 my $ds;
 
-if( $run_test )
-{
-  $ds = NonameTV::DataStore::Dummy->new( $conf->{DataStore} );
-  $conf->{Cache}->{Verbose} = 1;
+if( $run_test ) {
+  $ds = CreateDataStoreDummy();
 }
-else
-{
-  $ds = NonameTV::DataStore->new( $conf->{DataStore} );
+else {
+  $ds = CreateDataStore();
 }
 
 # Initialize cache
-HTTP::Cache::Transparent::init( $conf->{Cache} );
+InitHttpCache();
 
-# Create the right importer
-my $imp_data = $conf->{Importers}->{$imp_name};
-my $imp_type = $imp_data->{Type};
-
-my $imp = eval "use NonameTV::Importer::$imp_type; 
-                NonameTV::Importer::${imp_type}->new( \$imp_data, \$ds );"
-        or die $@;
+my $imp = CreateImporter( $imp_name, $ds );
 
 my %opt = %{$imp->{OptionDefaults}};
 my $option_spec = $imp->{OptionSpec};
 
 my $res = GetOptions( \%opt, @{$option_spec} );
-
 
 # Run importer
 $imp->Import( \%opt );

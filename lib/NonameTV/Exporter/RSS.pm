@@ -41,16 +41,6 @@ Options:
 
 =cut 
 
-our $OptionSpec     = [ qw/export-nowongroup export-todayongroup force-export 
-                           verbose help/ ];
-our %OptionDefaults = ( 
-                        'export-nowongroup' => 0,
-                        'export-todayongroup' => 0,
-                        'force-export' => 0,
-                        'help' => 0,
-                        'verbose' => 0,
-                        );
-
 $XMLTV::ValidateFile::REQUIRE_CHANNEL_ID = 0;
 
 sub new {
@@ -74,6 +64,18 @@ sub new {
 
     $self->{LastRequiredDate} = 
       DateTime->today->add( days => $self->{MinDays}-1 )->ymd("-");
+
+    $self->{OptionSpec} = [ qw/export-nowongroup export-todayongroup 
+			       force-export 
+                               verbose help/ ];
+
+    $self->{OptionDefaults} = { 
+      'export-nowongroup' => 0,
+      'export-todayongroup' => 0,
+      'force-export' => 0,
+      'help' => 0,
+      'verbose' => 0,
+    };
 
     #LoadDtd( $self->{DtdFile} );
 

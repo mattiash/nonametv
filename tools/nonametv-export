@@ -5,31 +5,20 @@ use strict;
 use FindBin;
 use lib "$FindBin::Bin/../lib";
 
-use NonameTV;
-use NonameTV::DataStore;
-use NonameTV::Config qw/ReadConfig/;
-use NonameTV::Log;
+use NonameTV::Factory qw/CreateDataStore CreateDataStoreDummy 
+                         CreateExporter InitLog InitHttpCache/;
 
 use Getopt::Long;
 
-my $conf = ReadConfig();
+InitLog();
 
-NonameTV::Log::init( $conf );
+my $ds = CreateDataStore();
 
-# Create Datastore
-my $ds = NonameTV::DataStore->new( $conf->{DataStore} );
-
-# Create the right exporter
 my $exp_name = shift @ARGV;
-my $exp_data = $conf->{Exporters}->{$exp_name};
-my $exp_type = $exp_data->{Type};
+my $exp = CreateExporter( $exp_name, $ds );
 
-my $exp = eval "use NonameTV::Exporter::$exp_type; 
-                NonameTV::Exporter::${exp_type}->new( \$exp_data, \$ds );"
-        or die $@;
-
-my %opt = eval "\%NonameTV::Exporter::${exp_type}::OptionDefaults";
-my $option_spec = eval "\$NonameTV::Exporter::${exp_type}::OptionSpec";
+my %opt = %{$exp->{OptionDefaults}};
+my $option_spec = $exp->{OptionSpec};
 
 my $res = GetOptions( \%opt, @{$option_spec} );
 

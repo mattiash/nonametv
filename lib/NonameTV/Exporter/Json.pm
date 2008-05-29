@@ -39,16 +39,6 @@ Options:
 
 =cut 
 
-our $OptionSpec     = [ qw/export-channels remove-old force-export 
-                           verbose help/ ];
-our %OptionDefaults = ( 
-                        'export-channels' => 0,
-                        'remove-old' => 0,
-                        'force-export' => 0,
-                        'help' => 0,
-                        'verbose' => 0,
-                        );
-
 sub new {
     my $proto = shift;
     my $class = ref($proto) || $proto;
@@ -63,6 +53,17 @@ sub new {
 
     $self->{LastRequiredDate} = 
       DateTime->today->add( days => $self->{MinDays}-1 )->ymd("-");
+
+    $self->{OptionSpec} = [ qw/export-channels remove-old force-export 
+			    verbose help/ ];
+
+    $self->{OptionDefaults} = { 
+      'export-channels' => 0,
+      'remove-old' => 0,
+      'force-export' => 0,
+      'help' => 0,
+      'verbose' => 0,
+    };
 
     my $ds = $self->{datastore};
 
@@ -240,7 +241,7 @@ sub ReadState {
 
   if( not defined( $last_update ) )
   {
-    $ds->Add( 'state', { name => "json_last_update", value => 0 } );
+    $ds->sa->Add( 'state', { name => "json_last_update", value => 0 } );
     $last_update = 0;
   }
 

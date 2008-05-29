@@ -44,18 +44,6 @@ Options:
 
 =cut 
 
-our $OptionSpec     = [ qw/export-channels remove-old force-export 
-			   channel-group=s
-                           verbose help/ ];
-our %OptionDefaults = ( 
-                        'export-channels' => 0,
-                        'remove-old' => 0,
-                        'force-export' => 0,
-                        'channel-group' => "",
-                        'help' => 0,
-                        'verbose' => 0,
-                        );
-
 $XMLTV::ValidateFile::REQUIRE_CHANNEL_ID = 0;
 
 sub new {
@@ -74,6 +62,19 @@ sub new {
 
     $self->{LastRequiredDate} = 
       DateTime->today->add( days => $self->{MinDays}-1 )->ymd("-");
+
+    $self->{OptionSpec} = [ qw/export-channels remove-old force-export 
+			    channel-group=s
+			    verbose help/ ];
+
+    $self->{OptionDefaults} = { 
+      'export-channels' => 0,
+      'remove-old' => 0,
+      'force-export' => 0,
+      'channel-group' => "",
+      'help' => 0,
+      'verbose' => 0,
+    };
 
     LoadDtd( $self->{DtdFile} );
 
