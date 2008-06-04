@@ -111,6 +111,8 @@ sub ImportContentFile {
       # the column names are stored in the first row
       # so read them and store their column positions
       # for further findvalue() calls
+      my ($timeslot, $title, $crotitle, $genre);
+
       if( not defined( $column ) ) {
         my $cells = $row->findnodes( ".//ss:Cell" );
         my $i = 1;
@@ -126,10 +128,11 @@ sub ImportContentFile {
         next;
       }
 
-      my $timeslot = norm( $row->findvalue( $column->{'Time Slot'} ) );
-      my $title = norm( $row->findvalue( $column->{'EN Title'} ) );
-      my $crotitle = norm( $row->findvalue( $column->{'Croatian Title'} ) );
-      my $genre = norm( $row->findvalue( $column->{'Genre'} ) );
+
+      $timeslot = norm( $row->findvalue( $column->{'Time Slot'} ) );
+      $title = norm( $row->findvalue( $column->{'EN Title'} ) );
+      $crotitle = norm( $row->findvalue( $column->{'Croatian Title'} ) );
+      $genre = norm( $row->findvalue( $column->{'Genre'} ) );
 
       if( ! $timeslot ){
         next;
@@ -204,18 +207,18 @@ sub ExtractDate {
     return undef;
   }
 
-  $month = 1 if( $monname eq 'Jan' );
-  $month = 2 if( $monname eq 'Feb' );
-  $month = 3 if( $monname eq 'Mar' );
-  $month = 4 if( $monname eq 'Apr' );
+  $month = 1 if( $monname eq 'Jan' or $monname eq 'January' );
+  $month = 2 if( $monname eq 'Feb' or $monname eq 'February' );
+  $month = 3 if( $monname eq 'Mar' or $monname eq 'March' );
+  $month = 4 if( $monname eq 'Apr' or $monname eq 'April' );
   $month = 5 if( $monname eq 'May' );
-  $month = 6 if( $monname eq 'Jun' );
-  $month = 7 if( $monname eq 'Jul' );
-  $month = 8 if( $monname eq 'Aug' );
-  $month = 9 if( $monname eq 'Sep' );
-  $month = 10 if( $monname eq 'Oct' );
-  $month = 11 if( $monname eq 'Nov' );
-  $month = 12 if( $monname eq 'Dec' );
+  $month = 6 if( $monname eq 'Jun' or $monname eq 'June' );
+  $month = 7 if( $monname eq 'Jul' or $monname eq 'July' );
+  $month = 8 if( $monname eq 'Aug' or $monname eq 'August' );
+  $month = 9 if( $monname eq 'Sep' or $monname eq 'September' );
+  $month = 10 if( $monname eq 'Oct' or $monname eq 'October' );
+  $month = 11 if( $monname eq 'Nov' or $monname eq 'November' );
+  $month = 12 if( $monname eq 'Dec' or $monname eq 'December' );
 
   return ($month,$day);
 }
