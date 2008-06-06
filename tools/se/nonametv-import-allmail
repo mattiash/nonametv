@@ -5,16 +5,23 @@ PROOT=/home/mattias/development/nonametv
 
 cd $PROOT
 
+getmail -q -rkanal9.rc
+getmail -q -rngcsverige.rc
+
+# These importers are disabled but we fetch mail for them anyway
+getmail -q -rdr.rc
 getmail -q -rdiscovery.rc
 getmail -q -raftonbladet.rc
 getmail -q -rexpressen.rc
-getmail -q -rkanal9.rc
-getmail -q -rngcsverige.rc
-getmail -q -rdr.rc
+
+# Mail is additionally delivered to the tv-data account.
+
 tools/se/nonametv-filter-mail
 tools/se/nonametv-parse-maildir
+
 tools/nonametv-import Kanal5_mail
 tools/nonametv-import KanalLokal
 tools/nonametv-import DisneyChannel
+tools/nonametv-import Discovery
 
 

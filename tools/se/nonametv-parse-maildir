@@ -53,12 +53,13 @@ my $conf = ReadConfig();
 my $ds = NonameTV::DataStore->new( $conf->{DataStore} );
 my $filestore = $conf->{FileStore};
 
-my @folders = qw(/home/mattias/Maildir/.Projects.xmltv-data
-                 /home/mattias/Maildir/.Projects.NonameTV-Data.Disney
-                 /home/mattias/Maildir/.Projects.NonameTV-Data.Kanal9
-                 /home/mattias/Maildir/.Projects.NonameTV-Data.NationalGeographic
-                 /home/mattias/Maildir/.Projects.NonameTV-Data.KanalLokal
-                 /home/mattias/Maildir/.Projects.NonameTV-Data.Axess
+my $root = "/home/mattias/Maildir/.Projects";
+my @folders = qw(xmltv-data
+                 NonameTV-Data.Disney
+                 NonameTV-Data.Kanal9
+                 NonameTV-Data.NationalGeographic
+                 NonameTV-Data.KanalLokal
+                 NonameTV-Data.Axess
                  );
 
 # Flag messages AFTER they have been processed. Then I normally
@@ -69,7 +70,7 @@ my $tmpdir = tempdir( CLEANUP => 1 );
 my $mgr = Mail::Box::Manager->new;
 
 foreach my $dir (@folders) {
-  my $folder = $mgr->open( $dir, 
+  my $folder = $mgr->open( "$root.$dir", 
                            access => 'rw',
                            extract => 'ALWAYS' );
 
@@ -214,6 +215,16 @@ sub guess_channel
       elsif( $filename =~ /disney channel/i ) {
 	return "disneychannel.se";
       }
+      elsif( $subject =~ /toon disney/i ) {
+	return "toon.disneychannel.se";
+      }
+      elsif( $subject =~ /playhouse/i ) {
+	return "playhouse.disneychannel.se";
+      }
+      elsif( $subject =~ /disney channel/i ) {
+	return "disneychannel.se";
+      }
+
       return undef;
     }
   }
