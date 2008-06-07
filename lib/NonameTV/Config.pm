@@ -60,7 +60,7 @@ BEGIN {
     @ISA         = qw(Exporter);
     @EXPORT      = qw( );
     %EXPORT_TAGS = ( );     # eg: TAG => [ qw!name1 name2! ],
-    @EXPORT_OK   = qw/ReadConfig/;
+    @EXPORT_OK   = qw/ReadConfig MergeHash/;
 }
 our @EXPORT_OK;
 
@@ -90,14 +90,19 @@ sub ReadConfig {
     my $str = read_file( $override_file );
     my $override = eval( $str );
     die "Error in configuration file $override_file: $@" if $@;
-    mergehash( $conf, $override );
+    if( $override->{ResetConfig} ) {
+      $conf = $override;
+    }
+    else {
+      MergeHash( $conf, $override );
+    }
   }
 
   $Conf = $conf;
   return $conf;
 }
 
-sub mergehash {
+sub MergeHash {
   my( $src, $add ) = @_;
 
   croak "$src is not a hashref" if ref( $src ) ne "HASH";
@@ -109,7 +114,7 @@ sub mergehash {
     }
     elsif( ref( $add->{$key} ) eq "HASH" ) {
       $src->{$key} = {} if not defined $src->{$key};
-      mergehash( $src->{$key}, $add->{$key} );
+      MergeHash( $src->{$key}, $add->{$key} );
     }
   }
   

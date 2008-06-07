@@ -443,6 +443,7 @@ Returns an array with all channels associated with a specific channel.
 Each channel is described by a hashref with keys matching the database.
 
 Takes one parameter: the name of the grabber.
+The result is ordered by xmltvid.
 
 =cut
 
@@ -452,16 +453,8 @@ sub FindGrabberChannels {
 
   my @result;
 
-  my $sth = $self->{sa}->Iterate( 'channels', { grabber => $grabber } )
-    or logdie("$grabber: Failed to fetch grabber data");
-
-  while ( my $data = $sth->fetchrow_hashref ) {
-    push @result, $data;
-  }
-
-  $sth->finish();
-
-  return @result;
+  return $self->{sa}->LookupMany( 'channels', { grabber => $grabber },
+				  [ 'xmltvid' ] );
 }
 
 =item LookupCat

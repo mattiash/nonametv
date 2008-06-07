@@ -42,7 +42,7 @@ sub new {
     return $self;
 }
 
-sub Import {
+sub ImportData {
   my $self = shift;
   my( $p ) = @_;
   
@@ -52,7 +52,7 @@ sub Import {
 
   my $ds = $self->{datastore};
 
-  foreach my $data ($ds->FindGrabberChannels( $self->{grabber_name} ) ) {
+  foreach my $data (@{$self->ListChannels()}) {
     progress( "Checking files for $data->{xmltvid}" );
     if( $p->{'remove-missing'} ) {
       $self->RemoveMissing( $ds, $data );

@@ -129,7 +129,7 @@ sub LoadChannelsFromDb {
 
   my $res = {};
 
-  foreach my $ch ($ds->FindGrabberChannels( $self->{grabber_name} )) {
+  foreach my $ch (@{$self->ListChannels()}) {
     $res->{$ch->{xmltvid}} = $ch;
   }
 

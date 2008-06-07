@@ -6,6 +6,8 @@ use File::Copy;
 use IO::Scalar;
 use NonameTV::Log qw/info progress error log_to_string log_to_string_result/;
 
+use Data::Dumper;
+
 =head1 NAME
 
 NonameTV::Importer
@@ -19,10 +21,38 @@ data from different datasources into the NonameTV programming
 database.
 
 NonameTV::Importer::*-objects are instantiated from the nonametv.conf
-configuration file. To instantiate an object, add an entry
-in the 'importers'-hash. Each entry consists of a hash with 
-the package-name of the importer in the type-key and any other
-parameters to the object in other keys.
+configuration file. To instantiate an object, add an entry in the
+'Importers'-hash. Each entry consists of a hash with configuration
+parameters for the importer. The following keys are common to all
+importers: 
+
+Type - The class-name for the importer, i.e. the instantiated object
+will be of class NonameTV::Importer::$Type.
+
+Channels - The channels that this importer shall import data for. The
+value shall be another hash with xmltvids as keys and arrays as
+values. The array shall contain the following data in this order:
+
+  display_name, grabber_info, sched_lang, empty_ok, def_pty,
+  def_cat, url, chgroup 
+
+The fields def_pty, def_cat, url, and chgroup are optional and can be
+omitted.
+
+A sample entry for an importer can look like this:
+
+    Aftonbladet_http => {
+      Type => 'Aftonbladet_http',
+      MaxWeeks => 4,
+      UrlRoot => "http://www.aftonbladet.se/atv/pressrum/tabla",
+      Channels => {
+        "tv7.aftonbladet.se" => 
+           [ "Aftonbladet TV7", "", "sv", 0, "", "", "", "" ],
+        },
+      },
+
+The MaxWeeks and UrlRoot parameters are implemented by the classes
+deriving from Importer.
 
 =head1 METHODS
 
@@ -66,7 +96,25 @@ using the $NonameTV::Importer::*::Options arrayref as format specification.
 sub Import {
   my( $self, $param ) = @_;
   
-  die "You must override Import in your own class"
+  $self->ImportData( $param );
+}
+
+=item ImportData
+
+ImportData is called from Import. It takes a hashref as the only
+parameter. The hashref points to a hash with the command-line
+parameters decoded by Getopt::Long using the
+$NonameTV::Importer::*::Options arrayref as format specification.
+
+The ImportData method must be overridden in classes inheriting from
+NonameTV::Importer.
+
+=cut
+
+sub ImportData {
+  my( $self, $param ) = @_;
+  
+  die "You must override ImportData in your own class";
 }
 
 sub FetchData {
@@ -134,6 +182,186 @@ sub ImportFile {
   }
 
   return $self->ImportContent( $contentname, \$content, $p );
+}
+
+sub UpdateChannels {
+  my $self = shift;
+
+  return if defined $self->{_ChannelsUpdated};
+
+  if( not defined( $self->{Channels} ) ) {
+    $self->LoadChannelsFromDb();
+  }
+  else {
+    $self->SyncChannelsToDb();
+  }
+
+  $self->{_ChannelsUpdated} = 1;
+}
+
+=item ListChannels
+
+Return an arrayref with one entry per channnel configured for this
+grabber. Each entry is a hash with information about the channel.
+
+=cut
+
+sub ListChannels {
+  my $self = shift;
+
+  $self->UpdateChannels();
+
+  return $self->{_ChannelData};
+}
+
+sub LoadChannelsFromDb {
+  my $self = shift;
+
+  $self->{_ChannelData} = $self->{datastore}->FindGrabberChannels( 
+     $self->{grabber_name} );
+}
+
+sub defdef {
+  my( $value, $default ) = @_;
+
+  return defined $value ? $value : $default;
+}
+
+sub isequal {
+  my( $conf, $db ) = @_;
+
+  return 0 if $conf->{display_name} ne $db->{display_name};
+  return 0 if $conf->{sched_lang} ne $db->{sched_lang};
+  return 0 if $conf->{empty_ok} ne $db->{empty_ok};
+  return 0 if $conf->{def_pty} ne $db->{def_pty};
+  return 0 if $conf->{def_cat} ne $db->{def_cat};
+  return 0 if defdef($conf->{url}, "") ne defdef( $db->{url}, "");
+  return 0 if defdef($conf->{chgroup}, "") ne defdef($db->{chgroup}, "");
+
+  return 0 if $conf->{grabber_info} ne $db->{grabber_info};
+
+  return 1;
+}
+
+sub SyncChannelsToDb {
+  my $self = shift;
+
+  # 1. Convert Channels to _ChannelData. Order by xmltvid.
+  # 2. Iterate through _ChannelData and FindGrabberChannels.
+
+  foreach my $xmltvid (sort keys %{$self->{Channels}}) {
+    my $e = $self->{Channels}->{$xmltvid};
+    my $ce = {
+      xmltvid => $xmltvid,
+      display_name => $e->[0],
+      grabber_info => defdef( $e->[1], "" ),
+      sched_lang => $e->[2],
+      empty_ok => defdef( $e->[3], 0 ),
+      def_pty => defdef( $e->[4], "" ),
+      def_cat => defdef( $e->[5], "" ),
+      url => $e->[6],
+      chgroup => defdef( $e->[7], "" ),
+    };
+    
+    push @{$self->{_ChannelData}}, $ce;
+  }
+
+  my $db = $self->{datastore}->FindGrabberChannels( $self->{grabber_name} );
+  my $conf = $self->{_ChannelData};
+
+  push @{$db}, { xmltvid => 'zzzz' };
+  push @{$conf}, { xmltvid => 'zzzz' };
+
+  my $idb = 0;
+  my $ic = 0;
+
+  while( 1 ) {
+    my $cdb = $db->[$idb];
+    my $cc = $conf->[$ic];
+
+    if( ($cc->{xmltvid}) eq "zzzz" and ($cdb->{xmltvid} eq "zzzz") ) {
+      last;
+    }
+
+
+    if( $cc->{xmltvid} eq $cdb->{xmltvid} ) {
+      # The channel id only exists in the database.
+      $cc->{id} = $cdb->{id};
+
+      if( not isequal( $cc, $cdb )  ) {
+	print STDERR "Updating channel info for $cc->{xmltvid}\n";
+	$self->UpdateChannel( $cc );
+      }
+
+      $idb++;
+      $ic++;
+    }
+    elsif( $cc->{xmltvid} lt $cdb->{xmltvid} ) {
+      # This channel is missing from the database.
+      print STDERR "Adding channel info for $cc->{xmltvid}\n";
+      $self->AddChannel( $cc );
+      $ic++;
+    }
+    else {
+      # This channel is missing from the configuration.
+      print STDERR "Deleting channel info for $cdb->{xmltvid}\n";
+      $self->{datastore}->ClearChannel( $cdb->{id} );
+      $self->{datastore}->sa->Delete( "channels", { id => $cdb->{id} } );
+      $idb++;
+    }
+  }
+
+  # Delete dummy channel.
+  pop @{$conf};
+
+#  print Dumper $self->{_ChannelData};
+}
+
+sub UpdateChannel {
+  my $self = shift;
+  my( $cc ) = @_;
+
+  my $data = {
+    xmltvid => $cc->{xmltvid},
+    display_name => $cc->{display_name},
+    grabber => $self->{grabber_name},
+    grabber_info => $cc->{grabber_info},
+    sched_lang => $cc->{sched_lang},
+    empty_ok => $cc->{empty_ok},
+    def_pty => $cc->{def_pty},
+    def_cat => $cc->{def_cat},
+    url => $cc->{url},
+    chgroup => $cc->{chgroup},
+  };
+
+  $self->{datastore}->sa->Update( 'channels', {id => $cc->{id}}, $data );
+}
+
+sub AddChannel {
+  my $self = shift;
+  my( $cc ) = @_;
+
+  my $data = {
+    xmltvid => $cc->{xmltvid},
+    display_name => $cc->{display_name},
+    grabber => $self->{grabber_name},
+    grabber_info => $cc->{grabber_info},
+    sched_lang => $cc->{sched_lang},
+    empty_ok => $cc->{empty_ok},
+    def_pty => $cc->{def_pty},
+    def_cat => $cc->{def_cat},
+    url => $cc->{url},
+    chgroup => $cc->{chgroup},
+    export => 1,
+  };
+
+  $self->{datastore}->sa->Add( 'channels', $data );
+  my $id = $self->{datastore}->sa->Lookup( 'channels', 
+    { xmltvid => $cc->{xmltvid},
+      grabber => $self->{grabber_name} },
+    "id" );
+
+  $cc->{id} = $id;	 
 }
 
 =head1 CLASS VARIABLES

@@ -117,8 +117,7 @@ sub ImportContentFile
 sub UpdateFiles {
   my( $self ) = @_;
 
-  foreach my $data ( $self->{datastore}->FindGrabberChannels( 
-	$self->{grabber_name} ) ) { 
+  foreach my $data ( @{$self->ListChannels()} ) { 
     my $dir = $data->{grabber_info};
     my $xmltvid = $data->{xmltvid};
 

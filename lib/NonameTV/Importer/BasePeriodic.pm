@@ -115,7 +115,7 @@ sub ImportContent {
   die "You must override ImportContent";
 }
 
-sub Import {
+sub ImportData {
   my $self = shift;
   my( $p ) = @_;
 
@@ -138,7 +138,7 @@ sub Import {
 
   my $ds = $self->{datastore};
 
-  foreach my $data ($ds->FindGrabberChannels($self->{grabber_name}) ) {
+  foreach my $data (@{$self->ListChannels()} ) {
     my $error2 = $self->InitiateChannelDownload( $data );
 
     if( $p->{'force-update'} and not $p->{'short-grab'} ) {
@@ -204,7 +204,7 @@ sub ImportOld {
 
   my $ds = $self->{datastore};
 
-  foreach my $data ($ds->FindGrabberChannels($self->{grabber_name}) ) {
+  foreach my $data (@{$self->ListChannels()} ) {
     if( $p->{'force-update'} and not $p->{'short-grab'} ) {
       # Delete all data for this channel.
       my $deleted = $ds->ClearChannel( $data->{id} );

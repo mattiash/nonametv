@@ -54,6 +54,11 @@ sub CreateImporter {
   my $imp_data = $conf->{Importers}->{$name};
   my $imp_type = $imp_data->{Type};
 
+  if( not defined $imp_type ) {
+    print STDERR "Importer $name has no Type-field\n";
+    exit 1;
+  }
+
   my $imp = eval "use NonameTV::Importer::$imp_type; 
                   NonameTV::Importer::${imp_type}->new( \$imp_data, \$ds );"
                       or die $@;

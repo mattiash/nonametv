@@ -243,7 +243,7 @@ sub Import
 
   my $ds = $self->{datastore};
 
-  foreach my $data ($ds->FindGrabberChannels( $self->{grabber_name} ) ) {
+  foreach my $data (@{$self->ListChannels()} ) {
     if( not exists( $channel_data{$data->{xmltvid} } ) )
     {
       logdie( "Unknown channel '$data->{xmltvid}'" );
