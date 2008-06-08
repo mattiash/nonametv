@@ -87,7 +87,7 @@ sub ImportContentFile
                              $channel_xmltvid, $channel_id );
   }
   else {
-    $self->ImportData( $file, $doc, 
+    $self->ImportFull( $file, $doc, 
                        $channel_xmltvid, $channel_id );
   }
 }
@@ -95,7 +95,7 @@ sub ImportContentFile
 # Import files that contain full programming details,
 # usually for an entire month.
 # $doc is an XML::LibXML::Document object.
-sub ImportData
+sub ImportFull
 {
   my $self = shift;
   my( $filename, $doc, $channel_xmltvid, $channel_id ) = @_;
