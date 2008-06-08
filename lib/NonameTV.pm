@@ -133,7 +133,8 @@ sub Html2Xml
   
   if( $@ ne "" )
   {
-    print "parse_html_string failed: $@\n";
+    my ($package, $filename, $line) = caller;
+    print "parse_html_string failed: $@ when called from $filename:$line\n";
     return undef;
   }
 
