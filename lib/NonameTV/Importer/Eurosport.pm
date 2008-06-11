@@ -121,7 +121,10 @@ sub UpdateFiles {
     my $dir = $data->{grabber_info};
     my $xmltvid = $data->{xmltvid};
 
-    ftp_get( $self->{FtpRoot} . $dir . '/' . $self->{Filename},
+    my $url = $self->{FtpRoot} . $dir . '/' . $self->{Filename};
+print "URL: $url\n";
+
+    ftp_get( $url,
              $self->{FileStore} . '/' . 
              $xmltvid . '/' . $self->{Filename} );
   }  

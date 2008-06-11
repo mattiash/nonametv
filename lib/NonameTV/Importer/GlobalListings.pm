@@ -196,6 +196,7 @@ sub FlushDayData {
 sub isDate {
   my ( $text ) = @_;
 
+  # try 'Sunday1 June 2008'
   return 1 if( $text =~ /^Saturday(\d+)\s(\S+)\s(\d{4})/i );
   return 1 if( $text =~ /^Sunday(\d+)\s(\S+)\s(\d{4})/i );
   return 1 if( $text =~ /^Monday(\d+)\s(\S+)\s(\d{4})/i );
@@ -218,7 +219,8 @@ sub isDate {
 sub ParseDate {
   my( $text ) = @_;
 
-  # try the English format first
+#print "TEXT: $text\n";
+  # try the 1st English format 'Sunday1 June 2008'
   my( $day, $monthname, $year ) = ($text =~ /(\d+)\s(\S+)\s(\d+)/);
 
   if( not defined $monthname ){

@@ -204,7 +204,7 @@ sub ImportContent
       my $description;
       if( @addinfo ){
         foreach my $z ( @addinfo ){
-          $description .= $z . "<br>\n";
+          $description .= $z . "\n";
         }
       }
       $description .= norm($longdesc) || norm($shortdesc);
