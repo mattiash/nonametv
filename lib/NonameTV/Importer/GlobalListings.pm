@@ -5,42 +5,57 @@ use warnings;
 
 =pod
 
-Import data from Word-files delivered via e-mail.  Each day
-is handled as a separate batch.
-
-The grabber_info field should be set to 'HH:MM', as this is used
-to determine the start of each day batch.
+Import data from Word-files delivered via e-mail. The parsing of the
+data relies only on the text-content of the document, not on the
+formatting.
 
 Features:
+
+Episode numbers parsed from title.
+Subtitles.
 
 =cut
 
 use utf8;
 
-use POSIX;
 use DateTime;
 use XML::LibXML;
-#use Text::Capitalize qw/capitalize_title/;
 
-use NonameTV qw/MyGet Wordfile2Xml Htmlfile2Xml norm AddCategory/;
+use NonameTV qw/MyGet File2Xml norm/;
 use NonameTV::DataStore::Helper;
-use NonameTV::Log qw/info progress error logdie 
-                     log_to_string log_to_string_result/;
+use NonameTV::DataStore::Updater;
+use NonameTV::Log qw/info progress error logdie/;
 
 use NonameTV::Importer::BaseFile;
-
 use base 'NonameTV::Importer::BaseFile';
 
-sub new {
+# The lowest log-level to store in the batch entry.
+# DEBUG = 1
+# INFO = 2
+# PROGRESS = 3
+# ERROR = 4
+# FATAL = 5
+my $BATCH_LOG_LEVEL = 4;
+
+my $command_re = "ÄNDRA|RADERA|TILL|INFOGA|EJ ÄNDRAD|" . 
+    "CHANGE|DELETE|TO|INSERT|UNCHANGED";
+
+my $time_re = '\d\d[\.:]\d\d';
+
+sub new 
+{
   my $proto = shift;
   my $class = ref($proto) || $proto;
   my $self  = $class->SUPER::new( @_ );
   bless ($self, $class);
-
+  
   $self->{grabber_name} = "GlobalListings";
 
   my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore} );
   $self->{datastorehelper} = $dsh;
+
+  my $dsu = NonameTV::DataStore::Updater->new( $self->{datastore} );
+  $self->{datastoreupdater} = $dsu;
 
   return $self;
 }
@@ -50,239 +65,596 @@ sub ImportContentFile
   my $self = shift;
   my( $file, $chd ) = @_;
 
-  $self->{fileerror} = 0;
+  defined( $chd->{sched_lang} ) or die "You must specify the language used for this channel (sched_lang)";
+  if( $chd->{sched_lang} !~ /^en$/ and $chd->{sched_lang} !~ /^se$/ and $chd->{sched_lang} !~ /^hr$/ ){
+    error( "GlobalListings: $chd->{xmltvid} Invalid language '$chd->{sched_lang}'" );
+    return;
+  }
+  my $schedlang = $chd->{sched_lang};
+  progress( "GlobalListings: $chd->{xmltvid}: Setting schedules language to '$schedlang'" );
 
-  my $xmltvid=$chd->{xmltvid};
+  if( $file =~ /\bhigh/i )
+  {
+    error( "GlobalListings: $chd->{xmltvid} Skipping highlights file $file" );
+    return;
+  }
+
   my $channel_id = $chd->{id};
+  my $channel_xmltvid = $chd->{xmltvid};
+
+  my $doc = File2Xml( $file );
+
+  if( not defined( $doc ) )
+  {
+    error( "GlobalListings: $chd->{xmltvid} Failed to parse $file" );
+    return;
+  }
+
+  if( $file =~ /amend/i ) {
+    $self->ImportAmendments( $file, $doc, 
+                             $channel_xmltvid, $channel_id, $schedlang );
+  }
+  else {
+    $self->ImportFull( $file, $doc, 
+                       $channel_xmltvid, $channel_id, $schedlang );
+  }
+}
+
+# Import files that contain full programming details,
+# usually for an entire month.
+# $doc is an XML::LibXML::Document object.
+sub ImportFull
+{
+  my $self = shift;
+  my( $filename, $doc, $channel_xmltvid, $channel_id, $lang ) = @_;
+  
   my $dsh = $self->{datastorehelper};
-  my $ds = $self->{datastore};
-  my $firstshowtime = $chd->{grabber_info};
-  
-  defined( $chd->{grabber_info} ) or die "You must specify the time of the first show in grabber_info";
-  if( $chd->{grabber_info} !~ /^\d\d:\d\d$/ ){
-    error( "GlobalListings: $xmltvid: Invalid grabber_info - should be set to HH:MM" );
-    return;
-  }
 
-  progress( "GlobalListings: $xmltvid: Processing $file" );
-  
-  my $doc;
-  $doc = Wordfile2Xml( $file );
-
-  if( not defined( $doc ) ) {
-    error( "GlobalListings $xmltvid: $file: Failed to parse" );
-    return;
-  }
-
-  my @nodes = $doc->findnodes( '//span[@style="text-transform:uppercase"]/text()' );
-  foreach my $node (@nodes) {
-    my $str = $node->getData();
-    $node->setData( uc( $str ) );
-  }
-  
-  # Find all paragraphs.
+  # Find all div-entries.
   my $ns = $doc->find( "//div" );
   
-  if( $ns->size() == 0 ) {
-    error( "GlobalListings $xmltvid: $file: No divs found." ) ;
+  if( $ns->size() == 0 )
+  {
+    error( "GlobalListings: $channel_xmltvid: No programme entries found in $filename" );
+    return;
+  }
+  
+  progress( "GlobalListings: $channel_xmltvid: Processing $filename" );
+
+  # States
+  use constant {
+    ST_START  => 0,
+    ST_FDATE  => 1,   # Found date
+    ST_FHEAD  => 2,   # Found head with starttime and title
+    ST_FDESC  => 3,   # Found description
+    ST_EPILOG => 4,   # After END-marker
+  };
+  
+  use constant {
+    T_HEAD => 10,
+    T_DATE => 11,
+    T_TEXT => 12,
+    T_STOP => 13,
+    T_HEAD_ENG => 14,
+  };
+  
+  my $state=ST_START;
+  my $currdate;
+
+  my $start;
+  my $title;
+  my $date;
+  
+  my $ce = {};
+  
+  foreach my $div ($ns->get_nodelist)
+  {
+    # Ignore English titles in National Geographic.
+    next if $div->findvalue( '@name' ) =~ /title in english/i;
+
+    my( $text ) = norm( $div->findvalue( './/text()' ) );
+    next if $text eq "";
+
+    #print "Text: $text\n";
+
+    my $type;
+    
+    if( ( $lang =~ /^en$/ and $text =~ /^(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\s*\d+\s*\D+\s*\d+$/i )
+      or ( $lang =~ /^en$/ and $text =~ /^(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\s*\D+\s*\d+,\s*\d+$/i )
+      or ( $lang =~ /^se$/ and $text =~ /^(måndag|tisdag|onsdag|torsdag|fredag|lördag|söndag)\s*\d+\s*\D+\s*\d+$/i )
+      or ( $lang =~ /^hr$/ and $text =~ /^(ponedjeljak|utorak|srijeda|èvrtak|petak|subota|nedjelja)\s*\d+\.\s*\D+\s*\d+\.$/i )
+    )
+    {
+      $type = T_DATE;
+      $date = parse_date( $text, $lang );
+      if( not defined $date ) {
+	error( "GlobalListings: $channel_xmltvid: $filename Invalid date $text" );
+      }
+
+    }
+    elsif( $text =~ /^\d\d\.\d\d\s+\S+/ )
+    {
+      $type = T_HEAD;
+      $start=undef;
+      $title=undef;
+
+      ($start, $title) = ($text =~ /^(\d+\.\d+)\s+(.*)\s*$/ );
+      $start =~ tr/\./:/;
+
+      if( $lang =~ /^hr$/ ){
+        $title =~ s/na\s*hrvatskom\s*//i;
+      }
+    }
+    elsif( $text =~ /^\s*\(.*\)\s*$/ )
+    {
+      $type = T_HEAD_ENG;
+    }
+    elsif( $text =~ /^\s*END\s*$/ )
+    {
+      $type = T_STOP;
+    }
+    else
+    {
+      $type = T_TEXT;
+    }
+    
+    if( $state == ST_START )
+    {
+      if( $type == T_TEXT )
+      {
+        # Ignore
+      }
+      elsif( $type == T_DATE )
+      {
+	$dsh->StartBatch( "${channel_xmltvid}_$date", $channel_id );
+	$dsh->StartDate( $date );
+        $self->AddDate( $date );
+	$state = ST_FDATE;
+	next;
+      }
+      else
+      {
+	error( "State ST_START, found: $text" );
+      }
+    }
+    elsif( $state == ST_FHEAD )
+    {
+      if( $type == T_TEXT )
+      {
+	if( defined( $ce->{description} ) )
+	{
+	  $ce->{description} .= " " . $text;
+	}
+	else
+	{
+	  $ce->{description} = $text;
+	}
+	next;
+      }
+      elsif( $type == T_HEAD_ENG )
+      {}
+      else
+      {
+	extract_extra_info( $ce );
+	$dsh->AddProgramme( $ce );
+	$ce = {};
+	$state = ST_FDATE;
+      }
+    }
+    
+    if( $state == ST_FDATE )
+    {
+      if( $type == T_HEAD )
+      {
+	$ce->{start_time} = $start;
+	$ce->{title} = $title;
+	$state = ST_FHEAD;
+      }
+      elsif( $type == T_DATE )
+      {
+	$dsh->EndBatch( 1 );
+
+	$dsh->StartBatch( "${channel_xmltvid}_$date", $channel_id );
+	$dsh->StartDate( $date );
+        $self->AddDate( $date );
+	$state = ST_FDATE;
+      }
+      elsif( $type == T_STOP )
+      {
+	$state = ST_EPILOG;
+      }
+      else
+      {
+	error( "GlobalListings: $channel_xmltvid: $filename State ST_FDATE, found: $text" );
+      }
+    }
+    elsif( $state == ST_EPILOG )
+    {
+      if( ($type != T_TEXT) and ($type != T_DATE) )
+      {
+	error( "GlobalListings: $channel_xmltvid: $filename State ST_EPILOG, found: $text" );
+      }
+    }
+  }
+  $dsh->EndBatch( 1 );
+}
+
+#
+# Import data from a file that contains programme updates only.
+# $doc is an XML::LibXML::Document object.
+#
+sub ImportAmendments
+{
+  my $self = shift;
+  my( $filename, $doc, $channel_xmltvid, $channel_id, $lang ) = @_;
+
+  my $dsu = $self->{datastoreupdater};
+
+  my $loghandle;
+
+  progress( "GlobalListings: $channel_xmltvid: Processing $filename" );
+
+  # Find all div-entries.
+  my $ns = $doc->find( "//div" );
+  
+  if( $ns->size() == 0 )
+  {
+    error( "GlobalListings: $channel_xmltvid: $filename: No programme entries found." );
     return;
   }
 
-  my $fileok = 0;
+  use constant {
+    ST_HEAD => 0,
+    ST_FOUND_DATE => 1,
+  };
 
-  my $currdate = undef;
-  my $date = undef;
-  my @ces;
-  my $description;
-  my $subtitle;
+  my $state=ST_HEAD;
 
-  foreach my $div ($ns->get_nodelist) {
+  my( $date, $prevtime, $e );
+  
+  foreach my $div ($ns->get_nodelist)
+  {
+    my( $text ) = norm( $div->findvalue( './/text()' ) );
+    next if $text eq "";
 
-    my( $text ) = norm( $div->findvalue( '.' ) );
+    my( $time, $command, $title );
 
-#print "> $text\n";
-
-    if( $text eq "" ) {
-      # blank line
+    if( ($text =~ /^sida \d+ av \d+$/i) or
+        ($text =~ /tablån fortsätter som tidigare/i) or
+        ($text =~ /slut på tablå/i) or
+        ($text =~ /^page \d+ of \d+$/i) or
+        ($text =~ /schedule resumes as/i)
+        )
+    {
+      next;
     }
-    elsif( $text =~ /www\.globallistings\.info/i ) {
-      progress("GlobalListings: $xmltvid: OK, this is the file with the schedules: $file");
-      $fileok = 1;
+    elsif( $text =~ /^SLUT|END$/ )
+    {
+      last;
     }
-
-    # we have to find one string in the file
-    # that says this is the GlobalListings file
-    # and we don't process the rest of the file
-    # if this string was not found on the top
-    next if( ! $fileok );
-
-    if( isDate( $text ) ) { # the line with the date in format 'Tuesday 1 July 2008'
-
-      $date = ParseDate( $text );
-
-      if( defined $date ) {
-        progress("GlobalListings: $xmltvid: Date $date");
-
-        if( defined $currdate ){
-
-          # save last day if we have it in memory
-          FlushDayData( $xmltvid, $dsh , @ces );
-          $dsh->EndBatch( 1 )
-
-        }
-
-        my $batch_id = "${xmltvid}_" . $date->ymd();
-        $dsh->StartBatch( $batch_id, $channel_id );
-        $dsh->StartDate( $date->ymd("-") , $firstshowtime ); 
-        $currdate = $date;
+    elsif( $text =~ /^(måndag|tisdag|onsdag|torsdag|fredag|lördag|söndag|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\s*\d+\s*\D+\s*\d+$/i  )
+    {
+      if( $state != ST_HEAD )
+      {
+        $self->process_command( $channel_id, $e )
+          if( defined( $e ) );
+        $e = undef;
+        $dsu->EndBatchUpdate( 1 )
+          if( $self->{process_batch} ); 
       }
 
-      # empty last day array
-      undef @ces;
-      undef $description;
-      undef $subtitle;
-    }
-    elsif( $text =~ /^(\d+)\.(\d+) (\S+)/ ) { # the line with the show in format '19.30 Show title: Episode 4'
-
-      my( $starttime, $title, $episode ) = ParseShow( $text , $date );
-
-      my $ce = {
-        channel_id   => $chd->{id},
-	start_time => $starttime->hms(":"),
-	title => norm($title),
-      };
-
-      if( $episode ){
-        $ce->{episode} = sprintf( ". %d .", $episode-1 );
+      $date = parse_date( $text, $lang );
+      if( not defined $date ) {
+	error( "GlobalListings: $channel_xmltvid: $filename Invalid date $text" );
       }
 
-      # add the programme to the array
-      # as we have to add description later
-      push( @ces , $ce );
+      $state = ST_FOUND_DATE;
+
+      $self->{process_batch} = 
+        $dsu->StartBatchUpdate( "${channel_xmltvid}_$date", $channel_id ) ;
+      
+      $self->AddDate( $date ) if $self->{process_batch};
+      $self->start_date( $date );
     }
+    elsif( ($command, $title) = 
+           ($text =~ /^($command_re)\s
+                       (.*?)\s*
+                       ( \( [^)]* \) )*
+                     $/x ) )
+    {
+      if( $state != ST_FOUND_DATE )
+      {
+        logdie( "GlobalListings: $channel_xmltvid: $filename Wrong state for $text" );
+      }
 
-    else {
+      $self->process_command( $channel_id, $e )
+        if defined $e;
 
-        # the last element is the one to which
-        # this description belongs to
-        my $element = $ces[$#ces];
+      $e = $self->parse_command( $prevtime, $command, $title );
+    }
+    elsif( ($time, $command, $title) = 
+           ($text =~ /^($time_re)\s
+                       ($command_re)\s+
+                       ([A-ZÅÄÖ].*?)\s*
+                       ( \( [^)]* \) )*
+                     $/x ) )
+    {
+      if( $state != ST_FOUND_DATE )
+      {
+        logdie( "GlobalListings: $channel_xmltvid: $filename Wrong state for $text" );
+      }
 
-        $element->{description} .= $text;
+      $self->process_command( $channel_id, $e )
+        if defined $e;
 
+      $e = $self->parse_command( $time, $command, $title );
+
+      $prevtime = $time;
+    }
+    elsif( $state == ST_FOUND_DATE )
+    {
+      # Plain text. This must be a description.
+      if( defined( $e ) )
+      {
+        $e->{desc} .= $text;
+        $self->process_command( $channel_id, $e );
+        $e = undef;
+      }
+      else
+      {
+        error( "GlobalListings: $channel_xmltvid: $filename Ignored text: $text" );
+      }
+    }
+    else
+    {
+      # Plain text in header. Ignore.
     }
   }
+  $self->process_command( $channel_id, $e )
+    if( defined( $e ) );
 
-  # save last day if we have it in memory
-  FlushDayData( $xmltvid, $dsh , @ces );
+  $dsu->EndBatchUpdate( 1 )
+    if( $self->{process_batch} ); 
+}
 
-  $dsh->EndBatch( 1 );
-    
+sub parse_command
+{
+  my $self = shift;
+  my( $time, $command, $title ) = @_;
+
+#  print "PC: $time - $command - $title\n";
+  my $e;
+
+  $e->{time} = $time;
+  $e->{title} = $title;
+  $e->{desc} = "";
+
+  if( $command eq "ÄNDRA" or $command eq "RADERA")
+  {
+    $e->{command} = "DELETEBLIND";
+  }
+  elsif( $command eq "CHANGE" or $command eq "DELETE" )
+  {
+    # This is a document with changes in English.
+    # The titles won't match.
+    $e->{command} = "DELETEBLIND";
+  }    
+  elsif( $command eq "TILL" or $command eq "INFOGA" 
+         or $command eq "TO" or $command eq "INSERT" )
+  {
+    $e->{command} = "INSERT";
+  }
+  elsif( $command eq "EJ ÄNDRAD" or $command eq "UNCHANGED")
+  {
+    $e->{command} = "IGNORE";
+  }
+  else
+  {
+    error( "Unknown command $command with time $time" );
+  }
+
+  return $e;
+}
+
+sub process_command
+{
+  my $self = shift;
+  my( $channel_id, $e ) = @_;
+
+#  print "DO: $e->{command} $e->{time} $e->{title}\n";
+
+  return unless $self->{process_batch};
+
+  my $dsu = $self->{datastoreupdater};
+
+  my $dt = $self->create_dt( $e->{time} );
+
+  return if $dt < DateTime->today;
+
+  if( $e->{command} eq 'DELETEBLIND' )
+  {
+    my $ce = {
+      channel_id => $channel_id,
+      start_time => $dt->ymd('-') . " " . $dt->hms(':'),
+    };      
+
+    $self->{del_e} = $dsu->DeleteProgramme( $ce, 1 );
+  }
+  elsif( $e->{command} eq "INSERT" )
+  {
+    my $ce = {
+      channel_id => $channel_id,
+      start_time => $dt->ymd('-') . " " . $dt->hms(':'),
+      title => $e->{title},
+    };
+    extract_extra_info( $ce );
+
+    if( $e->{desc} =~ /Programförklaring ej ändrad/ )
+    {
+      # This is a program that has gotten a new title. It means
+      # that it is a record CHANGE ... TO ... Thus, the description
+      # is the same as the description from the record we just deleted.
+      $ce->{description} = $self->{del_e}->{description};
+    }
+    else
+    {
+      $e->{description} = $e->{desc};
+    }
+
+    $dsu->AddProgramme( $ce );
+  }    
+  elsif( $e->{command} eq "IGNORE" )
+  {}
+  else
+  {
+    logdie( "GlobalListings: Unknown command $e->{command}" );
+  }
+}
+
+sub extract_extra_info
+{
+  my( $ce ) = shift;
+
+  my( $episode ) = ($ce->{title} =~ /:\s*Avsnitt\s*(\d+)$/);
+  $ce->{title} =~ s/:\s*Avsnitt\s*(\d+)$//; 
+  $ce->{episode} = sprintf(" . %d . ", $episode-1)
+    if defined( $episode );
+  ( $ce->{subtitle} ) = ($ce->{title} =~ /:\s*(.+)$/);
+  $ce->{title} =~ s/:\s*(.+)$//;
+
+  if( $ce->{title} =~ /^\bs.ndningsslut\b$/i )
+  {
+    $ce->{title} = "end-of-transmission";
+  }
+
   return;
 }
 
-sub FlushDayData {
-  my ( $xmltvid, $dsh , @data ) = @_;
 
-    if( @data ){
-      foreach my $element (@data) {
+sub parse_date
+{
+  my( $text, $lang ) = @_;
 
-        progress("GlobalListings: $xmltvid: $element->{start_time} - $element->{title}");
+  my @months = qw/januari februari mars april maj juni juli augusti
+      september oktober november december/;
 
-        $dsh->AddProgramme( $element );
-      }
-    }
-}
-
-sub isDate {
-  my ( $text ) = @_;
-
-  # try 'Sunday1 June 2008'
-  return 1 if( $text =~ /^Saturday(\d+)\s(\S+)\s(\d{4})/i );
-  return 1 if( $text =~ /^Sunday(\d+)\s(\S+)\s(\d{4})/i );
-  return 1 if( $text =~ /^Monday(\d+)\s(\S+)\s(\d{4})/i );
-  return 1 if( $text =~ /^Tuesday(\d+)\s(\S+)\s(\d{4})/i );
-  return 1 if( $text =~ /^Wednesday(\d+)\s(\S+)\s(\d{4})/i );
-  return 1 if( $text =~ /^Thursday(\d+)\s(\S+)\s(\d{4})/i );
-  return 1 if( $text =~ /^Friday(\d+)\s(\S+)\s(\d{4})/i );
-
-  return 1 if( $text =~ /^subota(\d+)\.\s(\S+)\s(\d{4})\./i );
-  return 1 if( $text =~ /^nedjelja(\d+)\.\s(\S+)\s(\d{4})\./i );
-  return 1 if( $text =~ /^ponedjeljak(\d+)\.\s(\S+)\s(\d{4})\./i );
-  return 1 if( $text =~ /^utorak(\d+)\.\s(\S+)\s(\d{4})\./i );
-  return 1 if( $text =~ /^srijeda(\d+)\.\s(\S+)\s(\d{4})\./i );
-  return 1 if( $text =~ /^[[:lower:]]etvrtak(\d+)\.\s(\S+)\s(\d{4})\./i );
-  return 1 if( $text =~ /^petak(\d+)\.\s(\S+)\s(\d{4})\./i );
-
-  return 0;
-}
-
-sub ParseDate {
-  my( $text ) = @_;
-
-#print "TEXT: $text\n";
-  # try the 1st English format 'Sunday1 June 2008'
-  my( $day, $monthname, $year ) = ($text =~ /(\d+)\s(\S+)\s(\d+)/);
-
-  if( not defined $monthname ){
-    ( $day, $monthname, $year ) = ($text =~ /(\d+)\.\s(\S+)\s(\d+)\./);
-  }
-#print "day: $day\n";
-#print "mon: $monthname\n";
-#print "yea: $year\n";
-
-
-  my $month;
-  $month = 1 if( $monthname =~ /January/i );
-  $month = 2 if( $monthname =~ /February/i );
-  $month = 3 if( $monthname =~ /March/i );
-  $month = 4 if( $monthname =~ /April/i );
-  $month = 5 if( $monthname =~ /May/i );
-  $month = 6 if( $monthname =~ /June/i );
-  $month = 7 if( $monthname =~ /July/i );
-  $month = 8 if( $monthname =~ /August/i );
-  $month = 9 if( $monthname =~ /September/i );
-  $month = 10 if( $monthname =~ /October/i );
-  $month = 11 if( $monthname =~ /November/i );
-  $month = 12 if( $monthname =~ /December/i );
+  my @months_eng = qw/january february march april may june july
+    august september october november december/;
   
-  $month = 5 if( $monthname =~ /svibnja/i );
-  $month = 6 if( $monthname =~ /lipnja/i );
-  $month = 7 if( $monthname =~ /srpnja/i );
+  my @months_hr = qw/sijecnja veljace ozujka travnja svibnja lipnja srpnja
+    kolovoza rujna listopada studenoga prosinca/;
+  
+  my %monthnames = ();
+  for( my $i = 0; $i < scalar(@months); $i++ ) 
+  { $monthnames{$months[$i]} = $i+1;}
 
-  my $dt = DateTime->new( year   => $year,
-                          month  => $month,
-                          day    => $day,
-                          hour   => 0,
-                          minute => 0,
-                          second => 0,
-                          time_zone => 'Europe/Zagreb',
-  );
+  for( my $i = 0; $i < scalar(@months_eng); $i++ ) 
+  { $monthnames{$months_eng[$i]} = $i+1;}
+  
+  for( my $i = 0; $i < scalar(@months_hr); $i++ ) 
+  { $monthnames{$months_hr[$i]} = $i+1;}
+  
+  my( $weekday, $day, $monthname, $year );
+  my $month;
+
+  if( $lang =~ /^en$/ ){
+
+    # try 'Sunday 1 June 2008'
+    if( $text =~ /^(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\s*\d+\s*\D+\s*\d+$/i ){
+      ( $weekday, $day, $monthname, $year ) = ( $text =~ /^(\S+?)\s*(\d+)\s*(\S+?)\s*(\d+)$/ );
+
+    # try 'Tuesday July 01, 2008'
+    } elsif( $text =~ /^(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\s*\D+\s*\d+,\s*\d+$/i ){
+      ( $weekday, $monthname, $day, $year ) = ( $text =~ /^(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\s*(\S+)\s*(\d+),\s*(\d+)$/i );
+    }
+
+  } elsif( $lang =~ /^se$/ ){
+
+      # try 'Tisdag 3 Juni 2008'
+      if( $text =~ /^(måndag|tisdag|onsdag|torsdag|fredag|lördag|söndag)\s*\d+\s*\D+\s*\d+$/i ){
+        ( $weekday, $day, $monthname, $year ) = ( $text =~ /^(\S+?)\s*(\d+)\s*(\S+?)\s*(\d+)$/ );
+      }
+
+  } elsif( $lang =~ /^hr$/ ){
+
+      # try 'utorak 1. srpnja 2008.'
+      if( $text =~ /^(ponedjeljak|utorak|srijeda|èvrtak|petak|subota|nedjelja)\s*\d+\.\s*\D+\s*\d+\.$/i ){
+        ( $weekday, $day, $monthname, $year ) = ( $text =~ /^(\S+?)\s*(\d+)\.\s*(\S+?)\s*(\d+)\.$/ );
+      }
+
+  }
+  
+#print "WDAY: >$weekday<\n";
+#print "DAY : >$day<\n";
+#print "MON : >$monthname<\n";
+#print "YEAR: >$year<\n";
+
+  $month = $monthnames{lc $monthname};
+#print "MONT: $month\n";
+
+  return undef unless defined( $month );
+
+  return sprintf( '%d-%02d-%02d', $year, $month, $day );
+}
+
+sub start_date
+{
+  my $self = shift;
+  my( $date ) = @_;
+
+#  print "StartDate: $date\n";
+
+  my( $year, $month, $day ) = split( '-', $date );
+  $self->{curr_date} = DateTime->new( 
+                                      year   => $year,
+                                      month  => $month,
+                                      day    => $day,
+                                      hour   => 0,
+                                      minute => 0,
+                                      second => 0,
+                                      time_zone => 'Europe/Stockholm' );
+}
+
+
+sub create_dt
+{
+  my $self = shift;
+  my( $time ) = @_;
+
+  my $dt = $self->{curr_date}->clone();
+  
+  my( $hour, $minute ) = split( /[:\.]/, $time );
+
+  error( $self->{batch_id} . ": Unknown starttime $time" )
+    if( not defined( $minute ) );
+
+  # The schedule date doesn't wrap at midnight. This is what
+  # they seem to use.
+  if( $hour < 9 )
+  {
+    $dt->add( days => 1 );
+  }
+
+  # Don't die for invalid times during shift to DST.
+  my $res = eval {
+    $dt->set( hour   => $hour,
+              minute => $minute,
+              );
+  };
+
+  if( not defined $res )
+  {
+    print $self->{batch_id} . ": " . $dt->ymd('-') . " $hour:$minute: $@" ;
+    $hour++;
+    error( "Adjusting to $hour:$minute" );
+    $dt->set( hour   => $hour,
+              minute => $minute,
+              );
+  }
+
+  $dt->set_time_zone( "UTC" );
 
   return $dt;
-}
-
-sub ParseShow {
-  my( $text, $date ) = @_;
-  my( $title, $episode );
-
-  my( $hour, $min, $string ) = ($text =~ /(\d+)\.(\d+)\s(.*)/);
-
-  $string =~ s/NA HRVATSKOM //;
-
-  if( $string =~ /: Episode/ ){
-    ( $title, $episode ) = $string =~ m/(\S+):\s+Episode\s+(\d+)/;
-  }
-#  elsif( $string =~ /: Epizoda/ ){
-#    ( $title, $episode ) = $string =~ m/(\S+):\s+Epizoda\s+(\d+)/;
-#  }
-  else
-  {
-    $title = $string;
-  }
-
-  my $sdt = $date->clone()->add( hours => $hour , minutes => $min );
-
-  return( $sdt , $title , $episode );
 }
 
 1;

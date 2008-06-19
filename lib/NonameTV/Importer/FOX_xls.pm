@@ -1,4 +1,4 @@
-package NonameTV::Importer::FOX;
+package NonameTV::Importer::FOX_xls;
 
 use strict;
 use warnings;
@@ -32,7 +32,7 @@ sub new {
   my $self  = $class->SUPER::new( @_ );
   bless ($self, $class);
 
-  $self->{grabber_name} = "FOX";
+  $self->{grabber_name} = "FOX_xls";
 
   return $self;
 }
@@ -49,7 +49,7 @@ sub ImportContentFile {
   # Only process .xls files.
   return if $file !~  /\.xls$/i;
 
-  progress( "FOX: Processing $file" );
+  progress( "FOX_xls: Processing $file" );
   
   $self->{fileerror} = 0;
 
@@ -68,7 +68,7 @@ sub ImportContentFile {
 
     $oWkS = $oBook->{Worksheet}[$iSheet];
 
-    progress( "FOX: Processing worksheet: $oWkS->{Name} - $date" );
+    progress( "FOX_xls: Processing worksheet: $oWkS->{Name} - $date" );
 
     my $batch_id = $xmltvid . "_" . $date;
     $ds->StartBatch( $batch_id , $channel_id );
@@ -101,7 +101,7 @@ sub ImportContentFile {
           $end_dt->add( days => 1 );
         }
 
-        progress( "FOX: from $start_dt to $end_dt : $en_title" );
+        progress( "FOX_xls: from $start_dt to $end_dt : $en_title" );
 
         my $ce = {
           channel_id => $channel_id,

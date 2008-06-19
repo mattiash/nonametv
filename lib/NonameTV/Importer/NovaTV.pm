@@ -47,7 +47,7 @@ sub ImportContentFile
   my $self = shift;
   my( $file, $chd ) = @_;
 
-  if( ( $file !~ /program/i and $file !~ /izmjena/i ) and $file !~ /\.doc/ ) {
+  if( ( $file !~ /program/i and $file !~ /izmjena/i ) and $file !~ /\.doc$/ ) {
     progress( "NovaTV: Skipping unknown file $file" );
     return;
   }
@@ -111,16 +111,14 @@ sub ImportContentFile
       $date = ParseDate( $text , $nowyear );
 
       if( defined $date ) {
+
+        if( defined $currdate ){
+          # save last day if we have it in memory
+          FlushDayData( $dsh , @ces );
+          $dsh->EndBatch( 1 )
+        }
+
         progress("NovaTV: Date $date");
-
-      if( defined $currdate ){
-
-        # save last day if we have it in memory
-        FlushDayData( $dsh , @ces );
-
-        $dsh->EndBatch( 1 )
-
-      }
 
         my $batch_id = "${xmltvid}_" . $date->ymd();
         $dsh->StartBatch( $batch_id, $channel_id );
@@ -129,7 +127,7 @@ sub ImportContentFile
       }
 
       # empty last day array
-      undef @ces;
+      @ces = ();
       undef $targetshow;
       undef $description;
       undef $subtitle;
@@ -224,9 +222,7 @@ sub FlushDayData {
 
     if( @data ){
       foreach my $element (@data) {
-
         progress("NovaTV: $element->{start_time} - $element->{title}");
-
         $dsh->AddProgramme( $element );
       }
     }
