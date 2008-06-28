@@ -1,4 +1,4 @@
-package NonameTV::Importer::FOX_xml;
+package NonameTV::Importer::FOX;
 
 use strict;
 use warnings;
@@ -16,6 +16,7 @@ use utf8;
 
 use DateTime;
 use XML::LibXML;
+use Spreadsheet::ParseExcel;
 use Archive::Zip;
 use Data::Dumper;
 use File::Temp qw/tempfile/;
@@ -35,7 +36,7 @@ sub new {
   my $self  = $class->SUPER::new( @_ );
   bless ($self, $class);
 
-  $self->{grabber_name} = "FOX_xml";
+  $self->{grabber_name} = "FOX";
 
   my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore} );
   $self->{datastorehelper} = $dsh;
@@ -49,8 +50,25 @@ sub ImportContentFile {
 
   $self->{fileerror} = 0;
 
-  my $xmltvid=$chd->{xmltvid};
   my $channel_id = $chd->{id};
+  my $channel_xmltvid = $chd->{xmltvid};
+  my $dsh = $self->{datastorehelper};
+  my $ds = $self->{datastore};
+
+  if( $file =~ /\.xml$/i ){
+    $self->ImportXML( $file, $channel_id, $channel_xmltvid );
+  } elsif( $file =~ /\.xls$/i ){
+    $self->ImportXLS( $file, $channel_id, $channel_xmltvid );
+  }
+
+  return;
+}
+
+sub ImportXML
+{
+  my $self = shift;
+  my( $file, $channel_id, $channel_xmltvid ) = @_;
+
   my $dsh = $self->{datastorehelper};
   my $ds = $self->{datastore};
 
@@ -62,12 +80,11 @@ sub ImportContentFile {
   my $dayoff = 0;
   my $year = DateTime->today->year();
 
-  return if( $file !~ /\.xml$/i );
-  progress( "FOX_xml: $xmltvid: Processing $file" );
+  progress( "FOX: $channel_xmltvid: Processing XML $file" );
   
   my( $month, $firstday ) = ExtractDate( $file );
   if( not defined $firstday ) {
-    error( "FOX_xml $file: Unable to extract date from file name" );
+    error( "FOX: $file: Unable to extract date from file name" );
     next;
   }
 
@@ -76,13 +93,13 @@ sub ImportContentFile {
   eval { $doc = $xml->parse_file($file); };
 
   if( not defined( $doc ) ) {
-    error( "FOX_xml $file: Failed to parse xml" );
+    error( "FOX: $file: Failed to parse xml" );
     return;
   }
   my $wksheets = $doc->findnodes( "//ss:Worksheet" );
   
   if( $wksheets->size() == 0 ) {
-    error( "FOX_xml $file: No Worksheets found" ) ;
+    error( "FOX: $file: No worksheets found" ) ;
     return;
   }
 
@@ -96,13 +113,13 @@ sub ImportContentFile {
 
     # the name of the worksheet
     my $dayname = $wks->getAttribute('ss:Name');
-    progress("FOX_xml: $xmltvid: found worksheet named '$dayname'");
+    progress("FOX: $channel_xmltvid: processing worksheet named '$dayname'");
 
     # the path should point exactly to one worksheet
     my $rows = $wks->findnodes( ".//ss:Row" );
   
     if( $rows->size() == 0 ) {
-      error( "FOX_xml $xmltvid: No Rows found in Worksheet '$dayname'" ) ;
+      error( "FOX: $channel_xmltvid: No Rows found in worksheet '$dayname'" ) ;
       return;
     }
 
@@ -111,7 +128,6 @@ sub ImportContentFile {
       # the column names are stored in the first row
       # so read them and store their column positions
       # for further findvalue() calls
-      my ($timeslot, $title, $crotitle, $genre);
 
       if( not defined( $column ) ) {
         my $cells = $row->findnodes( ".//ss:Cell" );
@@ -128,6 +144,7 @@ sub ImportContentFile {
         next;
       }
 
+      my ($timeslot, $title, $crotitle, $genre);
 
       $timeslot = norm( $row->findvalue( $column->{'Time Slot'} ) );
       $title = norm( $row->findvalue( $column->{'EN Title'} ) );
@@ -147,10 +164,12 @@ sub ImportContentFile {
 	  $dsh->EndBatch( 1 );
         }
 
-        my $batch_id = $xmltvid . "_" . $date;
+        my $batch_id = $channel_xmltvid . "_" . $date;
         $dsh->StartBatch( $batch_id , $channel_id );
         $dsh->StartDate( $date , "06:00" );
         $currdate = $date;
+
+        progress("FOX: $channel_xmltvid: Date is: $date");
       }
 
       if( not defined( $starttime ) ) {
@@ -158,7 +177,7 @@ sub ImportContentFile {
         next;
       }
 
-      progress( "FOX_xml: $xmltvid: $starttime - $title" );
+      progress( "FOX XML: $channel_xmltvid: $starttime - $title" );
 
       my $ce = {
         channel_id => $channel_id,
@@ -177,6 +196,142 @@ sub ImportContentFile {
     } # next row
 
     $column = undef;
+    $dayoff++;
+
+  } # next worksheet
+
+  $dsh->EndBatch( 1 );
+
+  return;
+}
+
+sub ImportXLS
+{
+  my $self = shift;
+  my( $file, $channel_id, $channel_xmltvid ) = @_;
+
+  my $dsh = $self->{datastorehelper};
+  my $ds = $self->{datastore};
+
+  # there is no date information in the document
+  # the first and last dates are known from the file name
+  # which is in format 'FOX Crime schedule 28 Apr - 04 May CRO.xml'
+  # as each day is in one worksheet, other days are
+  # calculated as the offset from the first one
+  my $dayoff = 0;
+  my $year = DateTime->today->year();
+
+  my %columns = ();
+  my $date;
+  my $currdate = "x";
+
+  progress( "FOX: $channel_xmltvid: Processing XLS $file" );
+
+  my( $month, $firstday ) = ExtractDate( $file );
+  if( not defined $firstday ) {
+    error( "FOX: $file: Unable to extract date from file name" );
+    next;
+  }
+
+  my( $oBook, $oWkS, $oWkC );
+  $oBook = Spreadsheet::ParseExcel::Workbook->Parse( $file );
+
+  if( not defined( $oBook ) ) {
+    error( "FOX: $file: Failed to parse xls" );
+    return;
+  }
+
+  for(my $iSheet=0; $iSheet < $oBook->{SheetCount} ; $iSheet++) {
+
+    $oWkS = $oBook->{Worksheet}[$iSheet];
+    progress("FOX: $channel_xmltvid: processing worksheet named '$oWkS->{Name}'");
+
+    # read the rows with data
+    for(my $iR = $oWkS->{MinRow} ; defined $oWkS->{MaxRow} && $iR <= $oWkS->{MaxRow} ; $iR++) {
+
+      if( not %columns ){
+        # the column names are stored in the first row
+        # so read them and store their column positions
+        # for further findvalue() calls
+
+        for(my $iC = $oWkS->{MinCol} ; defined $oWkS->{MaxCol} && $iC <= $oWkS->{MaxCol} ; $iC++) {
+          if( $oWkS->{Cells}[$iR][$iC] ){
+            $columns{$oWkS->{Cells}[$iR][$iC]->Value} = $iC;
+          }
+        }
+#foreach my $cl (%columns) {
+#print "$cl\n";
+#}
+        next;
+      }
+
+      my ($timeslot, $title, $crotitle, $genre);
+
+      # Time Slot
+      $oWkC = $oWkS->{Cells}[$iR][$columns{'Time Slot'}];
+      next if( ! $oWkC );
+      $timeslot = $oWkC->Value;
+
+      # EN Title
+      $oWkC = $oWkS->{Cells}[$iR][$columns{'EN Title'}];
+      next if( ! $oWkC );
+      $title = $oWkC->Value;
+
+      # Croatian Title
+      $oWkC = $oWkS->{Cells}[$iR][$columns{'Croatian Title'}];
+      next if( ! $oWkC );
+      $crotitle = $oWkC->Value;
+
+      # Genre
+      $oWkC = $oWkS->{Cells}[$iR][$columns{'Genre'}];
+      next if( ! $oWkC );
+      $genre = $oWkC->Value;
+
+      if( ! $timeslot ){
+        next;
+      }
+
+      my $starttime = create_dt( $year , $month , $firstday , $dayoff , $timeslot );
+
+      my $date = $starttime->ymd('-');
+
+      if( $date ne $currdate ) {
+        if( $currdate ne "x" ) {
+	  $dsh->EndBatch( 1 );
+        }
+
+        my $batch_id = $channel_xmltvid . "_" . $date;
+        $dsh->StartBatch( $batch_id , $channel_id );
+        $dsh->StartDate( $date , "06:00" );
+        $currdate = $date;
+
+        progress("FOX: $channel_xmltvid: Date is: $date");
+      }
+
+      if( not defined( $starttime ) ) {
+        error( "Invalid start-time '$date' '$starttime'. Skipping." );
+        next;
+      }
+
+      progress( "FOX XLS: $channel_xmltvid: $starttime - $title" );
+
+      my $ce = {
+        channel_id => $channel_id,
+        title => $crotitle,
+        subtitle => $title,
+        start_time => $starttime->hms(':'),
+      };
+
+      if( $genre ){
+        my($program_type, $category ) = $ds->LookupCat( 'FOX', $genre );
+        AddCategory( $ce, $program_type, $category );
+      }
+    
+      $dsh->AddProgramme( $ce );
+
+    } # next row
+
+    %columns = ();
     $dayoff++;
 
   } # next worksheet
@@ -226,7 +381,13 @@ sub ExtractDate {
 sub create_dt {
   my ( $yr , $mn , $fd , $doff , $timeslot ) = @_;
 
-  my ( $hour, $minute ) = ( $timeslot =~ /^\d{4}-\d{2}-\d{2}T(\d\d):(\d\d):/ );
+  my( $hour, $minute );
+
+  if( $timeslot =~ /^\d{4}-\d{2}-\d{2}T\d\d:\d\d:/ ){
+    ( $hour, $minute ) = ( $timeslot =~ /^\d{4}-\d{2}-\d{2}T(\d\d):(\d\d):/ );
+  } elsif( $timeslot =~ /^\d+:\d+/ ){
+    ( $hour, $minute ) = ( $timeslot =~ /^(\d+):(\d+)/ );
+  }
 
   my $dt = DateTime->new( year   => $yr,
                           month  => $mn,
