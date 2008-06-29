@@ -47,20 +47,19 @@ sub ImportContentFile
   my $self = shift;
   my( $file, $chd ) = @_;
 
-  if( ( $file !~ /program/i and $file !~ /izmjena/i ) and $file !~ /\.doc$/ ) {
-    progress( "NovaTV: Skipping unknown file $file" );
-    return;
-  }
-
-  progress( "NovaTV: Processing $file" );
-  
   $self->{fileerror} = 0;
 
-  my $xmltvid=$chd->{xmltvid};
+  my $xmltvid = $chd->{xmltvid};
   my $channel_id = $chd->{id};
   my $dsh = $self->{datastorehelper};
   my $ds = $self->{datastore};
 
+  if( ( $file !~ /program/i and $file !~ /izmjena/i ) and $file !~ /\s*\.\s*doc$/ ) {
+    progress( "NovaTV: $xmltvid: Skipping unknown file $file" );
+    return;
+  }
+
+  progress( "NovaTV: $xmltvid: Processing $file" );
   
   my $doc;
   $doc = Wordfile2Xml( $file );
@@ -104,7 +103,7 @@ sub ImportContentFile
       # blank line
     }
     elsif( $text =~ /^PROGRAM NOVE TV za/i ) {
-      progress("NovaTV: OK, this is the file with the schedules: $file");
+      #progress("NovaTV: $xmltvid: OK, this is the file with the schedules: $file");
     }
     elsif( isDate( $text ) ) { # the line with the date in format 'MONDAY 12.4.'
 
@@ -114,16 +113,16 @@ sub ImportContentFile
 
         if( defined $currdate ){
           # save last day if we have it in memory
-          FlushDayData( $dsh , @ces );
+          FlushDayData( $chd, $dsh , @ces );
           $dsh->EndBatch( 1 )
         }
 
-        progress("NovaTV: Date $date");
-
         my $batch_id = "${xmltvid}_" . $date->ymd();
         $dsh->StartBatch( $batch_id, $channel_id );
-        $dsh->StartDate( $date->ymd("-") , "06:30" ); 
+        $dsh->StartDate( $date->ymd("-") , "06:00" ); 
         $currdate = $date;
+
+        progress("NovaTV: $xmltvid: Date is $date");
       }
 
       # empty last day array
@@ -134,7 +133,7 @@ sub ImportContentFile
       undef $directors;
       undef $actors;
     }
-    elsif( $text =~ /^(\d+)\.(\d+) (\S+)/ ) { # the line with the show in format '19.30 Show title, genre'
+    elsif( isShow( $text ) ) { # the line with the show in format '19.30 Show title, genre'
 
       my( $starttime, $title, $genre ) = ParseShow( $text , $date );
 
@@ -210,7 +209,7 @@ sub ImportContentFile
     }
   }
   # save last day if we have it in memory
-  FlushDayData( $dsh , @ces );
+  FlushDayData( $chd, $dsh , @ces );
 
   $dsh->EndBatch( 1 );
     
@@ -218,11 +217,11 @@ sub ImportContentFile
 }
 
 sub FlushDayData {
-  my ( $dsh , @data ) = @_;
+  my ( $chd, $dsh , @data ) = @_;
 
     if( @data ){
       foreach my $element (@data) {
-        progress("NovaTV: $element->{start_time} - $element->{title}");
+        progress("NovaTV: $chd->{xmltvid}: $element->{start_time} - $element->{title}");
         $dsh->AddProgramme( $element );
       }
     }
@@ -231,13 +230,13 @@ sub FlushDayData {
 sub isDate {
   my ( $text ) = @_;
 
-  return 1 if( $text =~ /^SUBOTA (\d+)\.(\d+)/ );
-  return 1 if( $text =~ /^NEDJELJA (\d+)\.(\d+)/ );
-  return 1 if( $text =~ /^PONEDJELJAK (\d+)\.(\d+)/ );
-  return 1 if( $text =~ /^UTORAK (\d+)\.(\d+)/ );
-  return 1 if( $text =~ /^SRIJEDA (\d+)\.(\d+)/ );
-  return 1 if( $text =~ /^[[:upper:]]ETVRTAK (\d+)\.(\d+)/ );	# \x{268}ETVRTAK
-  return 1 if( $text =~ /^PETAK (\d+)\.(\d+)/ );
+  if( 
+    ( $text =~ /^(ponedjeljak|utorak|srijeda|ČETVRTAK|petak|subota|nedjelja|nejelja)\,*\s*\d+\s*\.\s*\d+\s*\.\s*\d+\s*\.\s*$/i )
+    or
+    ( $text =~ /^(ponedjeljak|utorak|srijeda|ČETVRTAK|petak|subota|nedjelja|nejelja)\,*\s*\d+\s*\.\s*\d+\s*\.\s*$/i )
+  ){
+    return 1;
+  }
 
   return 0;
 }
@@ -245,8 +244,15 @@ sub isDate {
 sub ParseDate {
   my( $text, $year ) = @_;
 
-  my( $dayname, $day, $month ) = ($text =~ /^([[:upper:]]+) (\d+)\.(\d+)/);
-  #my( $dayname, $day, $month ) = ($text =~ /(\S+) (\d+)\.(\d+)/);
+  my( $day, $month, $yr );
+  if( $text =~ /\d+\s*\.\s*\d+\s*\.\s*\d+\s*\.\s*/ ){
+    ( $day, $month, $yr ) = ($text =~ /(\d+)\s*\.\s*(\d+)\s*\.\s*(\d+)/);
+  } elsif( $text =~ /\d+\s*\.\s*\d+\s*\.\s*/ ){
+    ( $day, $month ) = ($text =~ /(\d+)\s*\.\s*(\d+)/);
+  }
+
+  $year = $yr if $yr;
+  $year+= 2000 if $year< 100;
   
   my $dt = DateTime->new( year   => $year,
                           month  => $month,
@@ -260,11 +266,31 @@ sub ParseDate {
   return $dt;
 }
 
+sub isShow {
+  my ( $text ) = @_;
+
+  if(
+    ( $text =~ /^\d+\.\d+\s+/ )
+    or
+    ( $text =~ /^\d+\:\d+\s+/ )
+  ){
+    return 1;
+  }
+
+  return 0;
+}
+
 sub ParseShow {
   my( $text, $date ) = @_;
   my( $title, $genre );
 
-  my( $hour, $min, $string ) = ($text =~ /(\d+)\.(\d+) (.*)/);
+  my( $hour, $min, $string );
+
+  if( $text =~ /^\d+\.\d+\s*/ ){
+    ( $hour, $min, $string ) = ($text =~ /(\d+)\.(\d+)\s*(.*)/);
+  } elsif( $text =~ /^\d+\:\d+\s*/ ){
+    ( $hour, $min, $string ) = ($text =~ /(\d+)\:(\d+)\s*(.*)/);
+  }
 
   if( $string =~ /,/ ){
     ( $title, $genre ) = $string =~ m/(.*, )(.*)$/;
