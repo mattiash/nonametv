@@ -350,13 +350,23 @@ sub ExtractDate {
   # or
   # 'Life Programa 05 - 11 May 08 CRO.xml'
 
+  my( $day , $monname );
+
+  if( $fn =~ m/.*\s+\d+\s+\S+\s+-\s+\d+\s+\S+.*/ ){
+print "FORMAT 1\n";
+    ( $day , $monname ) = ($fn =~ m/.*\s+(\d+)\s+(\S+)\s+-\s+\d+\s+\S+.*/ );
+  } elsif( $fn =~ m/.*\s+\d+\s+-\s+\d+\s+\S+.*/ ){
+print "FORMAT 2\n";
+    ( $day , $monname ) = ($fn =~ m/.*\s+(\d+)\s+-\s+\d+\s+(\S+).*/ );
+  }
+
   # try the first format
-  my( $day , $monname ) = ($fn =~ m/\s(\d\d)\s(\S+)\s/ );
+  ###my( $day , $monname ) = ($fn =~ m/\s(\d\d)\s(\S+)\s/ );
   
   # try the second if the first failed
-  if( not defined( $monname ) or ( $monname eq '-' ) ) {
-    ( $day , $monname ) = ($fn =~ m/\s(\d\d)\s\-\s\d\d\s(\S+)\s/ );
-  }
+  ###if( not defined( $monname ) or ( $monname eq '-' ) ) {
+    ###( $day , $monname ) = ($fn =~ m/\s(\d\d)\s\-\s\d\d\s(\S+)\s/ );
+  ###}
 
   if( not defined( $day ) ) {
     return undef;
