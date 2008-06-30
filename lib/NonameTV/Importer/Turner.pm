@@ -5,6 +5,8 @@ use warnings;
 
 =pod
 
+Channels: Boomerang, TCM, Cartoon Network
+
 Import data from Word-files delivered via e-mail.  Each day
 is handled as a separate batch.
 
