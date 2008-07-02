@@ -250,7 +250,8 @@ sub FetchDataFromSite
   #my $url = "http://newsroom.zonemedia.net/Scripts/FileDownload.asp?fName=Extreme+PE+Listing+March+V4%2Exls&fPath=D%3A%5CZONE%5FPRESS%5CFiles%5CSchedules%5CExtreme+PE+Listing+March+V4%2Exls";
   #my $url = "http://newsroom.zonemedia.net/Scripts/FileDownload.asp?fName=Extreme+PE+Listing+April+V4%2Exls&fPath=D%3A%5CZONE%5FPRESS%5CFiles%5CSchedules%5CExtreme+PE+Listing+April+V4%2Exls";
   #my $url = "http://newsroom.zonemedia.net/Scripts/FileDownload.asp?fName=Extreme+PE+May+v2%2Exls&fPath=D%3A%5CZONE%5FPRESS%5CFiles%5CSchedules%5CExtreme+PE+May+v2%2Exls";
-  my $url = "http://newsroom.zonemedia.net/Scripts/FileDownload.asp?fName=Extreme+PE+Listings+June+2008+v2%2Exls&fPath=D%3A%5CZONE%5FPRESS%5CFiles%5CSchedules%5CExtreme+PE+Listings+June+2008+v2%2Exls";
+  #my $url = "http://newsroom.zonemedia.net/Scripts/FileDownload.asp?fName=Extreme+PE+Listings+June+2008+v2%2Exls&fPath=D%3A%5CZONE%5FPRESS%5CFiles%5CSchedules%5CExtreme+PE+Listings+June+2008+v2%2Exls";
+  my $url = "http://newsroom.zonemedia.net/Scripts/FileDownload.asp?fName=Extreme+PE+Listings+June+v4%2Exls&fPath=D%3A%5CZONE%5FPRESS%5CFiles%5CSchedules%5CExtreme+PE+Listings+June+v4%2Exls";
 
   progress("ExtremeSports: Fetching xls file from $url");
 
