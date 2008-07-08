@@ -1,0 +1,88 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+
+use NonameTV;
+use NonameTV::DataStore;
+use NonameTV::Config qw/ReadConfig/;
+
+use Getopt::Long;
+
+my $opt = { 'verbose' => 0,
+            'all' => 0,
+            'xmltvid' => "",
+          };
+
+my $res = GetOptions( $opt, qw/verbose all xmltvid=s/ );
+
+if( not $opt->{xmltvid} and not $opt->{all} )
+{
+  print << 'EOHELP';
+nonametv-lastshow --xmltvid <xmltvid>
+
+  --xmltvid <xmltvid>
+    Find the last program for the channel specified
+
+  --all
+    Find the last program for all channels
+
+  --verbose
+    Be verbose
+
+EOHELP
+
+  exit 1;
+}
+
+my( $xmltvid ) = $opt->{xmltvid};
+
+# Read configuration
+my $conf = ReadConfig();
+
+my $ds = NonameTV::DataStore->new( $conf->{DataStore} );
+
+if( $xmltvid ){
+  my $channel_id = $ds->{sa}->Lookup( 'channels', { xmltvid => $xmltvid }, 'id' );
+  if( not $channel_id ){
+    print "Invalid xmltvid $xmltvid\n";
+    exit;
+  }
+  my $lastshow = LastShow( $channel_id );
+  if( $lastshow ){
+    print "Last show for $xmltvid starts at $lastshow\n";
+  }
+}
+
+if( $opt->{all} ){
+  my $chdb = $ds->{sa}->LookupMany( 'channels', { export => 1 } , [ 'xmltvid' ] );
+  foreach my $ch (@{$chdb}) {
+    my $lastshow = LastShow( $ch->{id} );
+    if( $lastshow ){
+      print "Last show for $ch->{xmltvid} starts at $lastshow\n";
+    } else {
+      print "No shows found for $ch->{xmltvid}\n";
+    }
+  }
+}
+
+exit;
+
+sub LastShow {
+  my( $channel_id ) = @_;
+
+  my $sql = "SELECT MAX(start_time) FROM programs WHERE channel_id=$channel_id";
+
+  my( $res, $lastprog ) = $ds->sa->Sql( $sql );
+
+  my $value = $lastprog->fetchrow_array;
+  $lastprog->finish();
+
+  if ( not defined($value) ) {
+    return undef;
+  }
+
+  return $value;
+}
