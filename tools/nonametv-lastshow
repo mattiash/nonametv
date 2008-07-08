@@ -14,9 +14,10 @@ use Getopt::Long;
 my $opt = { 'verbose' => 0,
             'all' => 0,
             'xmltvid' => "",
+            'warndays' => "",
           };
 
-my $res = GetOptions( $opt, qw/verbose all xmltvid=s/ );
+my $res = GetOptions( $opt, qw/verbose all xmltvid=s warndays=s/ );
 
 if( not $opt->{xmltvid} and not $opt->{all} )
 {
@@ -28,6 +29,9 @@ nonametv-lastshow --xmltvid <xmltvid>
 
   --all
     Find the last program for all channels
+
+  --warndays <days>
+    Warn if the last show found is in less than <days> specified
 
   --verbose
     Be verbose
