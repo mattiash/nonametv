@@ -352,12 +352,12 @@ sub ExtractDate {
 
   my( $day , $monname );
 
-  if( $fn =~ m/.*\s+\d+\s+\S+\s+-\s+\d+\s+\S+.*/ ){
+  if( $fn =~ m/.*\s+\d+\s+\S+\s*-\s*\d+\s+\S+.*/ ){
 print "FORMAT 1\n";
-    ( $day , $monname ) = ($fn =~ m/.*\s+(\d+)\s+(\S+)\s+-\s+\d+\s+\S+.*/ );
-  } elsif( $fn =~ m/.*\s+\d+\s+-\s+\d+\s+\S+.*/ ){
+    ( $day , $monname ) = ($fn =~ m/.*\s+(\d+)\s+(\S+)\s*-\s*\d+\s+\S+.*/ );
+  } elsif( $fn =~ m/.*\s+\d+\s*-\s*\d+\s+\S+.*/ ){
 print "FORMAT 2\n";
-    ( $day , $monname ) = ($fn =~ m/.*\s+(\d+)\s+-\s+\d+\s+(\S+).*/ );
+    ( $day , $monname ) = ($fn =~ m/.*\s+(\d+)\s*-\s*\d+\s+(\S+).*/ );
   }
 
   # try the first format

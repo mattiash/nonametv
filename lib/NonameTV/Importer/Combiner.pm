@@ -197,6 +197,54 @@ $channel_data{ "cntcm.tv.gonix.net" } =
       ],
   };
 
+=pod
+
+MTV Adria / Blue Hustler
+
+=cut
+
+$channel_data{ "mtvbluecombo.tv.gonix.net" } =
+  { 
+    "mtvadria.tv.gonix.net" => 
+      [ 
+        {
+          day => 'all',
+	  time => '0500-2300',
+        },
+      ],
+    "hustlerblue.tv.gonix.net" =>
+      [
+        {
+          day => 'all',
+	  time => '2300-0500',
+        },
+      ],
+  };
+
+=pod
+
+VH1 / HustlerTV
+
+=cut
+
+$channel_data{ "vh1hustlercombo.tv.gonix.net" } =
+  { 
+    "vh1.tv.gonix.net" => 
+      [ 
+        {
+          day => 'all',
+	  time => '0500-2300',
+        },
+      ],
+    "hustlertv.tv.gonix.net" =>
+      [
+        {
+          day => 'all',
+	  time => '2300-0500',
+        },
+      ],
+  };
+
 use DateTime;
 use XML::LibXML;
 use Compress::Zlib;
