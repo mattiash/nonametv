@@ -1,11 +1,11 @@
-package NonameTV::Importer::STVOsijek;
+package NonameTV::Importer::KanalRi;
 
 use strict;
 use warnings;
 
 =pod
 
-Channels: Slavonska TV Osijek
+Channels: KanalRi
 
 Import data from Word-files delivered via e-mail.  Each day
 is handled as a separate batch.
@@ -36,7 +36,7 @@ sub new {
   my $self  = $class->SUPER::new( @_ );
   bless ($self, $class);
 
-  $self->{grabber_name} = "STVOsijek";
+  $self->{grabber_name} = "KanalRi";
 
   my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore} );
   $self->{datastorehelper} = $dsh;
@@ -58,13 +58,13 @@ sub ImportContentFile
   
   return if( $file !~ /\.doc$/i );
 
-  progress( "STVOsijek: $xmltvid: Processing $file" );
+  progress( "KanalRi: $xmltvid: Processing $file" );
   
   my $doc;
   $doc = Wordfile2Xml( $file );
 
   if( not defined( $doc ) ) {
-    error( "STVOsijek $xmltvid: $file: Failed to parse" );
+    error( "KanalRi $xmltvid: $file: Failed to parse" );
     return;
   }
 
@@ -78,7 +78,7 @@ sub ImportContentFile
   my $ns = $doc->find( "//div" );
   
   if( $ns->size() == 0 ) {
-    error( "STVOsijek $xmltvid: $file: No divs found." ) ;
+    error( "KanalRi $xmltvid: $file: No divs found." ) ;
     return;
   }
 
@@ -99,11 +99,13 @@ sub ImportContentFile
 
       if( $date ) {
 
-        progress("STVOsijek: $xmltvid: Date is $date");
+        progress("KanalRi: $xmltvid: Date is $date");
 
         if( $date ne $currdate ) {
 
           if( $currdate ne "x" ){
+            # save last day if we have it in memory
+            FlushDayData( $xmltvid, $dsh , @ces );
             $dsh->EndBatch( 1 );
           }
 
@@ -122,36 +124,54 @@ sub ImportContentFile
 
       my( $time, $title, $genre ) = ParseShow( $text );
 
-      progress("STVOsijek: $xmltvid: $time - $title");
-
       my $ce = {
         channel_id => $chd->{id},
         start_time => $time,
         title => norm($title),
       };
 
-      if( $genre ){
-        my($program_type, $category ) = $ds->LookupCat( 'STVOsijek', norm($genre) );
-        AddCategory( $ce, $program_type, $category );
-      }
-
-      $dsh->AddProgramme( $ce );
+      # add the programme to the array
+      # as we have to add description later
+      push( @ces , $ce );
 
     } else {
-        # skip
+
+        # the last element is the one to which
+        # this description belongs to
+        my $element = $ces[$#ces];
+
+        $text =~ s/\.\.\./, /;
+        $element->{description} .= norm($text);
+
     }
   }
+
+  # save last day if we have it in memory
+  FlushDayData( $xmltvid, $dsh , @ces );
 
   $dsh->EndBatch( 1 );
     
   return;
 }
 
+sub FlushDayData {
+  my ( $xmltvid, $dsh , @data ) = @_;
+
+    if( @data ){
+      foreach my $element (@data) {
+
+        progress("KanalRi: $xmltvid: $element->{start_time} - $element->{title}");
+
+        $dsh->AddProgramme( $element );
+      }
+    }
+}
+
 sub isDate {
   my ( $text ) = @_;
 
-  # format 'PETAK 11.07.08. ... Videostranice'
-  if( $text =~ /^(ponedjeljak|utorak|srijeda|cetvrtak|petak|subota|nedjelja)\s*\d+\.\d+\.\d+\.\s*.*$/i ){
+  # format 'SUBOTA 12.07.2008.'
+  if( $text =~ /^(ponedjeljak|utorak|srijeda|ČETVRTAK|petak|subota|nedjelja)\s+\d+\.\d+\.\d+\.$/i ){
     return 1;
   }
 
@@ -161,9 +181,7 @@ sub isDate {
 sub ParseDate {
   my( $text ) = @_;
 
-  my( $dayname, $day, $month, $year ) = ( $text =~ /^(\S+)\s*(\d+)\.\s*(\d+)\.\s*(\d+)\.\s*.*$/ );
-
-  $year += 2000 if $year lt 2000;
+  my( $dayname, $day, $month, $year ) = ( $text =~ /^(\S+)\s+(\d+)\.(\d+)\.(\d+)\.$/ );
 
   return sprintf( '%d-%02d-%02d', $year, $month, $day );
 }
@@ -171,8 +189,8 @@ sub ParseDate {
 sub isShow {
   my ( $text ) = @_;
 
-  # format '21.40 Journal, emisija o modi (18)'
-  if( $text =~ /^\d+\.\d+\s+\S+/i ){
+  # format '18.20 Dubinomjer, emisija o ronjenju'
+  if( $text =~ /^\d+\.\d+\s+.*/i ){
     return 1;
   }
 
@@ -189,7 +207,7 @@ sub ParseShow {
     $text =~ s/\,.*//;
   }
 
-  ( $hour, $min, $title ) = ( $text =~ /^(\d+)\.(\d+)\s+(.*)$/ );
+  ( $hour, $min, $title ) = ( $text =~ /^(\d+)\.(\d+)\s+(.*)/ );
 
   return( $hour . ":" . $min , $title , $genre );
 }
