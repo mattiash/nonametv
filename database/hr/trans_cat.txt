@@ -30,6 +30,13 @@ FOX,reality,Reality,
 FOX,"reality based mystery",Reality,
 FTV,erotic,Adult,
 FTV,magazine,Misc,
+GTVZadar,"emisija za djecu",Children,
+GTVZadar,"glazbena emisija",Music,
+GTVZadar,"informativna emisija",News,
+GTVZadar,"putopisna emisija",Documentary,
+GTVZadar,serija,,series
+GTVZadar,"tv magazine",Misc,
+GTVZadar,"zabavna emisija",Misc,
 HBOAdria,"akcija,",Action,
 HBOAdria,"akcija,akcija",Action,
 HBOAdria,"akcija,animirani",Action,
@@ -92,6 +99,8 @@ HBOAdria,"znanstvena fantastika,akcija",SciFi,
 HBOAdria,"znanstvena fantastika,komedija",SciFi,
 HBOAdria,"znanstvena fantastika,pustolovni",SciFi,
 HRT,Vijesti,News,
+Hustler,magazine,Magazine,tvshow
+Hustler,movie,,movie
 NetTV,"animirani film",Children,cartoon
 NetTV,"animirani fim",Children,cartoon
 NetTV,"crtani film",Children,cartoon
@@ -122,6 +131,8 @@ NovaTV,"reality show",Reality,
 NovaTV,serija,,series
 NovaTV,"serijski film",,series
 NovaTV,"showbiz magazin",Misc,
+OTV,serija,,series
+OTV,"snimka utakmice",Sport,
 Phazer,akcija,Action,
 Phazer,"akcija, avanturistički",Action,
 Phazer,"akcija, avanturistički, komedija, kriminalis",Action,
@@ -276,6 +287,11 @@ Phazer,"tv, drama",Drama,
 Phazer,"tv, kriminalistički",Crime,
 Phazer,vijesti,News,
 Phazer,"znanstveno-fantastični",SciFi,
+Port,film/dráma,Drama,movie
+Port,show/játék,Misc,
+Port,sport,Sports,
+Port,"szociális-/politikai témák / gazdaság",Politics,
+PortHu,film/dráma,drama,movie
 RTLTV,"dječji programanimirana serija",Children,series
 RTLTV,"dječji programcrtana serija",Children,series
 RTLTV,"dokumentarna sapunica",Documentary,
@@ -304,6 +320,7 @@ RTLTV,sportprijenos,Sports,
 RTLTV,"sportsportsko - dokumentarna emisija",Sports,
 RTLTV,"zabavni program",Misc,
 RTLTV,"zabavni programzabavna emisija",Misc,
+STVOsijek,"serijski film",,series
 Tiji,"dessin animé",,cartoon
 Tiji,documentaire,Documentary,
 Tiji,série,,series
