@@ -1,11 +1,11 @@
-package NonameTV::Importer::RiTv;
+package NonameTV::Importer::TVDalmacija;
 
 use strict;
 use warnings;
 
 =pod
 
-Channels: RiTv
+Channels: TV Dalmacija
 
 Import data from Word-files delivered via e-mail.  Each day
 is handled as a separate batch.
@@ -36,7 +36,7 @@ sub new {
   my $self  = $class->SUPER::new( @_ );
   bless ($self, $class);
 
-  $self->{grabber_name} = "RiTv";
+  $self->{grabber_name} = "TVDalmacija";
 
   my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore} );
   $self->{datastorehelper} = $dsh;
@@ -74,13 +74,13 @@ sub ImportDOC
   
   return if( $file !~ /\.doc$/i );
 
-  progress( "RiTv: $xmltvid: Processing $file" );
+  progress( "TVDalmacija: $xmltvid: Processing $file" );
   
   my $doc;
   $doc = Wordfile2Xml( $file );
 
   if( not defined( $doc ) ) {
-    error( "RiTv $xmltvid: $file: Failed to parse" );
+    error( "TVDalmacija $xmltvid: $file: Failed to parse" );
     return;
   }
 
@@ -94,7 +94,7 @@ sub ImportDOC
   my $ns = $doc->find( "//div" );
   
   if( $ns->size() == 0 ) {
-    error( "RiTv $xmltvid: $file: No divs found." ) ;
+    error( "TVDalmacija $xmltvid: $file: No divs found." ) ;
     return;
   }
 
@@ -109,7 +109,7 @@ sub ImportDOC
 
     # skip the bottom of the document
     # all after 'TJEDNI PROGRAM'
-    last if( $text =~ /^TJEDNI PROGRAM$/ );
+    last if( $text =~ /^Split\s*,\s*\d+\.\d+\.\d+\./ );
 
 #print ">$text<\n";
 
@@ -119,7 +119,7 @@ sub ImportDOC
 
       if( $date ) {
 
-        progress("RiTv: $xmltvid: Date is $date");
+        progress("TVDalmacija: $xmltvid: Date is $date");
 
         if( $date ne $currdate ) {
 
@@ -180,7 +180,7 @@ sub FlushDayData {
     if( @data ){
       foreach my $element (@data) {
 
-        progress("RiTv: $xmltvid: $element->{start_time} - $element->{title}");
+        progress("TVDalmacija: $xmltvid: $element->{start_time} - $element->{title}");
 
         $dsh->AddProgramme( $element );
       }
@@ -190,8 +190,8 @@ sub FlushDayData {
 sub isDate {
   my ( $text ) = @_;
 
-  # format 'RASPORED PROGRAMA ZA PETAK 18.07.2008.'
-  if( $text =~ /^RASPORED PROGRAMA ZA (ponedjeljak|utorak|srijedu|Četvrtak|petak|subotu|nedjelju)\s*\d+\.\d+\.\d+\.\s*$/i ){
+  # format 'Petak 18.07.2008.'
+  if( $text =~ /^(ponedjeljak|utorak|srijeda|Četvrtak|petak|subota|nedjelja)\s*\d+\.\d+\.\d+\.\s*$/i ){
     return 1;
   }
 
@@ -201,7 +201,7 @@ sub isDate {
 sub ParseDate {
   my( $text ) = @_;
 
-  my( $dayname, $day, $month, $year ) = ( $text =~ /^RASPORED PROGRAMA ZA (\S+)\s*(\d+)\.(\d+)\.(\d+)\.\s*$/ );
+  my( $dayname, $day, $month, $year ) = ( $text =~ /^(\S+)\s*(\d+)\.(\d+)\.(\d+)\.\s*$/ );
 
   return sprintf( '%d-%02d-%02d', $year, $month, $day );
 }
