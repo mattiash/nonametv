@@ -1,4 +1,4 @@
-package NonameTV::Importer::STVOsijek;
+package NonameTV::Importer::MTVAdria;
 
 use strict;
 use warnings;
@@ -18,8 +18,7 @@ use utf8;
 
 use POSIX;
 use DateTime;
-use XML::LibXML;
-#use Text::Capitalize qw/capitalize_title/;
+use Locale::Recode;
 
 use NonameTV qw/MyGet Wordfile2Xml Htmlfile2Xml norm AddCategory/;
 use NonameTV::DataStore::Helper;
@@ -36,7 +35,7 @@ sub new {
   my $self  = $class->SUPER::new( @_ );
   bless ($self, $class);
 
-  $self->{grabber_name} = "STVOsijek";
+  $self->{grabber_name} = "MTVAdria";
 
   my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore} );
   $self->{datastorehelper} = $dsh;
@@ -56,42 +55,30 @@ sub ImportContentFile
   my $dsh = $self->{datastorehelper};
   my $ds = $self->{datastore};
   
-  return if( $file !~ /\.doc$/i );
+  return if( $file !~ /\.txt$/i );
 
-  progress( "STVOsijek: $xmltvid: Processing $file" );
+  progress( "MTVAdria: $xmltvid: Processing $file" );
   
-  my $doc;
-  $doc = Wordfile2Xml( $file );
-
-  if( not defined( $doc ) ) {
-    error( "STVOsijek $xmltvid: $file: Failed to parse" );
-    return;
-  }
-
-  my @nodes = $doc->findnodes( '//span[@style="text-transform:uppercase"]/text()' );
-  foreach my $node (@nodes) {
-    my $str = $node->getData();
-    $node->setData( uc( $str ) );
-  }
-  
-  # Find all paragraphs.
-  my $ns = $doc->find( "//div" );
-  
-  if( $ns->size() == 0 ) {
-    error( "STVOsijek $xmltvid: $file: No divs found." ) ;
-    return;
-  }
+  open(TXTFILE, $file);
+  my @lines = <TXTFILE>;
 
   my $currdate = "x";
   my $date = undef;
   my @ces;
   my $description;
 
-  foreach my $div ($ns->get_nodelist) {
+  # the original file is in WINDOWS-1250 codepage
+  my $cd = Locale::Recode->new( from => 'WINDOWS-1250' , to => 'UTF-8' );
+#my $sup = Locale::Recode->getSupported;
+#foreach my $s (@$sup){
+#print $s . "\n";
+#}
 
-    my( $text ) = norm( $div->findvalue( '.' ) );
+  foreach my $text (@lines){
 
-#print ">$text<\n";
+#    if( not $cd->recode( $text ) ){
+#      error("MTVAdria: $xmltvid: Failed to recode text");
+#    }
 
     if( isDate( $text ) ) { # the line with the date in format 'Friday 1st August 2008'
 
@@ -99,7 +86,7 @@ sub ImportContentFile
 
       if( $date ) {
 
-        progress("STVOsijek: $xmltvid: Date is $date");
+        progress("MTVAdria: $xmltvid: Date is $date");
 
         if( $date ne $currdate ) {
 
@@ -120,24 +107,19 @@ sub ImportContentFile
 
     } elsif( isShow( $text ) ) {
 
-      my( $time, $title, $genre ) = ParseShow( $text );
+      my( $time, $title ) = ParseShow( $text );
 
-      progress("STVOsijek: $xmltvid: $time - $title");
+      # skip on error
+      next if not $time;
+      next if not $title;
+
+      progress("MTVAdria: $xmltvid: $time - $title");
 
       my $ce = {
         channel_id => $chd->{id},
         start_time => $time,
         title => norm($title),
       };
-
-      if( $genre ){
-
-        my($program_type, $category ) = $ds->LookupCat( 'STVOsijek', norm($genre) );
-        AddCategory( $ce, $program_type, $category );
-
-        $ce->{description} = $genre;
-
-      }
 
       $dsh->AddProgramme( $ce );
 
@@ -147,6 +129,8 @@ sub ImportContentFile
   }
 
   $dsh->EndBatch( 1 );
+
+  close(TXTFILE);
     
   return;
 }
@@ -154,8 +138,8 @@ sub ImportContentFile
 sub isDate {
   my ( $text ) = @_;
 
-  # format 'PETAK 11.07.08. ... Videostranice'
-  if( $text =~ /^(ponedjeljak|utorak|srijeda|cetvrtak|petak|subota|nedjelja)\s*\d+\.\d+\.\d+\.\s*.*$/i ){
+  # format '2008-06-26 Thursday'
+  if( $text =~ /^\s*\d+-\d+-\d+\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\s*$/i ){
     return 1;
   }
 
@@ -165,7 +149,7 @@ sub isDate {
 sub ParseDate {
   my( $text ) = @_;
 
-  my( $dayname, $day, $month, $year ) = ( $text =~ /^(\S+)\s*(\d+)\.\s*(\d+)\.\s*(\d+)\.\s*.*$/ );
+  my( $year, $month, $day, $dayname ) = ( $text =~ /^\s*(\d+)-(\d+)-(\d+)\s+(\S+)\s*$/ );
 
   $year += 2000 if $year lt 2000;
 
@@ -176,7 +160,7 @@ sub isShow {
   my ( $text ) = @_;
 
   # format '21.40 Journal, emisija o modi (18)'
-  if( $text =~ /^\d+\.\d+\s+\S+/i ){
+  if( $text =~ /^\d+\:\d+\s+.*$/i ){
     return 1;
   }
 
@@ -186,16 +170,14 @@ sub isShow {
 sub ParseShow {
   my( $text ) = @_;
 
-  my( $hour, $min, $title, $genre );
+  my( $hour, $min, $title );
 
-  if( $text =~ /\,.*/ ){
-    ( $genre ) = ( $text =~ /\,\s*(.*)$/ );
-    $text =~ s/\,.*//;
-  }
+  ( $hour, $min, $title ) = ( $text =~ /^(\d+)\:(\d+)\s+(.*)$/ );
 
-  ( $hour, $min, $title ) = ( $text =~ /^(\d+)\.(\d+)\s+(.*)$/ );
+  my $time = $hour . ":" . $min;
+  $time = undef if( $min gt 59 );
 
-  return( $hour . ":" . $min , $title , $genre );
+  return( $time , $title );
 }
 
 1;

@@ -150,6 +150,14 @@ sub ImportDOC
         title => norm($title),
       };
 
+      if( $genre ){
+
+        my($program_type, $category ) = $ds->LookupCat( "RiTv", $genre );
+        AddCategory( $ce, $program_type, $category );
+
+        $ce->{description} = $genre;
+      }
+
       # add the programme to the array
       # as we have to add description later
       push( @ces , $ce );
@@ -229,7 +237,7 @@ sub ParseShow {
     
   ( $hour, $min, $title ) = ( $text =~ /^(\d+)\.(\d+)\s+(.*)/ );
 
-  return( $hour . ":" . $min , $title );
+  return( $hour . ":" . $min , $title , $genre );
 }
 
 1;

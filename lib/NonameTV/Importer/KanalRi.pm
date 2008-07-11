@@ -130,6 +130,14 @@ sub ImportContentFile
         title => norm($title),
       };
 
+      if( $genre ){
+
+        my($program_type, $category ) = $ds->LookupCat( "KanalRi", $genre );
+        AddCategory( $ce, $program_type, $category );
+
+        $ce->{description} = $genre;
+      }
+
       # add the programme to the array
       # as we have to add description later
       push( @ces , $ce );
