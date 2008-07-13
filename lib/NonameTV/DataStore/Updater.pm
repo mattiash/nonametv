@@ -73,8 +73,8 @@ sub StartBatchUpdate
 
 #  print "SBU: $batchname\n";
 
-  $ds->DoSql( "START TRANSACTION" );
-  my $data = $ds->Lookup( 'batches', { name => $batchname } );
+  $ds->sa->DoSql( "START TRANSACTION" );
+  my $data = $ds->sa->Lookup( 'batches', { name => $batchname } );
   if( not defined( $data->{id} ) )
   {
     error( "No such batch $batchname" );
@@ -125,18 +125,19 @@ sub EndBatchUpdate
 
   if( $success and not $self->{batcherror} )
   {
-    $ds->Update( 'batches', { id => $self->{currbatch} }, 
-                   { last_update => time(),
-                     message => $self->{oldmessage} .  "\n$log" } );
+    $ds->sa->Update( 'batches', { id => $self->{currbatch} }, 
+		     { last_update => time(),
+		       message => $self->{oldmessage} .  "\n$log" } );
 
-    $ds->DoSql("Commit");
+    $ds->sa->DoSql("Commit");
   }
   else
   {
-    $ds->DoSql("Rollback");
+    $ds->sa->DoSql("Rollback");
 
-    $ds->Update( 'batches', { id => $self->{currbatch} },
-                 { abort_message => $self->{oldabortmessage} . "\n$log" } );
+    $ds->sa->Update( 'batches', { id => $self->{currbatch} },
+		     { abort_message => $self->{oldabortmessage} 
+		       . "\n$log" } );
 
     error( $self->{currbatchname} . ": Rolling back changes" );
   }
@@ -194,13 +195,13 @@ sub DeleteProgramme
   $data->{batch_id} = $self->{currbatch}
     unless $ignore_batch_id;
 
-  my $del_data = $self->{ds}->Lookup( 'programs', $data );
+  my $del_data = $self->{ds}->sa->Lookup( 'programs', $data );
   
   # I won't check that $del_data is defined here. If it isn't, then
   # the delete will not delete exactly one record and we'll catch it
   # there instead.
 
-  my $del = $self->{ds}->Delete( 'programs', $data );
+  my $del = $self->{ds}->sa->Delete( 'programs', $data );
 
   if( $del != 1 )
   {
