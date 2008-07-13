@@ -98,6 +98,11 @@ sub new {
 
   $self->{ua} = $ua;
 
+  if( not -d $self->{basedir} ) {
+      mkdir( $self->{basedir} ) or
+	  die "Failed to create $self->{basedir}";
+  }
+
   return $self;
 }
 
