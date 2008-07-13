@@ -33,6 +33,26 @@ sub new {
     return $self;
 }
 
+sub Object2Url {
+  my $self = shift;
+  my( $objectname, $chd ) = @_;
+
+  my( $date ) = ($objectname =~ /_(.*)/);
+
+  my $url = $self->{UrlRoot} . '&siteid=' . $chd->{grabber_info} . 
+     '&date=' . $date;
+
+  return ($url, undef);
+}
+
+sub ContentExtension {
+  return 'xml';
+}
+
+sub FilteredExtension {
+  return 'xml';
+}
+
 sub ImportContent
 {
   my $self = shift;
@@ -96,20 +116,6 @@ sub ImportContent
   
   # Success
   return 1;
-}
-
-sub FetchDataFromSite
-{
-  my $self = shift;
-  my( $batch_id, $data ) = @_;
-
-  my( $date ) = ($batch_id =~ /_(.*)/);
-
-  my $url = $self->{UrlRoot} . '&siteid=' . $data->{grabber_info} . 
-     '&date=' . $date;
-
-  my( $content, $code ) = MyGet( $url );
-  return( $content, $code );
 }
 
 sub create_dt
