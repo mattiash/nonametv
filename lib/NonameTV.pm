@@ -9,7 +9,6 @@ use Env;
 
 use LWP::UserAgent;
 use File::Temp qw/tempfile tempdir/;
-use Unicode::String qw/utf8/;
 use File::Slurp;
 
 use NonameTV::StringMatcher;
