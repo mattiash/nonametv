@@ -108,7 +108,7 @@ sub CreateDataStore {
   return NonameTV::DataStore->new( $conf->{DataStore} );
 }
 
-=item CreateDataStore
+=item CreateDataStoreDummy
 
 Create a dummy datastore (see NonameTV::DataStore::Dummy) from the
 configuration.
