@@ -148,7 +148,11 @@ sub FetchTOC {
   my %toc;
 
   my $base_url = $self->{UrlRoot} . $data->{grabber_info};
-  my( $content, $code ) = $self->{cc}->GetUrl( $base_url );
+  my( $content, $error ) = $self->{cc}->GetUrl( $base_url );
+
+  if( not defined $content ) {
+    return "Failed to fetch TOC: $error";
+  }
 
   my $doc = Html2Xml( $$content );
 
