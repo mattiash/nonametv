@@ -2,18 +2,28 @@
 
 NROOT=/var/local/nonametv
 SC_OPT=-qq
+V=false
 
 if [ $1z = '--verbosez' ]
 then
   SC_OPT=
+  V=true
 fi
-
+$V && echo "Local rsync"
 rsync -c --delete -r $NROOT/xmltv_staging/ $NROOT/xmltv/
 rsync -c --delete -r $NROOT/json_staging/ $NROOT/json/
+
+$V && echo "tv.swedb.se"
 sitecopy --update $SC_OPT tv.swedb.se
+
+$V && echo acheron
 rsync -a --delete $NROOT/xmltv/ acheron.geijersson.com:public_html/xmltv/
-rsync -a --delete $NROOT/xmltv/ fiorina161.geijersson.com:public_html/xmltv/
-rsync -a --delete $NROOT/xmltv/ xmltv3.tvsajten.com:xmltv/xmltv/
 rsync -a --delete $NROOT/json/ acheron.geijersson.com:public_html/json/
+
+$V && echo fiorina161
 rsync -a --delete $NROOT/json/ fiorina161.geijersson.com:public_html/json/
+rsync -a --delete $NROOT/xmltv/ fiorina161.geijersson.com:public_html/xmltv/
+
+$V && echo xmltv3
+rsync -a --delete $NROOT/xmltv/ xmltv3.tvsajten.com:xmltv/xmltv/
 rsync -a --delete $NROOT/json/ xmltv3.tvsajten.com:xmltv/json/
