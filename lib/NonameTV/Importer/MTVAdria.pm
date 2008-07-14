@@ -18,7 +18,7 @@ use utf8;
 
 use POSIX;
 use DateTime;
-use Locale::Recode;
+use Encode;
 
 use NonameTV qw/MyGet Wordfile2Xml Htmlfile2Xml norm AddCategory/;
 use NonameTV::DataStore::Helper;
@@ -67,18 +67,9 @@ sub ImportContentFile
   my @ces;
   my $description;
 
-  # the original file is in WINDOWS-1250 codepage
-  my $cd = Locale::Recode->new( from => 'WINDOWS-1250' , to => 'UTF-8' );
-#my $sup = Locale::Recode->getSupported;
-#foreach my $s (@$sup){
-#print $s . "\n";
-#}
-
   foreach my $text (@lines){
 
-#    if( not $cd->recode( $text ) ){
-#      error("MTVAdria: $xmltvid: Failed to recode text");
-#    }
+    $text = decode( "utf8", $text );
 
     if( isDate( $text ) ) { # the line with the date in format 'Friday 1st August 2008'
 

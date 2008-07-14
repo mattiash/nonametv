@@ -101,6 +101,8 @@ sub LastShow {
 sub isToWarn {
   my( $lastshow , $warndays ) = @_;
 
+  return 1 if not $warndays;
+
   my( $year, $month, $day, $hour, $min, $sec ) = ( $lastshow =~ /^(\d+)\-(\d+)\-(\d+)\s+(\d+)\:(\d+)\:(\d+)$/ );
 
   my $ldt = DateTime->new( year   => $year,
