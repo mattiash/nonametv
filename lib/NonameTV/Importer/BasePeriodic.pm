@@ -61,7 +61,6 @@ sub new {
       basedir => $conf->{ContentCachePath} . $name,
       credentials => $conf->{ContentCacheCredentials},
       callbackobject => $self,
-      warnafter => 23*60*60,
       useragent => "Grabber from http://tv.swedb.se", 
     } );
 
