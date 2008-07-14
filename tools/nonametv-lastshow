@@ -5,6 +5,8 @@ use strict;
 use FindBin;
 use lib "$FindBin::Bin/../lib";
 
+use DateTime;
+
 use NonameTV;
 use NonameTV::DataStore;
 use NonameTV::Config qw/ReadConfig/;
@@ -42,6 +44,7 @@ EOHELP
 }
 
 my( $xmltvid ) = $opt->{xmltvid};
+my( $warndays ) = $opt->{warndays};
 
 # Read configuration
 my $conf = ReadConfig();
@@ -61,11 +64,15 @@ if( $xmltvid ){
 }
 
 if( $opt->{all} ){
+
+  print "Channels with last show in less then $warndays days:\n";
   my $chdb = $ds->{sa}->LookupMany( 'channels', { export => 1 } , [ 'xmltvid' ] );
   foreach my $ch (@{$chdb}) {
     my $lastshow = LastShow( $ch->{id} );
     if( $lastshow ){
-      print "Last show for $ch->{xmltvid} starts at $lastshow\n";
+      if( isToWarn( $lastshow, $warndays ) ){
+        print "Last show for $ch->{xmltvid} starts at $lastshow\n";
+      }
     } else {
       print "No shows found for $ch->{xmltvid}\n";
     }
@@ -89,4 +96,28 @@ sub LastShow {
   }
 
   return $value;
+}
+
+sub isToWarn {
+  my( $lastshow , $warndays ) = @_;
+
+  my( $year, $month, $day, $hour, $min, $sec ) = ( $lastshow =~ /^(\d+)\-(\d+)\-(\d+)\s+(\d+)\:(\d+)\:(\d+)$/ );
+
+  my $ldt = DateTime->new( year   => $year,
+                            month  => $month,
+                            day    => $day,
+                            hour   => $hour,
+                            minute => $min,
+                            second => $sec,
+                            nanosecond => 0,
+                            time_zone => 'Europe/Zagreb',
+    );
+
+  my $checktime = DateTime->now->add( days => $warndays );
+
+  my $cmp = DateTime->compare( $checktime, $ldt );
+
+  return 1 if( $cmp gt 0 );
+
+  return 0;
 }
