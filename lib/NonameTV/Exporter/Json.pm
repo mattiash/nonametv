@@ -27,6 +27,9 @@ Options:
   --verbose
     Show which datafiles are created.
 
+  --quiet 
+    Show only fatal errors.
+
   --export-channels
     Print a list of all channels in xml-format to stdout.
 
@@ -55,7 +58,7 @@ sub new {
       DateTime->today->add( days => $self->{MinDays}-1 )->ymd("-");
 
     $self->{OptionSpec} = [ qw/export-channels remove-old force-export 
-			    verbose help/ ];
+			    verbose quiet help/ ];
 
     $self->{OptionDefaults} = { 
       'export-channels' => 0,
@@ -63,6 +66,7 @@ sub new {
       'force-export' => 0,
       'help' => 0,
       'verbose' => 0,
+      'quiet' => 0,
     };
 
     my $ds = $self->{datastore};
@@ -101,7 +105,7 @@ EOH
     return;
   }
 
-  NonameTV::Log::verbose( $p->{verbose} );
+  NonameTV::Log::verbose( $p->{verbose}, $p->{quiet} );
 
   if( $p->{'export-channels'} )
   {

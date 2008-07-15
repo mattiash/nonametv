@@ -44,10 +44,12 @@ sub new {
     
     bless ($self, $class);
 
-    $self->{OptionSpec} = [ qw/force-update verbose+ short-grab remove-old/ ];
+    $self->{OptionSpec} = [ qw/force-update verbose+ quiet 
+			    short-grab remove-old/ ];
     $self->{OptionDefaults} = { 
       'force-update' => 0,
       'verbose'      => 0,
+      'quiet'        => 0,
       'short-grab'   => 0,
       'remove-old'   => 0,
     };
@@ -128,7 +130,7 @@ sub ImportData {
     return $self->ImportOld( $p );
   }
 
-  NonameTV::Log::verbose( $p->{verbose} );
+  NonameTV::Log::verbose( $p->{verbose}, $p->{quiet} );
 
   my $error1 = $self->InitiateDownload();
 
@@ -199,7 +201,7 @@ sub ImportOld {
   my $self = shift;
   my( $p ) = @_;
 
-  NonameTV::Log::verbose( $p->{verbose} );
+  NonameTV::Log::verbose( $p->{verbose}, $p->{quiet} );
 
   my $ds = $self->{datastore};
 

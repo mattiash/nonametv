@@ -27,6 +27,7 @@ FATAL Fatal error. Program terminated.
 Normal output consists of ERROR and FATAL only.
 
 --verbose prints everything up to and including INFO.
+--quiet prints only FATAL
 
 /var/log/nonametv logs everything up to and including PROGRESS
 
@@ -99,19 +100,19 @@ sub init
 
 sub verbose
 {
-  my( $verbose ) = @_;
+  my( $verbose, $quiet ) = @_;
 
-  if( $verbose == 0 )
-  {
-    $stderr_level = ERROR;
-  }
-  elsif( $verbose == 1 )
-  {
+  if( $verbose == 1 ) {
     $stderr_level = PROGRESS;
   }
-  else
-  {
+  elsif( $verbose > 1 ) {
     $stderr_level = INFO;
+  }
+  elsif( $quiet ) {
+    $stderr_level = FATAL;
+  }
+  else {
+    $stderr_level = ERROR;
   }
 }
  

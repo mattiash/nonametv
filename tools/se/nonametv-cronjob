@@ -30,10 +30,10 @@ fi
 
 tools/se/nonametv-update-mark > $NROOT/xmltv_staging/last_updated
 
-$d tools/se/nonametv-import-allhttp
-$h tools/se/nonametv-import-allhttp --short-grab
-$d perl -I lib tools/nonametv-import Eurosport
-$d perl -I lib tools/nonametv-import Discovery_xml
+$d tools/se/nonametv-import-allhttp --quiet
+$h tools/se/nonametv-import-allhttp --quiet --short-grab
+$d perl -I lib tools/nonametv-import Eurosport --quiet
+$d perl -I lib tools/nonametv-import Discovery_xml --quiet
 tools/se/nonametv-import-allmail
 
 $d perl -I lib/ tools/nonametv-export Xmltv --remove-old
@@ -46,11 +46,11 @@ tools/se/nonametv-updatesite
 $d perl -I lib tools/nonametv-export Xmltv --force-export --verbose 2>&1 | grep -v INFO
 
 # Update the Combiner-channels as well.
-$d perl -I lib tools/nonametv-import Combiner
-$h perl -I lib tools/nonametv-import Combiner --short-grab
+$d perl -I lib tools/nonametv-import Combiner --quiet
+$h perl -I lib tools/nonametv-import Combiner --short-grab --quiet
 
-$d perl -I lib tools/nonametv-import Timeshifter
-$h perl -I lib tools/nonametv-import Timeshifter --short-grab
+$d perl -I lib tools/nonametv-import Timeshifter --quiet
+$h perl -I lib tools/nonametv-import Timeshifter --short-grab --quiet
 
 tools/se/nonametv-updatesite
 

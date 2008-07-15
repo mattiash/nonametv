@@ -268,10 +268,11 @@ sub new {
     $self->{MaxDays} = 32 unless defined $self->{MaxDays};
     $self->{MaxDaysShort} = 2 unless defined $self->{MaxDaysShort};
 
-    $self->{OptionSpec} = [ qw/force-update verbose short-grab/ ];
+    $self->{OptionSpec} = [ qw/force-update verbose+ quiet short-grab/ ];
     $self->{OptionDefaults} = { 
       'force-update' => 0,
       'verbose'      => 0,
+      'quiet'        => 0,
       'short-grab'   => 0,
     };
 
@@ -285,7 +286,7 @@ sub Import
   my $self = shift;
   my( $p ) = @_;
   
-  NonameTV::Log::verbose( $p->{verbose} );
+  NonameTV::Log::verbose( $p->{verbose}, $q->{quiet} );
 
   my $maxdays = $p->{'short-grab'} ? $self->{MaxDaysShort} : $self->{MaxDays};
 

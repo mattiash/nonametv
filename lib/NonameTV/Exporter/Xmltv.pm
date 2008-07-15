@@ -29,6 +29,9 @@ Options:
   --verbose
     Show which datafiles are created.
 
+  --quiet 
+    Show only fatal errors.
+
   --export-channels
     Print a list of all channels in xml-format to stdout.
 
@@ -65,7 +68,7 @@ sub new {
 
     $self->{OptionSpec} = [ qw/export-channels remove-old force-export 
 			    channel-group=s
-			    verbose help/ ];
+			    verbose quiet help/ ];
 
     $self->{OptionDefaults} = { 
       'export-channels' => 0,
@@ -74,6 +77,7 @@ sub new {
       'channel-group' => "",
       'help' => 0,
       'verbose' => 0,
+      'quiet' => 0,
     };
 
     LoadDtd( $self->{DtdFile} );
@@ -122,7 +126,7 @@ EOH
     return;
   }
 
-  NonameTV::Log::verbose( $p->{verbose} );
+  NonameTV::Log::verbose( $p->{verbose}, $p->{quiet} );
 
   if( $p->{'export-channels'} )
   {

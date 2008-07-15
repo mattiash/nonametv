@@ -27,6 +27,9 @@ Options:
   --verbose
     Show which datafiles are created.
 
+  --quiet 
+    Show only fatal errors.
+
   --export-nowongroup
     Print a list of all channels in xml-format to stdout.
 
@@ -67,7 +70,7 @@ sub new {
 
     $self->{OptionSpec} = [ qw/export-nowongroup export-todayongroup 
 			       force-export 
-                               verbose help/ ];
+                               verbose quiet help/ ];
 
     $self->{OptionDefaults} = { 
       'export-nowongroup' => 0,
@@ -75,6 +78,7 @@ sub new {
       'force-export' => 0,
       'help' => 0,
       'verbose' => 0,
+      'quiet' => 0,
     };
 
     #LoadDtd( $self->{DtdFile} );
@@ -117,7 +121,7 @@ EOH
     return;
   }
 
-  NonameTV::Log::verbose( $p->{verbose} );
+  NonameTV::Log::verbose( $p->{verbose}, $p->{quiet} );
 
   if( $p->{'export-nowongroup'} )
   {

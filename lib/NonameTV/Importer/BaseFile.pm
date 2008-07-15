@@ -30,10 +30,11 @@ sub new {
     my $self  = $class->SUPER::new( @_ );
     bless ($self, $class);
 
-    $self->{OptionSpec} = [ qw/force-update verbose+ remove-missing/ ];
+    $self->{OptionSpec} = [ qw/force-update verbose+ quiet remove-missing/ ];
     $self->{OptionDefaults} = { 
       'force-update' => 0,
       'verbose'      => 0,
+      'quiet'        => 0,
       'remove-missing' => 0,
     };
 
@@ -46,7 +47,7 @@ sub ImportData {
   my $self = shift;
   my( $p ) = @_;
   
-  NonameTV::Log::verbose( $p->{verbose} );
+  NonameTV::Log::verbose( $p->{verbose}, $p->{quiet} );
 
   $self->UpdateFiles();
 
