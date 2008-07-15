@@ -286,7 +286,7 @@ sub Import
   my $self = shift;
   my( $p ) = @_;
   
-  NonameTV::Log::verbose( $p->{verbose}, $q->{quiet} );
+  NonameTV::Log::verbose( $p->{verbose}, $p->{quiet} );
 
   my $maxdays = $p->{'short-grab'} ? $self->{MaxDaysShort} : $self->{MaxDays};
 
