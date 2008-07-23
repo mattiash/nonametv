@@ -148,11 +148,13 @@ sub ImportContentFile {
       $oWkC = $oWkS->{Cells}[$iR][9];
       my $freeorenc = $oWkC->Value if( $oWkC->Value );
 
-      progress("BubbleHits: $xmltvid: $time - $title");
+      my $starttime = create_dt( $date , $time );
+
+      progress("BubbleHits: $xmltvid: $starttime - $title");
 
       my $ce = {
         channel_id => $channel_id,
-        start_time => $time,
+        start_time => $starttime->hour . ":" . $starttime->minute,
         title => norm($title),
       };
 
@@ -196,6 +198,27 @@ sub ParseDate
 
   my $date = sprintf( "%04d-%02d-%02d", $year, $month, $day );
   return $date;
+}
+
+sub create_dt
+{
+  my ( $date, $time ) = @_;
+
+  my( $year, $month, $day) = ( $date =~ /^(\d+)-(\d+)-(\d+)$/ );
+  my( $hour, $minute ) = ( $time =~ /^(\d+):(\d+)$/ );
+
+  my $dt = DateTime->new( year   => $year,
+                          month  => $month,
+                          day    => $day,
+                          hour   => $hour,
+                          minute => $minute,
+                          second => 0,
+                          time_zone => 'Europe/London',
+                          );
+
+  $dt->set_time_zone( 'Europe/Zagreb' );
+
+  return $dt;
 }
 
 1;

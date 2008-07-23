@@ -44,13 +44,19 @@ sub Object2Url {
   my( $objectname, $chd ) = @_;
 
   my( $year, $month, $day ) = ($objectname =~ /_(\d+)-(\d+)-(\d+)/);
-  $year -= 2000 if $year gt 2000;
 
-  my $url = $self->{UrlRoot} . '?zona=0'
-    . '&dan=' . sprintf( '%02d%02d%02d', $year, $month, $day )
-    . '&tv=' . $chd->{grabber_info};
+  my $url;
 
-print "url $url\n";
+  if( $chd->{grabber_info} =~ /^http:/i ){
+    $url = $chd->{grabber_info} . '?dan=' . sprintf( '%02d%02d%02d', $year, $month, $day );
+  } else {
+    $year -= 2000 if $year gt 2000;
+    $url = $self->{UrlRoot} . '?zona=0'
+      . '&dan=' . sprintf( '%02d%02d%02d', $year, $month, $day )
+      . '&tv=' . $chd->{grabber_info};
+  }
+
+  progress("Fetching data from $url");
 
   return( $url, undef );
 }

@@ -209,7 +209,7 @@ sub ParseDate
                           time_zone => 'Europe/Zagreb',
                           );
 
-  #$dt->set_time_zone( "UTC" );
+  $dt->set_time_zone( "UTC" );
 
   return $dt;
 }

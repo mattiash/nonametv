@@ -287,6 +287,7 @@ Phazer,"tv, drama",Drama,
 Phazer,"tv, kriminalistički",Crime,
 Phazer,vijesti,News,
 Phazer,"znanstveno-fantastični",SciFi,
+PinkTV,4,Sports,
 Port,film/dráma,Drama,movie
 Port,show/játék,Misc,
 Port,sport,Sports,

@@ -33,7 +33,8 @@ BEGIN {
 		      FindParagraphs
                       norm AddCategory
                       ParseDescCatSwe FixProgrammeData
-		      ParseXml ParseXmltv/;
+		      ParseXml ParseXmltv
+                      MonthNumber/;
 }
 our @EXPORT_OK;
 
@@ -615,6 +616,37 @@ sub create_dt
                           );
   
   return $dt;
+}
+
+=pod
+
+Convert month name to month number
+
+=cut
+
+sub MonthNumber {
+  my( $monthname , $lang ) = @_;
+
+  my( @months_1, @months_2 );
+
+  if( $lang =~ /^en$/ ){
+    @months_1 = qw/jan feb mar apr may jun jul aug sep oct nov dec/;
+    @months_2 = qw/january february march april may june july august september october november december/;
+  }
+
+  my %monthnames = ();
+
+  for( my $i = 0; $i < scalar(@months_1); $i++ ){
+    $monthnames{$months_1[$i]} = $i+1;
+  }
+
+  for( my $i = 0; $i < scalar(@months_2); $i++ ){
+    $monthnames{$months_2[$i]} = $i+1;
+  }
+
+  my $month = $monthnames{lc $monthname};
+
+  return $month;
 }
   
 1;

@@ -142,6 +142,9 @@ sub ImportContent {
         $ce->{description} = norm($shortdesc) if $shortdesc;
         $ce->{description} = norm($longdesc) if $longdesc;
 
+        # some characters cleanup
+        $ce->{description} =~ s/\x8a/\n/g;
+
         if( $dvbccateg ){
           my($program_type, $category ) = $ds->LookupCat( 'Port', $dvbccateg );
           AddCategory( $ce, $program_type, $category );
