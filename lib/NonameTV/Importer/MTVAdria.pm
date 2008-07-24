@@ -168,6 +168,9 @@ sub ParseShow {
   my $time = $hour . ":" . $min;
   $time = undef if( $min gt 59 );
 
+  # do some changes
+  $title =~ s/®/(R)/;
+
   return( $time , $title );
 }
 
