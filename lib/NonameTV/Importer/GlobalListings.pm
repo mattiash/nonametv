@@ -158,7 +158,7 @@ sub ImportFull
     #print "Text: $text\n";
 
     my $type;
-    
+
     if( ( $lang =~ /^en$/ and $text =~ /^(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\s*\d+\s*\D+\s*\d+$/i )
       or ( $lang =~ /^en$/ and $text =~ /^(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\s*\D+\s*\d+,\s*\d+$/i )
       or ( $lang =~ /^se$/ and $text =~ /^(måndag|tisdag|onsdag|torsdag|fredag|lördag|söndag)\s*\d+\s*\D+\s*\d+$/i )
@@ -236,6 +236,7 @@ sub ImportFull
       else
       {
 	extract_extra_info( $ce );
+        progress("GlobalListings: $channel_xmltvid: $start - $title");
 	$dsh->AddProgramme( $ce );
 	$ce = {};
 	$state = ST_FDATE;

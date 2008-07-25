@@ -7,7 +7,7 @@ use warnings;
 
 channel: Smile of a child
 
-Import data from Excel-files delivered via e-mail.
+Import data from Excel or PDF files delivered via e-mail.
 Each file is for one week.
 
 Features:
@@ -18,6 +18,7 @@ use utf8;
 
 use DateTime;
 use Spreadsheet::ParseExcel;
+use PDF::API2;
 
 use NonameTV::DataStore::Helper;
 use NonameTV::Log qw/info progress error logdie 
@@ -55,6 +56,8 @@ sub ImportContentFile {
 
   if( $file =~ /\.xls$/i ){
     $self->ImportXLS( $file, $channel_id, $xmltvid );
+  } elsif( $file =~ /\.pdf$/i ){
+    $self->ImportPDF( $file, $channel_id, $xmltvid );
   }
 
   return;
@@ -68,12 +71,6 @@ sub ImportXLS
   my $dsh = $self->{datastorehelper};
   my $ds = $self->{datastore};
 
-  my( $dateinfo );
-  my( $kada, $newtime, $lasttime );
-  my( $title, $newtitle , $lasttitle , $newdescription , $lastdescription );
-  my( $day, $month , $year , $hour , $min );
-  my( $oBook, $oWkS, $oWkC );
-
   # Only process .xls files.
   return if $file !~  /\.xls$/i;
 
@@ -83,6 +80,8 @@ sub ImportXLS
 
   progress( "SOAC: $xmltvid:  Processing $file" );
   
+  my( $oBook, $oWkS, $oWkC );
+
   $oBook = Spreadsheet::ParseExcel::Workbook->Parse( $file );
 
   for(my $iSheet=0; $iSheet < $oBook->{SheetCount} ; $iSheet++) {
@@ -162,6 +161,36 @@ sub ImportXLS
     $ds->EndBatch( 1 );
 
   } # next worksheet
+
+  return;
+}
+
+sub ImportPDF
+{
+  my $self = shift;
+  my( $file, $channel_id, $xmltvid ) = @_;
+
+  my $dsh = $self->{datastorehelper};
+  my $ds = $self->{datastore};
+
+  # Only process .xls files.
+  return if $file !~  /\.pdf$/i;
+
+  my $batch_id;
+  my $currdate = "x";
+  my $timecol = 0;
+
+  progress( "SOAC: $xmltvid:  Processing $file" );
+
+  open( my $fh, $file) or die "$@";
+  my @pdf = <$fh>;
+  my $pdf = PDF::API->openScalar(join('',@pdf));
+
+  #my $string = $pdf->stringify;
+#print ">$string<\n";  
+
+
+  close( $fh );
 
   return;
 }
