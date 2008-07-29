@@ -109,9 +109,9 @@ sub ImportDOC
 
     # skip the bottom of the document
     # all after 'TJEDNI PROGRAM'
-    last if( $text =~ /^Zone Reality \(EMEA 1\)$/ );
+    last if( $text =~ /^Produced by EBS New Media/ );
 
-print ">$text<\n";
+#print ">$text<\n";
 
     if( isDate( $text ) ) { # the line with the date in format 'FRIDAY 1 AUGUST 2008 - ZONE REALITY EMEA 1'
 
