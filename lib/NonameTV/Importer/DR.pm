@@ -60,11 +60,27 @@ sub Object2Url {
 
   my( $year, $week ) = ( $objectname =~ /(\d+)-(\d+)$/ );
  
-  my $url = sprintf( "%s%s_%4d_%2d_Hvid.txt",
-                     $self->{UrlRoot}, $chd->{grabber_info}, 
-                     $year, $week );
+  # Prefer Hvid but sometimes only Blå exists.
+  my $url1 = sprintf( "%s%s_%4d_%2d_Hvid.txt",
+		      $self->{UrlRoot}, $chd->{grabber_info}, 
+		      $year, $week );
+  my $url2 = sprintf( "%s%s_%4d_%2d_Blå.txt",
+		      $self->{UrlRoot}, $chd->{grabber_info}, 
+		      $year, $week );
 
-  return( $url, undef );
+  return( [$url1, $url2], undef );
+}
+
+sub ApproveContent {
+  my $self = shift;
+  my( $cref, $callbackdata ) = @_;
+
+  if( $$cref eq '<script type="text/javascript" src="http://www.dr.dk/drdk404/404.js"></script>' ) {
+    return "404 not found";
+  }
+  else {
+    return undef;
+  }
 }
 
 sub ContentExtension {
