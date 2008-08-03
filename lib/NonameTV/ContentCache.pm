@@ -31,7 +31,21 @@ The callbackobject must implement the following methods:
   my( $urlstr, $error ) = $co->Object2Url( $objectname, $callbackdata );
 
   Convert an objectname into a url. The callbackdata is taken from
-  the call to GetConvert.
+  the call to GetConvert. $urlstr can also be a reference to an array
+  in which case the urls will be tried in order until one of them
+  receive a successful response.
+
+  my $error = $co->ApproveContent( $content_ref, $callbackdata );
+
+  Check the content returned from the server to determine if it is
+  valid. This method is called whenever the downloaded content is
+  valid according to the http protocol. It can be used for servers
+  that do not return proper http response-codes and uses error-pages
+  or something else instead. ApproveContent is really only useful in
+  combination with an Object2Url that returns several urls.
+
+  undef means that the content is valid. A string is treated as an
+  error message.
 
   my( $filtered_ref, $error ) = $co->FilterContent( $content_ref, 
                                                     $callbackdata )
@@ -114,7 +128,32 @@ sub GetContent {
     return( undef, $objerror );
    }
 
-  my( $cref, $geterror ) = $self->GetUrl( $url );
+  my @urls;
+
+  if( ref( $url ) eq "ARRAY" ) {
+    @urls = @{$url};
+    if( scalar( @urls ) == 0 ) {
+      die "$objectname: Object2Url returned an empty array-ref.";
+    }
+  }
+  else {
+    @urls = ($url);
+  }
+
+  my( $cref, $geterror );
+
+  foreach my $surl (@urls) {
+    ( $cref, $geterror ) = $self->GetUrl( $surl );
+    if( defined $cref ) {
+      $geterror = $co->ApproveContent( $cref, $data );
+      if( defined $geterror ) {
+	$cref = undef;
+      }
+      else {
+	last;
+      }
+    }
+  }
 
   if( defined( $cref ) ) {
     $self->TouchState( $objectname );

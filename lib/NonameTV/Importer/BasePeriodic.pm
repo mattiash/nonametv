@@ -108,6 +108,13 @@ sub FilteredExtension {
   return undef;
 }
 
+sub ApproveContent {
+  my $self = shift;
+  my( $cref, $callbackdata ) = @_;
+
+  return undef;
+}
+
 sub ImportContent {
   my $self = shift;
 
