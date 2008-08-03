@@ -99,7 +99,7 @@ sub ImportContentFile {
       next if( ! $oWkC );
       my $title = $oWkC->Value if( $oWkC->Value );
 
-      my $type = $oWkS->{Cells}[$iR][$columns{'Type'}]->Value if $oWkS->{Cells}[$iR][$columns{'Synopsis'}];
+      my $type = $oWkS->{Cells}[$iR][$columns{'Type'}]->Value if $oWkS->{Cells}[$iR][$columns{'Type'}];
       my $prodno = $oWkS->{Cells}[$iR][$columns{'Prod No.'}]->Value if $oWkS->{Cells}[$iR][$columns{'Prod No.'}];
       my $episodetitle = $oWkS->{Cells}[$iR][$columns{'Episode Title'}]->Value if $oWkS->{Cells}[$iR][$columns{'Episode Title'}];
       my $slotlen = $oWkS->{Cells}[$iR][$columns{'Slot Len'}]->Value if $oWkS->{Cells}[$iR][$columns{'Slot Len'}];

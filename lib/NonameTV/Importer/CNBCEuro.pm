@@ -105,6 +105,8 @@ sub ImportContentFile {
         my $text = $oWkC->Value;
 #print ">$text<\n";
 
+        next if( ! $text );
+
         if( isDate( $text ) ){
 
           $date = ParseDate( $text );
@@ -129,7 +131,7 @@ sub ImportContentFile {
 
         # if this is the first line of the title
         # then read the time from the $coltime
-        if( $text and $title eq "" ){
+        if( $text and ( $title eq "" ) ){
           $oWkC = $oWkS->{Cells}[$iR][$coltime];
           next if( ! $oWkC );
           $time = ParseTime( $oWkC->Value );
@@ -230,7 +232,7 @@ sub ParseTime
 {
   my ( $text ) = @_;
 
-  my( $hour, $min ) = ( $text =~ /^(\d{2})(\d{2})$/ );
+  my( $hour, $min ) = ( $text =~ /(\d{2})(\d{2})/ );
 
   return undef if( ! $hour or ! $min );
 

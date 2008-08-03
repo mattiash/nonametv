@@ -632,6 +632,9 @@ sub MonthNumber {
   if( $lang =~ /^en$/ ){
     @months_1 = qw/jan feb mar apr may jun jul aug sep oct nov dec/;
     @months_2 = qw/january february march april may june july august september october november december/;
+  } elsif( $lang =~ /^hr$/ ){
+    @months_1 = qw/sijecanj veljaca ozujak travanj svibanj lipanj srpanj kolovoz rujan listopad studeni prosinac/;
+    @months_2 = qw/sijecnja veljace ozujka travnja svibnja lipnja srpnja kolovoza rujna listopada studenoga prosinca/;
   }
 
   my %monthnames = ();

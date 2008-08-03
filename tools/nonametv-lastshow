@@ -6,6 +6,7 @@ use FindBin;
 use lib "$FindBin::Bin/../lib";
 
 use DateTime;
+use DateTime::Duration;
 
 use NonameTV;
 use NonameTV::DataStore;
@@ -70,8 +71,10 @@ if( $opt->{all} ){
   foreach my $ch (@{$chdb}) {
     my $lastshow = LastShow( $ch->{id} );
     if( $lastshow ){
-      if( isToWarn( $lastshow, $warndays ) ){
-        print "Last show for $ch->{xmltvid} starts at $lastshow\n";
+      my $indays = isToWarn( $lastshow, $warndays );
+      if( $indays ){
+        #print "Last show for $ch->{xmltvid} starts at $lastshow\n";
+        printf( "%32s | %19s | %3d\n", $ch->{xmltvid}, $lastshow, $indays );
       }
     } else {
       print "No shows found for $ch->{xmltvid}\n";
@@ -101,6 +104,8 @@ sub LastShow {
 sub isToWarn {
   my( $lastshow , $warndays ) = @_;
 
+  my $now = DateTime->now;
+
   return 1 if not $warndays;
 
   my( $year, $month, $day, $hour, $min, $sec ) = ( $lastshow =~ /^(\d+)\-(\d+)\-(\d+)\s+(\d+)\:(\d+)\:(\d+)$/ );
@@ -115,11 +120,14 @@ sub isToWarn {
                             time_zone => 'Europe/Zagreb',
     );
 
-  my $checktime = DateTime->now->add( days => $warndays );
+  my $checktime = $now->add( days => $warndays );
 
   my $cmp = DateTime->compare( $checktime, $ldt );
 
-  return 1 if( $cmp gt 0 );
+  if( $cmp gt 0 ){
+    my $dur = $now - $ldt;
+    return $dur->delta_days;
+  }
 
   return 0;
 }

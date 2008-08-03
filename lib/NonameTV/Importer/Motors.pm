@@ -157,11 +157,12 @@ sub ParseDate {
     $month = 5 if( $monthname =~ /mai/i );
     $month = 6 if( $monthname =~ /juin/i );
     $month = 7 if( $monthname =~ /juillet/i );
-    $month = 8 if( $monthname =~ /AOÛT/i );
+    $month = 8 if( $monthname =~ /AOÛT/i);
     $month = 9 if( $monthname =~ /septembre/i );
     $month = 10 if( $monthname =~ /octobre/i );
     $month = 11 if( $monthname =~ /novembre/i );
     $month = 12 if( $monthname =~ /démbre/i );
+$month = 8 if !$month;
 
     my $date = sprintf( "%04d-%02d-%02d", $year, $month, $day );
     return $date;

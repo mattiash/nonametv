@@ -13,44 +13,60 @@ Features:
 
 =cut
 
-use POSIX qw/strftime/;
 use DateTime;
 use Spreadsheet::ParseExcel;
+use Data::Dumper;
+use File::Temp qw/tempfile/;
 
 use NonameTV qw/MyGet norm AddCategory/;
-use NonameTV::Log qw/info progress error logdie/;
+use NonameTV::Log qw/info progress error logdie 
+                     log_to_string log_to_string_result/;
+use NonameTV::Config qw/ReadConfig/;
 
-use NonameTV::Importer::BaseOne;
+use NonameTV::Importer::BaseFile;
 
-use base 'NonameTV::Importer::BaseOne';
+use base 'NonameTV::Importer::BaseFile';
 
 sub new {
     my $proto = shift;
     my $class = ref($proto) || $proto;
     my $self  = $class->SUPER::new( @_ );
     bless ($self, $class);
+print "1\n";
 
     $self->{grabber_name} = "ExtremeSports";
 
     defined( $self->{UrlRoot} ) or die "You must specify UrlRoot";
 
+    my $conf = ReadConfig();
+    $self->{FileStore} = $conf->{FileStore};
+
     return $self;
 }
 
-sub ImportContent
+sub ImportContentFile
 {
   my $self = shift;
+  my( $file, $chd ) = @_;
 
-  my( $batch_id, $cref, $chd ) = @_;
+  progress( "ExtremeSports: Processing $file" );
+
+  #my( $batch_id, $cref, $chd ) = @_;
   my( $schedule_date , $start_time , $duration );
   my( $event_title , $event_episode_title , $event_short_description );
   my( $genre , $sub_genre , $production_year );
   my( $episode_number , $episode_season , $episode );
 
-  my $ds = $self->{datastore};
-  $ds->{SILENCE_END_START_OVERLAP}=1;
+  $self->{fileerror} = 0;
 
-  my $oBook = Spreadsheet::ParseExcel::Workbook->Parse('/tmp/extremesports.xls');
+  my $xmltvid=$chd->{xmltvid};
+
+  my $channel_id = $chd->{id};
+  my $ds = $self->{datastore};
+
+  progress( "ExtremeSports: Processing $file" );
+
+  my $oBook = Spreadsheet::ParseExcel::Workbook->Parse( $file );
 
   my($iR, $oWkS, $oWkC);
 
@@ -224,6 +240,7 @@ sub FetchDataFromSite
 {
   my $self = shift;
   my( $batch_id, $data ) = @_;
+print "1\n";
 
   my @mondays = ( 0 , 31 , 28 , 31 , 30 , 31 , 30 , 31 , 31 , 30 , 31 , 30 , 31 );
 
@@ -252,6 +269,7 @@ sub FetchDataFromSite
   #my $url = "http://newsroom.zonemedia.net/Scripts/FileDownload.asp?fName=Extreme+PE+May+v2%2Exls&fPath=D%3A%5CZONE%5FPRESS%5CFiles%5CSchedules%5CExtreme+PE+May+v2%2Exls";
   #my $url = "http://newsroom.zonemedia.net/Scripts/FileDownload.asp?fName=Extreme+PE+Listings+June+2008+v2%2Exls&fPath=D%3A%5CZONE%5FPRESS%5CFiles%5CSchedules%5CExtreme+PE+Listings+June+2008+v2%2Exls";
   my $url = "http://newsroom.zonemedia.net/Scripts/FileDownload.asp?fName=Extreme+PE+Listings+June+v4%2Exls&fPath=D%3A%5CZONE%5FPRESS%5CFiles%5CSchedules%5CExtreme+PE+Listings+June+v4%2Exls";
+  #my $url = "http://newsroom.zonemedia.net/Scripts/FileDownload.asp?fName=Extreme+August+Pan+Euro+%28English+%26+French%29+V1%2Exls&fPath=D%3A%5CZONE%5FPRESS%5CFiles%5CSchedules%5CExtreme+August+Pan+Euro+%28English+%26+French%29+V1%2Exls";
 
   progress("ExtremeSports: Fetching xls file from $url");
 
@@ -268,5 +286,21 @@ sub FetchDataFromSite
 
   return( $content, $code );
 }
+
+#sub UpdateFiles {
+#  my( $self ) = @_;
+#
+#  foreach my $data ( @{$self->ListChannels()} ) {
+#    my $dir = $data->{grabber_info};
+#    my $xmltvid = $data->{xmltvid};
+#
+#    my $url = $self->{FtpRoot} . $dir . '/' . $self->{Filename};
+#print "URL: $url\n";
+#
+#    ftp_get( $url,
+#             $self->{FileStore} . '/' .
+#             $xmltvid . '/' . $self->{Filename} );
+#  }
+#}
 
 1;

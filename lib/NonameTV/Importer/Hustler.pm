@@ -20,7 +20,7 @@ use Spreadsheet::ParseExcel;
 use Data::Dumper;
 use File::Temp qw/tempfile/;
 
-use NonameTV qw/norm AddCategory/;
+use NonameTV qw/norm AddCategory MonthNumber/;
 use NonameTV::DataStore::Helper;
 use NonameTV::Log qw/info progress error logdie 
                      log_to_string log_to_string_result/;
@@ -113,12 +113,13 @@ sub ImportContentFile {
         }
       }
 
-      if( defined $coltime and defined $coltitle and defined $colduration ){
+      if( defined $coltime and defined $coltitle ){
         progress( "Hustler: $chd->{xmltvid}: Found columns" );
         last;
       }
 
       $coltime = undef;
+      $colgenre = undef;
       $coltitle = undef;
       $colduration = undef;
     }
@@ -130,7 +131,9 @@ sub ImportContentFile {
 
       my $oWkC;
 
-      if( isDate( $oWkS->{Cells}[$iR][$datecolumn]->Value ) ){
+      $oWkC = $oWkS->{Cells}[$iR][$datecolumn];
+      next if( ! $oWkC );
+      if( isDate( $oWkC->Value ) ){
 
         $date = ParseDate( $oWkS->{Cells}[$iR][$datecolumn]->Value );
 
@@ -164,9 +167,12 @@ sub ImportContentFile {
       next if( ! $title );
 
       # duration - column $colduration
-      $oWkC = $oWkS->{Cells}[$iR][$colduration];
-      next if( ! $oWkC );
-      my $duration = $oWkC->Value if( $oWkC->Value );
+      my $duration;
+      if( $colduration ){
+        $oWkC = $oWkS->{Cells}[$iR][$colduration];
+        next if( ! $oWkC );
+        $duration = $oWkC->Value if( $oWkC->Value );
+      }
 
       # genre - column $colgenre
       my $genre;
@@ -266,12 +272,6 @@ sub ParseDate
 {
   my ( $dinfo ) = @_;
 
-  my @months_eng = qw/january february march april may june july august september october november december/;
-
-  my %monthnames = ();
-  for( my $i = 0; $i < scalar(@months_eng); $i++ )
-    { $monthnames{$months_eng[$i]} = $i+1;}
-
   # the format is 'Monday, 1 July 2008'
   my( $dayname, $day, $monthname, $year ) = ( $dinfo =~ /^(\S+)\,\s*(\d+)\s+(\S+)\s+(\d+)$/ );
 
@@ -279,7 +279,7 @@ sub ParseDate
 
   $year += 2000 if $year < 100;
 
-  my $month = $monthnames{lc $monthname};
+  my $month = MonthNumber( $monthname , "en" );
 
   my $date = sprintf( "%04d-%02d-%02d", $year, $month, $day );
   return $date;

@@ -222,6 +222,7 @@ print "URL: $url\n";
 
 sub http_get {
   my( $url, $file ) = @_;
+print "URL: $url\n";
 
   qx[curl -s -S -z "$file" -o "$file" "$url"];
 }

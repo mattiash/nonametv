@@ -21,7 +21,7 @@ use DateTime;
 use XML::LibXML;
 #use Text::Capitalize qw/capitalize_title/;
 
-use NonameTV qw/MyGet Wordfile2Xml Htmlfile2Xml norm AddCategory/;
+use NonameTV qw/MyGet Wordfile2Xml Htmlfile2Xml norm AddCategory MonthNumber/;
 use NonameTV::DataStore::Helper;
 use NonameTV::Log qw/info progress error logdie 
                      log_to_string log_to_string_result/;
@@ -198,25 +198,6 @@ sub isShow {
   }
 
   return 0;
-}
-
-sub MonthNumber {
-  my( $monthname , $lang ) = @_;
-
-  my @months;
-
-  if( $lang =~ /^en$/ ){
-    @months = qw/january february march april may june july august september october november december/;
-  }
-
-  my %monthnames = ();
-
-  for( my $i = 0; $i < scalar(@months); $i++ )
-    { $monthnames{$months[$i]} = $i+1;}
-
-  my $month = $monthnames{lc $monthname};
-
-  return $month;
 }
 
 sub ParseShow {
