@@ -56,6 +56,11 @@ BEGIN
 }
 our @EXPORT_OK;
 
+# Turn all "warn" statements into errors.
+BEGIN { 
+  $SIG{'__WARN__'} = \&error;
+}
+
 use constant {
   DEBUG => 1,
   INFO => 2,
