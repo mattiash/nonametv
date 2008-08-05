@@ -139,67 +139,66 @@ sub ImportData {
 
   NonameTV::Log::verbose( $p->{verbose}, $p->{quiet} );
 
+  my $h = log_to_string( 4 );
+
   my $error1 = $self->InitiateDownload();
+  error( $error1 ) if defined $error1;
 
   my $dsh = exists( $self->{datastorehelper} ) ? $self->{datastorehelper} : 
       $self->{datastore};
 
   my $ds = $self->{datastore};
 
+  my $message1 = log_to_string_result( $h );
+
   foreach my $data (@{$self->ListChannels()} ) {
+    my $h = log_to_string( 4 );
     my $error2 = $self->InitiateChannelDownload( $data );
+    error( $error2 ) if defined $error2;
 
     if( $p->{'force-update'} and not $p->{'short-grab'} ) {
-      if( defined( $error1 ) ) {
-        error( $data->{xmltvid} . ": $error1\n" );
-        next;
-      }
-  
-      if( defined( $error2 ) ) {
-        error( $data->{xmltvid} . ": $error2\n" );
-        next;
-      }
-
       # Delete all data for this channel.
       my $deleted = $ds->ClearChannel( $data->{id} );
       progress( "Deleted $deleted records for $data->{xmltvid}" );
     }
 
     my @batch_periods = $self->BatchPeriods( $p->{'short-grab'} );
+
+    my $message2 = log_to_string_result( $h );
  
     foreach my $period (@batch_periods) {
+      # Log ERROR and FATAL
+      my $h = log_to_string( 4 );
+
       my $batch_id = $data->{xmltvid} . "_" . $period;
 
-      my( $cref, $error );
-      if( defined( $error1 ) ) {
-        $error = $self->{cc}->ReportError( $batch_id, $error1, 0 );
-      }
-      elsif( defined( $error2 ) ) {
-        $error = $self->{cc}->ReportError( $batch_id, $error2, 0 );
-      }
-      else {
+      my $error = $message1 . $message2;
+
+      my $cref;
+      if( $error eq "" ) {
         info( "$batch_id: Fetching data" );
         ( $cref, $error ) = $self->{cc}->GetContent( 
           $batch_id, $data, $p->{'force-update'} );
       }
 
+      my $res;
+      $dsh->StartBatch( $batch_id, $data->{id} );
+
       if( defined $cref ) { 
         progress( "$batch_id: Processing data" );
-        $dsh->StartBatch( $batch_id, $data->{id} );
-        # Log ERROR and FATAL
-        my $h = log_to_string( 4 );
-        my $res = $self->ImportContent( $batch_id, $cref, $data );
-        my $message = log_to_string_result( $h );
-        $dsh->EndBatch( $res, $message );
+        $res = $self->ImportContent( $batch_id, $cref, $data );
       }
       elsif( defined $error ) {
-        error( "$batch_id: $error" );
-        $dsh->StartBatch( $batch_id, $data->{id} );
-        $dsh->EndBatch( 0, $error );
+        error( $error );
+	$res = 0;
       }
       else {
         # Nothing has changed.
+	$res = -1;
       }
+
+      my $message = log_to_string_result( $h );
+      $dsh->EndBatch( $res, $message );
     }
   }
 }
