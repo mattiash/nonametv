@@ -68,13 +68,17 @@ if( $opt->{all} ){
 
   print "Channels with last show in less then $warndays days:\n";
   my $chdb = $ds->{sa}->LookupMany( 'channels', { export => 1 } , [ 'xmltvid' ] );
+
+  print "----------------------------------------------------------------\n";
+  printf( "%32s | %19s | %7s\n", "channel xmltvid", "lastshow time", "in days" );
+  print "----------------------------------------------------------------\n";
+
   foreach my $ch (@{$chdb}) {
     my $lastshow = LastShow( $ch->{id} );
     if( $lastshow ){
       my $indays = isToWarn( $lastshow, $warndays );
       if( $indays ){
-        #print "Last show for $ch->{xmltvid} starts at $lastshow\n";
-        printf( "%32s | %19s | %3d\n", $ch->{xmltvid}, $lastshow, $indays );
+        printf( "%32s | %19s | %7d\n", $ch->{xmltvid}, $lastshow, $indays );
       }
     } else {
       print "No shows found for $ch->{xmltvid}\n";
@@ -120,12 +124,12 @@ sub isToWarn {
                             time_zone => 'Europe/Zagreb',
     );
 
-  my $checktime = $now->add( days => $warndays );
+  my $checktime = $now->clone->add( days => $warndays );
 
   my $cmp = DateTime->compare( $checktime, $ldt );
 
   if( $cmp gt 0 ){
-    my $dur = $now - $ldt;
+    my $dur = $ldt - $now;
     return $dur->delta_days;
   }
 
