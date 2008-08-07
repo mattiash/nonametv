@@ -98,14 +98,22 @@ sub CreateExporter {
 Create a NonameTV::DataStore from the configuration.
 
 Returns the newly created datastore or dies if creation fails.
+If CreateDataStore is called more than once, the same DataStore object
+will be returned avery time.
 
 =cut
 
+my $ds;
+
 sub CreateDataStore {
+  return $ds if defined $ds;
+
   my $conf = ReadConfig();
   
   require NonameTV::DataStore;
-  return NonameTV::DataStore->new( $conf->{DataStore} );
+  $ds = NonameTV::DataStore->new( $conf->{DataStore} );
+
+  return $ds;
 }
 
 =item CreateDataStoreDummy
