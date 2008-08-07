@@ -64,7 +64,7 @@ sub dump_structure {
   print "Writing database structure to $outfile\n";
 
   my @tables = qw/
-      batches channels channelgroups files 
+      batches channels channelgroups files jobs 
       programs state trans_cat languagestrings
       /;
 

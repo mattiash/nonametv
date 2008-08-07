@@ -47,6 +47,21 @@ CREATE TABLE `files` (
   PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+DROP TABLE IF EXISTS `jobs`;
+CREATE TABLE `jobs` (
+  `id` int(11) NOT NULL auto_increment,
+  `type` varchar(50) NOT NULL,
+  `name` varchar(50) NOT NULL,
+  `starttime` datetime NOT NULL,
+  `duration` int(11) NOT NULL,
+  `lastok` datetime default NULL,
+  `lastfail` datetime default NULL,
+  `message` text NOT NULL,
+  `success` tinyint(1) NOT NULL,
+  `deleteafter` datetime NOT NULL,
+  PRIMARY KEY  (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
 DROP TABLE IF EXISTS `programs`;
 CREATE TABLE `programs` (
   `category` varchar(100) NOT NULL default '',
