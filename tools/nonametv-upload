@@ -1,0 +1,57 @@
+#!/usr/bin/perl
+
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+
+use Getopt::Long;
+
+use NonameTV::Job qw/StartJob EndJob/;
+use NonameTV::Log qw/error/;
+use NonameTV::Factory qw/InitLog/;
+use NonameTV::Config qw/ReadConfig/;
+
+my $opt = { verbose      => 0,
+	  };
+
+my $res = GetOptions( $opt, qw/verbose/ );
+
+InitLog();
+
+foreach my $server (@ARGV) {
+  StartJob( "Upload", $server, 10 );
+
+  my $conf = ReadConfig();
+  my $sc = $conf->{Upload}->{$server};
+  
+  if( $sc->{Type} eq "rsync" ) {
+    RsyncUpload( $sc );
+  }
+  else {
+    error( "Unknown upload type $sc->{Type}" );
+  }
+  
+  EndJob();
+}
+
+sub RsyncUpload {
+  my( $sc ) = @_;
+
+  my $server = $sc->{Server};
+  my $connected = qx/ssh $server -o ConnectTimeout=5 'echo -n Connected' 2>&1/;
+  if( $connected ne "Connected" ) {
+    error( "Failed to connect to $server: $connected" );
+    return;
+  }
+
+  foreach my $local (keys %{$sc->{Paths}}) {
+    my $remote = $sc->{Paths}->{$local};
+    my $verbose = $opt->{verbose} ? "-v" : "";
+    my $command = "rsync $verbose -a --delete $local $server:$remote";
+    print "$command\n" if $opt->{verbose};
+    # Capture STDERR and let STDOUT come out on STDERR. From perldoc perlop
+    my $res = qx/$command 3>&1 1>&2 2>&3 3>&-/;
+    if( $? > 0 ) {
+      error( "Failed to upload $local to $server: $res" );
+    }
+  }
+}
