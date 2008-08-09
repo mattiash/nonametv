@@ -111,28 +111,23 @@ fails.
 
 =cut
 
-sub Html2Xml
-{
+sub Html2Xml {
   my( $html ) = @_;
+
   my $xml = XML::LibXML->new;
   $xml->recover(1);
-  
-  # Stupid XML::LibXML writes to STDERR. Redirect it temporarily.
-  open(SAVERR, ">&STDERR"); # save the stderr fhandle
-  print SAVERR "Nothing\n" if 0;
-  open(STDERR,"> /dev/null");
   
   # Remove character that makes the parser stop.
   $html =~ s/\x00//g;
 
   my $doc;
-  eval { $doc = $xml->parse_html_string($html); };
+  eval { $doc = $xml->parse_html_string($html, {
+    recover => 1,
+    suppress_errors => 1,
+    suppress_warnings => 1,
+  }); };
   
-  # Restore STDERR
-  open( STDERR, ">&SAVERR" );
-  
-  if( $@ ne "" )
-  {
+  if( $@ ne "" ) {
     my ($package, $filename, $line) = caller;
     print "parse_html_string failed: $@ when called from $filename:$line\n";
     return undef;
