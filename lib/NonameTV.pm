@@ -12,7 +12,7 @@ use File::Temp qw/tempfile tempdir/;
 use File::Slurp;
 
 use NonameTV::StringMatcher;
-use NonameTV::Log qw/logdie error/;
+use NonameTV::Log qw/w/;
 use XML::LibXML;
 
 BEGIN {
@@ -316,10 +316,13 @@ sub Wordfile2HtmlTree
 sub Htmlfile2HtmlTree
 {
     my ($filename)= @_;
+    my $fh;
+    if( not open($fh, "<:utf8", "$filename") ) {
+      w "Failed to read from $filename";
+      return undef;
+    }
+
     my $tree = HTML::TreeBuilder->new();
-    open(my $fh, "<:utf8", "$filename") 
-      or logdie( "Failed to read from $filename" );
-    
     $tree->parse_file($fh); 
 
     return $tree;

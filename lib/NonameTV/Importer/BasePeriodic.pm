@@ -28,8 +28,7 @@ use POSIX qw/floor/;
 
 use NonameTV qw/MyGet/;
 use NonameTV::Config qw/ReadConfig/;
-use NonameTV::Log qw/info progress error
-                     log_to_string log_to_string_result/;
+use NonameTV::Log qw/SetVerbosity StartLogSection EndLogSection d p w f/;
 use NonameTV::ContentCache;
 
 use NonameTV::Importer;
@@ -137,46 +136,45 @@ sub ImportData {
     return $self->ImportOld( $p );
   }
 
-  NonameTV::Log::verbose( $p->{verbose}, $p->{quiet} );
+  SetVerbosity( $p->{verbose}, $p->{quiet} );
 
-  my $h = log_to_string( 4 );
+  StartLogSection( $self->{grabber_name} );
 
   my $error1 = $self->InitiateDownload( $p );
-  error( $error1 ) if defined $error1;
+  e( $error1 ) if defined $error1;
 
   my $dsh = exists( $self->{datastorehelper} ) ? $self->{datastorehelper} : 
       $self->{datastore};
 
   my $ds = $self->{datastore};
 
-  my $message1 = log_to_string_result( $h );
+  my $message1 = EndLogSection( $self->{grabber_name} );
 
   foreach my $data (@{$self->ListChannels()} ) {
-    my $h = log_to_string( 4 );
+    StartLogSection( $data->{xmltvid} );
     my $error2 = $self->InitiateChannelDownload( $data );
-    error( $error2 ) if defined $error2;
+    e( $error2 ) if defined $error2;
 
     if( $p->{'force-update'} and not $p->{'short-grab'} ) {
       # Delete all data for this channel.
       my $deleted = $ds->ClearChannel( $data->{id} );
-      progress( "Deleted $deleted records for $data->{xmltvid}" );
+      p "Deleted $deleted records";
     }
 
     my @batch_periods = $self->BatchPeriods( $p->{'short-grab'} );
 
-    my $message2 = log_to_string_result( $h );
+    my $message2 = EndLogSection( $data->{xmltvid} );
  
     foreach my $period (@batch_periods) {
-      # Log ERROR and FATAL
-      my $h = log_to_string( 4 );
-
       my $batch_id = $data->{xmltvid} . "_" . $period;
+
+      StartLogSection( $batch_id );
 
       my $error = $message1 . $message2;
 
       my $cref;
       if( $error eq "" ) {
-        info( "$batch_id: Fetching data" );
+        d "Fetching data";
         ( $cref, $error ) = $self->{cc}->GetContent( 
           $batch_id, $data, $p->{'force-update'} );
       }
@@ -185,11 +183,11 @@ sub ImportData {
       $dsh->StartBatch( $batch_id, $data->{id} );
 
       if( defined $cref ) { 
-        progress( "$batch_id: Processing data" );
+        p "Processing data";
         $res = $self->ImportContent( $batch_id, $cref, $data );
       }
       elsif( defined $error ) {
-        error( $error );
+        f $error;
 	$res = 0;
       }
       else {
@@ -197,7 +195,7 @@ sub ImportData {
 	$res = -1;
       }
 
-      my $message = log_to_string_result( $h );
+      my $message = EndLogSection( $batch_id );
       $dsh->EndBatch( $res, $message );
     }
   }
@@ -215,7 +213,7 @@ sub ImportOld {
     if( $p->{'force-update'} and not $p->{'short-grab'} ) {
       # Delete all data for this channel.
       my $deleted = $ds->ClearChannel( $data->{id} );
-      progress( "Deleted $deleted records for $data->{xmltvid}" );
+      p "Deleted $deleted records for $data->{xmltvid}";
     }
 
     my @batch_periods = $self->BatchPeriods( $p->{'short-grab'} );
@@ -244,10 +242,9 @@ sub ImportBatch {
 
   my $ds;
 
-  # Log ERROR and FATAL
-  my $h = log_to_string( 4 );
+  StartLogSection( $batch_id );  
 
-  info( "$batch_id: Fetching data" );
+  d "Fetching data";
   
   if( exists( $self->{datastorehelper} ) ) {
     $ds = $self->{datastorehelper};
@@ -261,22 +258,23 @@ sub ImportBatch {
   my( $content, $code ) = $self->FetchData( $batch_id, $chd );
   
   if( not defined( $content ) ) {
-    error( "$batch_id: Failed to fetch data ($code)" );
-    my $message = log_to_string_result( $h );
+    f "Failed to fetch data ($code)";
+    my $message = EndLogSection( $batch_id );
     $ds->EndBatch( 0, $message );
     return;
   }
   elsif( (not ($force_update) and ( not $code ) ) ) {
     # No changes.
+    my $message = EndLogSection( $batch_id );
     $ds->EndBatch( -1 );
     return;
   }
 
-  progress( "$batch_id: Processing data" );
+  p "Processing data";
 
   my $res = $self->ImportContent( $batch_id, \$content, $chd ); 
 
-  my $message = log_to_string_result( $h );
+  my $message = EndLogSection( $batch_id );
 
   if( $res ) {
     # success
