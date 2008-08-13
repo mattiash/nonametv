@@ -4,32 +4,51 @@ package NonameTV::Log;
 
 Logging-module for NonameTV.
 
-In each module, do
+SEVERITIES
 
-  use NonameTV::Log qw/progress error logdie/;
+d Debug
+p Progress
+w Warning. Execution of this task continued anyway. 
+f Fatal error. Execution of this task aborted.
 
-  info( "Fetching data" ); or progress, error, fatal, debug
+StartLogSection( "batchname" );
+my( $messages, $highestpriority ) = EndLogSection( "batchname" );
 
-  do_stuff() or logdie "Failed to do stuff.";
+StartLogSection can be nested. The outer LogSection will NOT catch messages
+that are caught by the inner LogSection.
 
-Levels:
+STDERR
+Each message is prefixed with the severity and the current LogSection name.
 
-DEBUG Debugging output
+Normally, severities Warning and Fatal are printed.
 
-INFO Progress messages
+--verbose prints Progress as well.
+--verbose=2 prints Debug and Progress as well.
+--quiet prints only Fatal.
+--quiet=2 prints nothing
 
-PROGRESS Something has been updated in the database/external files.
+LOGFILE
 
-ERROR Parse errors etc.
+LogFile logs everything up to and including severity Progress. Each
+message is prefixed with the severity and the current LogSection name.
 
-FATAL Fatal error. Program terminated.
+LOGSECTION
 
-Normal output consists of ERROR and FATAL only.
+EndLogSection returns all messages with priority warning and fatal
+that have been issued since the matching call to StartLogSection. The
+messages are prefixed with the severity.
 
---verbose prints everything up to and including INFO.
---quiet prints only FATAL
+Compatibility functions
 
-/var/log/nonametv logs everything up to and including PROGRESS
+LogSection is not appended to these strings.
+debug not available
+info not available
+progress => p
+error => w
+logdie not available
+
+log_to_string not available
+log_to_string_result not available
 
 =cut
 
@@ -39,7 +58,7 @@ use warnings;
 use POSIX qw/strftime/;
 use IO::File;
 
-use Carp qw/confess/;
+use NonameTV::Config qw/ReadConfig/;
 
 BEGIN 
 {
@@ -49,51 +68,37 @@ BEGIN
   @ISA         = qw(Exporter);
   @EXPORT      = qw( );
   %EXPORT_TAGS = ( );     # eg: TAG => [ qw!name1 name2! ],
-  @EXPORT_OK   = qw/init verbose
-                    debug info progress error logdie
-                    log_to_string log_to_string_result/;
+  @EXPORT_OK   = qw/progress error
+                    d p w f
+                    StartLogSection EndLogSection
+                    SetVerbosity/;
   
 }
 our @EXPORT_OK;
 
-# Turn all "warn" statements into errors.
-BEGIN { 
-  $SIG{'__WARN__'} = \&error;
-}
+sub d;
+sub p;
+sub w;
+sub e;
 
 use constant {
   DEBUG => 1,
-  INFO => 2,
-  PROGRESS => 3,
-  ERROR => 4,
-  FATAL => 5,
-  NONE => 100 
+  PROGRESS => 2,
+  WARNING => 3,
+  FATAL => 4,
+  NONE => 100,
 };
 
-my %levels = (
-  (DEBUG) => "DEBUG",
-  (INFO) => "INFO",
-  (PROGRESS) => "PROG",
-  (ERROR) => "ERROR",
-  (FATAL) => "FATAL",
-);
+my $stderr_level = WARNING;
+my $file_level = PROGRESS;
 
-my $stderr_level;
-my $file_level;
-my $string_level;
 
 my $logfile;
-my $logstring;
-my $logstring_highest;
+my @section = [ undef, "" ];
 
-sub init
-{
-  my( $conf ) = @_;
+BEGIN {
+  my $conf = ReadConfig();
 
-  $stderr_level = ERROR;
-  $file_level = PROGRESS;
-  $string_level = NONE;
-  
   $logfile = new IO::File "$conf->{LogFile}", O_WRONLY|O_APPEND|O_CREAT;
 
   die "Failed to open logfile $conf->{LogFile} for writing"
@@ -101,107 +106,115 @@ sub init
 
   # Flush the logfile to disk for each write.
   $logfile->autoflush( 1 );
+
+  # Turn all "warn" statements into w():s.
+  $SIG{'__WARN__'} = \&w;
 }
 
-sub verbose
-{
+sub SetVerbosity {
   my( $verbose, $quiet ) = @_;
 
   if( $verbose == 1 ) {
     $stderr_level = PROGRESS;
   }
   elsif( $verbose > 1 ) {
-    $stderr_level = INFO;
+    $stderr_level = DEBUG;
   }
-  elsif( $quiet ) {
+  elsif( $quiet == 1 ) {
     $stderr_level = FATAL;
   }
+  elsif( $quiet > 1 ) {
+    $stderr_level = NONE;
+  }
   else {
-    $stderr_level = ERROR;
-  }
-}
- 
-sub log_to_string
-{
-  my( $level ) = @_;
-
-  $string_level = $level;
-  $logstring = "";
-  $logstring_highest = 0;
-
-  return 123;
-}
-
-sub log_to_string_result
-{
-  my( $h ) = @_;
-
-  $string_level = NONE;
-  if( wantarray ) 
-  {
-    return ($logstring, $logstring_highest);
-  }
-  else
-  {
-    return $logstring;
+    $stderr_level = WARNING;
   }
 }
 
-sub info
-{
+sub d {
   my( $message ) = @_;
 
-  writelog( INFO, $message );
+  writelog( DEBUG, "D", $section[0][0], $message );
 }
 
-sub progress
-{
+sub p {
   my( $message ) = @_;
 
-  writelog( PROGRESS, $message );
+  writelog( PROGRESS, "P", $section[0][0], $message );
 }
 
-sub error
-{
+sub w {
   my( $message ) = @_;
 
-  writelog( ERROR, $message );
+  writelog( WARNING, "W", $section[0][0], $message );
 }
 
-sub logdie
-{
+sub f {
   my( $message ) = @_;
 
-  writelog( FATAL, $message );
-  confess( $message );
+  writelog( FATAL, "F", $section[0][0], $message );
 }
 
-sub writelog
-{
-  my( $level, $message ) = @_;
+sub writelog {
+  my( $level, $levelstr, $prefix, $message ) = @_;
+
+  # Remove trailing newline added by warn.
+  $message =~ s/\s+$//;
+
+  my $pmessage;
+  if( defined( $prefix ) ) {
+    $pmessage = "$prefix: $message";
+  }
+  else {
+    $pmessage = $message;
+  }
 
   my $time = strftime( '%F %T', localtime );
 
-  my $levelstr = $levels{$level};
-  
-  if( $level >= $stderr_level )
-  {
-    print STDERR "$levelstr: $message\n";
+  if( $level >= $stderr_level ) {
+    print STDERR "$levelstr: $pmessage\n";
   }
 
-  if( $level >= $file_level )
-  {
-    print $logfile "$time $levelstr: $message\n";
+  if( $level >= $file_level ) {
+    print $logfile "$time $levelstr: $pmessage\n";
   }
 
-  if( $level >= $string_level )
-  {
-    $logstring .= "$levelstr: $message\n";
-    if( $level > $logstring_highest ) 
-    {
-      $logstring_highest = $level;
-    }
+  if( $level >= WARNING ) {
+    $section[0][1] .= "$levelstr: $message\n";
   }
 }
+
+sub StartLogSection {
+  my( $sectionname ) = @_;
+
+  unshift @section, [ $sectionname, "" ];
+}
+
+sub EndLogSection {
+  my( $sectionname ) = @_;
+
+  if( $sectionname eq $section[0][0] ) {
+    my $result = $section[0][1];
+    shift @section;
+    return $result;
+  }
+  else { 
+    e "Mismatched LogSections, got $sectionname, expected $section[0][0]";
+  }
+}
+
+# Deprecated functions
+sub progress {
+  my( $message ) = @_;
+
+  writelog( PROGRESS, "PROG", undef, $message );
+}
+
+sub error {
+  my( $message ) = @_;
+
+  writelog( WARNING, "ERROR", undef, $message );
+}
+
 
 1;

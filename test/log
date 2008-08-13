@@ -3,20 +3,35 @@
 use strict;
 
 use IO::Scalar;
-use NonameTV::Log qw/info progress error log_to_string log_to_string_result/;
+use NonameTV::Log qw/d p w f debug progress error 
+                     StartLogSection EndLogSection SetVerbosity/;
+use Getopt::Long;
 
+my $opt = { verbose => 0,
+            quiet =>0
+	  };
 
-NonameTV::Log::init( { LogFile => '/tmp/test.log'}, 
-              ($ARGV[0] || "") eq '--verbose' );
+my $res = GetOptions( $opt, qw/verbose+ quiet+/ );
 
-error( "Error" );
+SetVerbosity( $opt->{verbose}, $opt->{quiet} );
+
 progress( "Progress" );
-info( "Information" );
-
-my $h = log_to_string(1);
-
 error( "Error" );
-progress( "Progress" );
-info( "Information" );
+d "d";
+p "p";
+w "w";
+f "f";
+warn "warn";
 
-print "Message: " . log_to_string_result( $h );
+StartLogSection( "Test" );
+progress( "Progress" );
+error( "Error" );
+d "d";
+p "p";
+w "w";
+f "f";
+warn "warn";
+
+my $message = EndLogSection( "Test" );
+
+print "---\n$message---\n";
