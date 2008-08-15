@@ -5,270 +5,167 @@ use warnings;
 
 =pod
 
-Import data from Word-files delivered via e-mail. The parsing of the
-data relies only on the text-content of the document, not on the
-formatting.
-
-Features:
+Importer for files in the format provided by Axess Television.
+This is supposedly the format defined by TTSpektra. 
 
 =cut
 
-use utf8;
+use NonameTV::DataStore::Helper;
+use NonameTV::Log qw/progress error/;
+
+use NonameTV qw/ParseXml norm/;
 
 use DateTime;
-use XML::LibXML;
 
-use NonameTV qw/MyGet File2Xml FindParagraphs norm/;
-use NonameTV::DataStore::Helper;
-use NonameTV::DataStore::Updater;
-use NonameTV::Log qw/info progress error logdie/;
+use NonameTV::Importer::BaseDaily;
 
-use NonameTV::Importer::BaseFile;
-use base 'NonameTV::Importer::BaseFile';
+use base 'NonameTV::Importer::BaseDaily';
 
-sub new 
-{
-  my $proto = shift;
-  my $class = ref($proto) || $proto;
-  my $self  = $class->SUPER::new( @_ );
-  bless ($self, $class);
-  
-  $self->{grabber_name} = "Axess";
+sub new {
+    my $proto = shift;
+    my $class = ref($proto) || $proto;
+    my $self  = $class->SUPER::new( @_ );
+    bless ($self, $class);
 
-  my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore} );
-  $self->{datastorehelper} = $dsh;
+    $self->{grabber_name} = 'Axess';
 
-  my $dsu = NonameTV::DataStore::Updater->new( $self->{datastore} );
-  $self->{datastoreupdater} = $dsu;
+    defined( $self->{UrlRoot} ) or die "You must specify UrlRoot";
+    defined( $self->{LoginUrl} ) or die "You must specify LoginUrl";
 
-  return $self;
+    $self->{datastore}->{SILENCE_END_START_OVERLAP} = 1;
+    return $self;
 }
 
-sub ImportContentFile {
+sub InitiateDownload {
   my $self = shift;
-  my( $file, $chd ) = @_;
 
-  my $channel_id = $chd->{id};
-  my $channel_xmltvid = $chd->{xmltvid};
-
-  my $doc = File2Xml( $file );
-
-  if( not defined( $doc ) ) {
-    error( "Axess: Failed to parse $file" );
-    return;
-  }
-
-  $self->ImportData( $file, $doc, 
-		     $channel_xmltvid, $channel_id );
+  # Do the login. This will set a cookie that will be transferred on all
+  # subsequent page-requests.
+  my( $dataref, $error ) = $self->{cc}->GetUrl( $self->{LoginUrl} );
+  
+  return $error;
 }
 
-# Import files that contain full programming details,
-# usually for an entire week.
-# $doc is an XML::LibXML::Document object.
-sub ImportData {
+sub Object2Url {
   my $self = shift;
-  my( $filename, $doc, $channel_xmltvid, $channel_id ) = @_;
-  
-  my $dsh = $self->{datastorehelper};
+  my( $objectname, $chd ) = @_;
 
-  my $paragraphs = FindParagraphs( $doc, '//.' );
+  my( $date ) = ( $objectname =~ /_(.*)$/ );
+ 
+  my $url = $self->{UrlRoot} . $date;
 
-  if( scalar( @{$paragraphs} ) == 0 ) {
-    error( "Axess: No programme entries found in $filename" );
-    return;
-  }
-  
-  progress( "Axess: Processing $filename" );
-
-  # States
-  use constant {
-    ST_START  => 0,
-    ST_FDATE  => 1,   # Found date
-    ST_FHEAD  => 2,   # Found head with starttime and title
-    ST_FDESC  => 3,   # Found description
-    ST_EPILOG => 4,   # After END-marker
-  };
-  
-  use constant {
-    T_HEAD => 10,
-    T_DATE => 11,
-    T_TEXT => 12,
-    T_STOP => 13,
-  };
-  
-  my $state=ST_START;
-  my $currdate;
-
-  my $start;
-  my $end;
-  my $title;
-  my $date;
-  
-  my $ce = {};
-  
-  foreach my $text (@{$paragraphs}) {
-    my $type;
-    
-    if( $text =~ /^Kl\.\s
-                  (mån|tis|ons|tors|fre|lör|sön)dagen\sden
-                  \s*\d+\s*\D+$/ix ) {
-      $date = parse_date( $text );
-      if( not defined $date ) {
-	error( "Axess: $filename Invalid date $text" );
-	$type = T_TEXT;
-      }
-      else {
-	$type = T_DATE;
-      }
-    }
-    elsif( $text =~ /^\d\d\.\d\d\s*-\s*\d\d\.\d\d\s+\S+/ ) {
-      $type = T_HEAD;
-      $start=undef;
-      $end=undef;
-      $title=undef;
-
-      ($start, $end, $title) = ($text =~ /^(\d+\.\d+)
-				           \s*-\s*
-                                           (\d+\.\d+)\s+
-				           (.*)$/x );
-      $start =~ tr/\./:/;
-      $end =~ tr/\./\:/;
-    }
-    elsif( $text =~ /^\d\d\.\d\d\s+\S+/ ) {
-      $type = T_HEAD;
-      $start=undef;
-      $end=undef;
-      $title=undef;
-
-      ($start, $title) = ($text =~ /^(\d+\.\d+)\s+
-				     (.*)$/x );
-      $start =~ tr/\./:/;
-    }
-    else {
-      $type = T_TEXT;
-    }
-    
-    if( $state == ST_START ) {
-      if( $type == T_DATE ) {
-	$dsh->StartBatch( "${channel_xmltvid}_$date", $channel_id );
-	$dsh->StartDate( $date );
-        $self->AddDate( $date );
-	$state = ST_FDATE;
-	next;
-      }
-      else {
-#	error( "State ST_START, found: $text" );
-      }
-    }
-    elsif( $state == ST_FHEAD ) {
-      if( $type == T_TEXT ) {
-	if( defined( $ce->{description} ) ) {
-	  $ce->{description} .= " " . $text;
-	}
-	else {
-	  $ce->{description} = $text;
-	}
-	next;
-      }
-      else {
-	extract_extra_info( $ce );
-	$dsh->AddProgramme( $ce );
-	$ce = {};
-	$state = ST_FDATE;
-      }
-    }
-    
-    if( $state == ST_FDATE ) {
-      if( $type == T_HEAD ) {
-	$ce->{start_time} = $start;
-	$ce->{end_time} = $end if defined $end;
-	$ce->{title} = $title;
-	$state = ST_FHEAD;
-      }
-      elsif( $type == T_DATE ) {
-	$dsh->EndBatch( 1 );
-
-	$dsh->StartBatch( "${channel_xmltvid}_$date", $channel_id );
-	$dsh->StartDate( $date );
-        $self->AddDate( $date );
-	$state = ST_FDATE;
-      }
-      elsif( $type == T_STOP ) {
-	$state = ST_EPILOG;
-      }
-      else {
-	error( "Axess: $filename State ST_FDATE, found: $text" );
-      }
-    }
-    elsif( $state == ST_EPILOG ) {
-      if( ($type != T_TEXT) and ($type != T_DATE) )
-      {
-	error( "Axess: $filename State ST_EPILOG, found: $text" );
-      }
-    }
-  }
-  $dsh->EndBatch( 1 );
+  # Only one url to look at and no error
+  return ([$url], undef);
 }
 
-
-
-sub extract_extra_info {
-  my( $ce ) = shift;
-
-  return;
+sub ContentExtension {
+  return 'xml';
 }
 
-my @months = qw/januari februari mars april maj juni juli augusti
-    september oktober november december/;
+sub FilteredExtension {
+  return 'xml';
+}
 
-my @shortmonths = qw/jan feb mar apr maj jun jul aug sept okt nov dec/;
+sub ImportContent {
+  my $self = shift;
 
-my %monthnames = ();
-for( my $i = 0; $i < scalar(@months); $i++ ) 
-{ $monthnames{$months[$i]} = $i+1;}
+  my( $batch_id, $cref, $chd ) = @_;
 
-for( my $i = 0; $i < scalar(@shortmonths); $i++ ) 
-{ $monthnames{$shortmonths[$i]} = $i+1;}
+  my $ds = $self->{datastore};
 
-sub parse_date {
-  my( $text ) = @_;
+  my $doc = ParseXml( $cref );
+  my $xp = XML::LibXML::XPathContext->new($doc);
+  
+  # Create namespace
+  # http://perl-xml.sourceforge.net/faq/#namespaces_xpath
+  $xp->registerNs(tt => 'http://www.ttspektra.se' );
+  
+  my $ns = $xp->find( "//tt:TVRProgramBroadcast" );
 
-  print "DateText: '$text'\n";
+  if( $ns->size() == 0 ) {
+    error( "$batch_id: No data found" );
+    return 0;
+  }
+  
+  foreach my $pb ($ns->get_nodelist)
+  {
+    my $start = $xp->findvalue( 
+      'tt:TVRBroadcast/tt:BroadcastDateTime/tt:StartDateTime', $pb );
+    my $end = $xp->findvalue( 
+      'tt:TVRBroadcast/tt:BroadcastDateTime/tt:EndDateTime', $pb );
+    my $url = $xp->findvalue( 
+      'tt:TVRBroadcast/tt:BroadcastInformation/tt:WebPage/@URL', $pb );
+    my $title = $xp->findvalue( 'tt:TVRProgram/tt:Title', $pb );
+    my $subtitle = $xp->findvalue( 'tt:TVRProgram/tt:EpisodeTitle', $pb );
 
-  my( $weekday, $day, $monthname ) = 
-      ( $text =~ /^Kl. (\S+)\sden\s(\d+)\s*(\S+)$/ );
-  print "Date: $monthname $day\n";
-  my $month = $monthnames{lc $monthname};
-  return undef unless defined( $month );
+    if( $title eq $subtitle ) {
+      my( $title2, $subtitle2 ) = ( $title =~ /(.*?) - (.*)/ );
+      if( defined( $subtitle2 ) ) {
+        $title = $title2;
+        $subtitle = $subtitle2;
+      }
+      else {
+        $subtitle = "";
+      }
+    }
 
-  my $year = (localtime(time))[5] + 1900;
+    my $intro = $xp->findvalue( 'tt:TVRProgram/tt:Intro', $pb );
+    my $description = $xp->findvalue( 
+      'tt:TVRProgram/tt:Description/tt:TextDesc', $pb );
+    my $episodenum = $xp->findvalue( 'tt:TVRProgram/tt:EpisodeNumber', $pb );
 
-  my $dt = DateTime->new( 
-			  year   => $year,
-			  month  => $month,
-			  day    => $day,
-			  hour   => 0,
-			  minute => 0,
-			  second => 0,
-			  );
+    my $ce = {
+      channel_id  => $chd->{id},
+      start_time  => ParseDateTime( $start ),
+      end_time    => ParseDateTime( $end ),
+      title       => norm( $title ),
+      description => norm( "$intro $description" ),
+      url         => $url,
+    };
 
-  if( $dt < DateTime->now->subtract( months => 3 ) ) {
-    $dt = DateTime->new( 
-			 year   => $year+1,
-			 month  => $month,
-			 day    => $day,
-			 hour   => 0,
-			 minute => 0,
-			 second => 0,
-			 );
+    if( $subtitle ne "" ) {
+      $ce->{subtitle} = $subtitle;
+    }
+
+    if( $episodenum ne "" ) {
+      $ce->{episode} = " . " . ($episodenum-1) . " . ";
+    }
+
+    $ds->AddProgramme( $ce );
   }
 
-  return $dt->ymd('-');
+  return 1;
+}
+
+sub ParseDateTime {
+  my( $str ) = @_;
+
+  my( $year, $month, $day, $hour, $minute, $second ) = ($str =~ /
+    ^(\d{4})-(\d{2})-(\d{2})T
+     (\d{2}):(\d{2}):(\d{2})$/x );
+
+  my $dt;
+  eval {
+    $dt = DateTime->new(
+    year => $year,
+    month => $month,
+    day => $day,
+    hour => $hour,
+    minute => $minute,
+    time_zone => 'local' );
+  };
+
+  error( "$@" ) if $@;
+
+  return undef if not defined $dt;
+  
+  if( $second > 0 ) {
+    $dt->add( minutes => 1 );
+  }
+  
+  $dt->set_time_zone( 'UTC' );
+  
+  return $dt->ymd() . " " . $dt->hms();
 }
 
 1;
-
-### Setup coding system
-## Local Variables:
-## coding: utf-8
-## End:
