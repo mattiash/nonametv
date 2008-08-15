@@ -13,6 +13,7 @@ getmail -q -rdr.rc
 getmail -q -rdiscovery.rc
 getmail -q -raftonbladet.rc
 getmail -q -rexpressen.rc
+getmail -q -rtv-data-swedb.se.rc
 
 # Mail is additionally delivered to the tv-data account.
 
