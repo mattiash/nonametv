@@ -58,7 +58,7 @@ CREATE TABLE `programs` (
   `description` mediumtext,
   `batch_id` int(11) NOT NULL default '0',
   `program_type` varchar(20) default '',
-  `episode` varchar(20) default NULL,
+  `episode` varchar(30) default NULL,
   `production_date` date default NULL,
   `aspect` enum('unknown','4:3','16:9') NOT NULL default 'unknown',
   `stereo` varchar(40) NOT NULL,
