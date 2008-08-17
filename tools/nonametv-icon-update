@@ -5,44 +5,58 @@
 
 use strict;
 
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+
 use NonameTV;
 use NonameTV::DataStore;
 use NonameTV::Config qw/ReadConfig/;
+use NonameTV::Factory qw/CreateDataStore/;
 
 use LWP::Simple;
+use Getopt::Long;
+
+my $opt = { 
+  verbose => 0,
+  quiet => 0,
+  unattended => 0,
+};
+
+my $res = GetOptions( $opt, qw/verbose quiet unattended/ );
 
 # Read configuration
 my $conf = ReadConfig();
 
 # Create Datastore
-my $ds = NonameTV::DataStore->new( $conf->{DataStore} );
+my $ds = CreateDataStore();
 
 my $iconroot = $conf->{Exporters}->{Xmltv}->{IconRootUrl};
 
 my $sth = $ds->sa->Iterate( 'channels' );
 
-while( my $entry = $sth->fetchrow_hashref() )
-{
+while( my $entry = $sth->fetchrow_hashref() ) {
   my $xmltvid = $entry->{xmltvid};
   my $logo = $entry->{logo};
 
-  print "Processing $xmltvid\n";
+  print "Processing $xmltvid\n" if $opt->{verbose};
 
   my $url = "$iconroot$xmltvid.png";
-  if( head( $url ) )
-  {
-    if( not $logo )
-    {
+  if( head( $url ) ) {
+    if( not $logo ) {
       $ds->sa->Update( 'channels', { xmltvid => $xmltvid }, { logo => 1 } );
-      print "Added icon for $xmltvid\n";
+      print "Added icon for $xmltvid\n" if not $opt->{quiet};
     }
   }
   else
   {
-    if( $logo )
-    {
-      $ds->sa->Update( 'channels', { xmltvid => $xmltvid }, { logo => 0 } );
-      print "Removed icon for $xmltvid\n";
+    if( $logo ) {
+      if( $opt->{unattended} ) {
+        print "Icon for $xmltvid has disappeared.\n";
+      }
+      else {
+        $ds->sa->Update( 'channels', { xmltvid => $xmltvid }, { logo => 0 } );
+        print "Removed icon for $xmltvid\n" if not $opt->{quiet};
+      }
     }
   }
 }

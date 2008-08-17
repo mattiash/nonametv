@@ -38,6 +38,7 @@ tools/se/nonametv-import-allmail
 
 $d perl -I lib/ tools/nonametv-export Xmltv --remove-old
 $d perl -I lib/ tools/nonametv-export Json --remove-old
+$d tools/nonametv-icon-update --quiet --unattended
 
 tools/se/nonametv-updatesite
 
