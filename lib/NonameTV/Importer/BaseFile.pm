@@ -15,7 +15,7 @@ use DateTime;
 use POSIX qw/floor/;
 use Encode;
 
-use NonameTV::Log qw/info progress error logdie 
+use NonameTV::Log qw/progress error 
   log_to_string log_to_string_result/;
 
 use NonameTV::Config qw/ReadConfig/;

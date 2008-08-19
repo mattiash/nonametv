@@ -16,7 +16,7 @@ use XML::LibXML;
 
 use NonameTV qw/MyGet norm/;
 use NonameTV::DataStore::Helper;
-use NonameTV::Log qw/info progress error logdie/;
+use NonameTV::Log qw/progress error/;
 
 use NonameTV::Importer::BaseOne;
 

@@ -12,7 +12,7 @@ use XML::LibXML;
 use Compress::Zlib;
 
 use NonameTV qw/MyGet ParseXmltv norm/;
-use NonameTV::Log qw/info progress error logdie/;
+use NonameTV::Log qw/progress error/;
 
 use NonameTV::Importer::BaseDaily;
 

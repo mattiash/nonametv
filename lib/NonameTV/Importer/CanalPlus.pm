@@ -21,7 +21,7 @@ use XML::LibXML;
 use HTTP::Date;
 
 use NonameTV qw/ParseXml norm AddCategory/;
-use NonameTV::Log qw/info progress error logdie/;
+use NonameTV::Log qw/progress error logdie/;
 
 use NonameTV::Importer::BaseWeekly;
 

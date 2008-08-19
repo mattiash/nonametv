@@ -29,7 +29,7 @@ use Encode;
 
 use NonameTV qw/norm/;
 use NonameTV::DataStore::Helper;
-use NonameTV::Log qw/info progress error logdie/;
+use NonameTV::Log qw/progress error/;
 
 use NonameTV::Importer::BaseWeekly;
 

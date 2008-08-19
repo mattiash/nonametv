@@ -32,7 +32,7 @@ use POSIX qw/floor/;
 
 use NonameTV qw/Word2Xml Html2Xml ParseXml norm AddCategory ParseDescCatSwe/;
 use NonameTV::DataStore::Helper;
-use NonameTV::Log qw/info progress error logdie/;
+use NonameTV::Log qw/info progress error/;
 
 BEGIN {
     use Exporter   ();

@@ -21,7 +21,7 @@ use Locale::Recode;
 
 use NonameTV qw/MyGet Wordfile2Xml Htmlfile2Xml norm AddCategory/;
 use NonameTV::DataStore::Helper;
-use NonameTV::Log qw/info progress error logdie 
+use NonameTV::Log qw/progress error 
                      log_to_string log_to_string_result/;
 
 use NonameTV::Importer::BaseFile;
