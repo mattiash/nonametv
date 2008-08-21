@@ -24,7 +24,7 @@ use Encode;
 
 use NonameTV qw/MyGet expand_entities AddCategory norm/;
 use NonameTV::DataStore::Helper;
-use NonameTV::Log qw/info progress error logdie/;
+use NonameTV::Log qw/progress error/;
 
 use NonameTV::Importer::BaseWeekly;
 

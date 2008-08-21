@@ -17,7 +17,7 @@ use DateTime;
 use XML::LibXML;
 
 use NonameTV qw/MyGet norm AddCategory/;
-use NonameTV::Log qw/info progress error logdie/;
+use NonameTV::Log qw/progress error/;
 
 use NonameTV::Importer::BaseDaily;
 

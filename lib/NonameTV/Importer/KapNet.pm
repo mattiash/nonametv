@@ -21,7 +21,7 @@ use DateTime;
 use Spreadsheet::ParseExcel;
 
 use NonameTV::DataStore::Helper;
-use NonameTV::Log qw/info progress error logdie 
+use NonameTV::Log qw/progress error 
                      log_to_string log_to_string_result/;
 use NonameTV qw/AddCategory norm/;
 

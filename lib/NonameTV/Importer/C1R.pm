@@ -1,4 +1,4 @@
-package NonameTV::Importer::OTV;
+package NonameTV::Importer::C1R;
 
 use strict;
 use warnings;
@@ -19,9 +19,9 @@ use DateTime;
 use RTF::Tokenizer;
 use Locale::Recode;
 
-use NonameTV qw/MyGet Wordfile2Xml Htmlfile2Xml norm AddCategory/;
+use NonameTV qw/MyGet Wordfile2Xml Htmlfile2Xml norm AddCategory MonthNumber/;
 use NonameTV::DataStore::Helper;
-use NonameTV::Log qw/progress error 
+use NonameTV::Log qw/info progress error logdie 
                      log_to_string log_to_string_result/;
 
 use NonameTV::Importer::BaseFile;
@@ -34,7 +34,7 @@ sub new {
   my $self  = $class->SUPER::new( @_ );
   bless ($self, $class);
 
-  $self->{grabber_name} = "OTV";
+  $self->{grabber_name} = "C1R";
 
   my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore} );
   $self->{datastorehelper} = $dsh;
@@ -47,12 +47,12 @@ sub ImportContentFile
   my $self = shift;
   my( $file, $chd ) = @_;
 
-  if( $file !~ /program/i and $file !~ /izmjene/i and $file !~ /\.rtf/ ) {
-    progress( "OTV: Skipping unknown file $file" );
+  if( $file !~ /\.rtf$/ ) {
+    progress( "C1R: Skipping unknown file $file" );
     return;
   }
 
-  progress( "OTV: Processing $file" );
+  progress( "C1R: Processing $file" );
   
   $self->{fileerror} = 0;
 
@@ -65,7 +65,7 @@ sub ImportContentFile
   my $tokenizer = RTF::Tokenizer->new( file => $file );
 
   if( not defined( $tokenizer ) ) {
-    error( "OTV $file: Failed to parse" );
+    error( "C1R $file: Failed to parse" );
     return;
   }
 
@@ -104,7 +104,7 @@ sub ImportContentFile
       $text .= chr(0x0111) if( $param eq 'f0' ); # malo dj
 
     } elsif( $type eq 'text' ){
-      if( $arg =~ /^\d\d\:\d\d$/ ){
+      if( $arg =~ /^\d\d\.\d\d$/ ){
         $text = $arg;
         $textfull = 1;
       } else {
@@ -135,42 +135,25 @@ sub ImportContentFile
 
           my $batch_id = "${xmltvid}_" . $date->ymd();
           $dsh->StartBatch( $batch_id, $channel_id );
-          $dsh->StartDate( $date->ymd("-") , "06:00" ); 
+          $dsh->StartDate( $date->ymd("-") , "08:00" ); 
           $currdate = $date;
+
+          progress("C1R: $chd->{xmltvid}: Date is " . $date->ymd("-") );
 
           $havedatetime = 0;
         }
       }
-      elsif( $text =~ /^(\d+)\:(\d+)$/ ) { # the token with the time in format '19.30'
+      elsif( isShow( $text ) ) { # the token with the time in format '19.30 Vremja'
 
-	my( $hours , $mins ) = ( $text =~ /^(\d+)\:(\d+)$/ );
+	my( $starttime , $title ) = ParseShow( $text );
 
-        $starttime = create_dt( $date , $hours , $mins );
-
-        $havedatetime = 1;
-      }
-      else
-      {
-        if( ! $havedatetime ){
-          $textfull = 0;
-          $text = '';
-          next;
-        }
-
-        my( $title, $genre ) = ParseShow( $text );
-
-        progress("OTV: $chd->{xmltvid}: $starttime - $title");
+        progress("C1R: $chd->{xmltvid}: $starttime - $title");
 
         my $ce = {
           channel_id   => $chd->{id},
-          start_time => $starttime->hms(":"),
+          start_time => $starttime,
           title => norm($title),
         };
-
-        if( $genre ){
-          my($program_type, $category ) = $ds->LookupCat( 'OTV', $genre );
-          AddCategory( $ce, $program_type, $category );
-        }
 
         $dsh->AddProgramme( $ce );
 
@@ -178,9 +161,8 @@ sub ImportContentFile
       }
 
       $textfull = 0;
-      $text = '';
+      $text = ''
     }
-
   }
 
   $dsh->EndBatch( 1 );
@@ -191,13 +173,21 @@ sub ImportContentFile
 sub isDate {
   my ( $text ) = @_;
 
-  return 1 if( $text =~ /^SUBOTA (\d+)\.(\d+)/ );
-  return 1 if( $text =~ /^NEDJELJA (\d+)\.(\d+)/ );
-  return 1 if( $text =~ /^PONEDJELJAK (\d+)\.(\d+)/ );
-  return 1 if( $text =~ /^UTORAK (\d+)\.(\d+)/ );
-  return 1 if( $text =~ /^SRIJEDA (\d+)\.(\d+)/ );
-  return 1 if( $text =~ /^[[:upper:]]ETVRTAK (\d+)\.(\d+)/ );   # \x{268}ETVRTAK
-  return 1 if( $text =~ /^PETAK (\d+)\.(\d+)/ );
+  # format 'Wednesday, August 13'
+  if( $text =~ /^(monday|tuesday|wednesday|thursday|friday|saturday|sunday),\s*\S+\s*\d+$/i ){
+    return 1;
+  }
+
+  return 0;
+}
+
+sub isShow {
+  my ( $text ) = @_;
+
+  # format '23.00 Vremja'
+  if( $text =~ /^\d+\.\d+\s+\S+/ ){
+    return 1;
+  }
 
   return 0;
 }
@@ -205,8 +195,11 @@ sub isDate {
 sub ParseDate {
   my( $text ) = @_;
 
-  my( $dayname, $day, $month, $year ) = ($text =~ /^([[:upper:]]+) (\d+)\.(\d+)\.(\d+)/);
-#print "DAYNAME: $dayname DAY: $day MONTH: $month YEAR: $year\n";
+  # format 'Wednesday, August 13'
+  my( $dayname, $monthname, $day ) = ( $text =~ /^(\S+),\s*(\S+)\s*(\d+)$/ );
+
+  my $year = DateTime->today->year();
+  my $month = MonthNumber( $monthname , "en" );
 
   my $dt = DateTime->new( year   => $year,
                           month  => $month,
@@ -214,36 +207,18 @@ sub ParseDate {
                           hour   => 0,
                           minute => 0,
                           second => 0,
-                          time_zone => 'Europe/Zagreb',
+                          time_zone => 'Europe/Moscow',
   );
 
   return $dt;
 }
 
 sub ParseShow {
-  my( $string ) = @_;
-  my( $title, $genre );
+  my( $text ) = @_;
 
-  if( $string =~ /,/ ){
-    ( $title, $genre ) = $string =~ m/(.*, )(.*)$/;
-    if( $title ){
-      $title =~ s/, $//;
-    }
-  }
-  else
-  {
-    $title = $string;
-  }
+  my( $hour, $min, $title ) = ( $text =~ /^(\d+)\.(\d+)\s+(.*)$/ );
 
-  return( $title , $genre );
-}
-
-sub create_dt {
-  my( $date, $hour, $min ) = @_;
-
-  my $sdt = $date->clone()->add( hours => $hour , minutes => $min );
-
-  return $sdt;
+  return( $hour . ":" . $min , $title );
 }
 
 1;

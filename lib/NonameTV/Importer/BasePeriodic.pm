@@ -28,7 +28,7 @@ use POSIX qw/floor/;
 
 use NonameTV qw/MyGet/;
 use NonameTV::Config qw/ReadConfig/;
-use NonameTV::Log qw/info progress error logdie
+use NonameTV::Log qw/info progress error
                      log_to_string log_to_string_result/;
 use NonameTV::ContentCache;
 

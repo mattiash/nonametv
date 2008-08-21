@@ -20,7 +20,7 @@ use Text::Capitalize qw/capitalize_title/;
 
 use NonameTV qw/MyGet Wordfile2Xml Htmlfile2Xml norm/;
 use NonameTV::DataStore::Helper;
-use NonameTV::Log qw/info progress error logdie 
+use NonameTV::Log qw/progress error 
                      log_to_string log_to_string_result/;
 
 use NonameTV::Importer::BaseFile;

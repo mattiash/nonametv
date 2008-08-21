@@ -16,7 +16,7 @@ use Encode;
 
 use NonameTV qw/MyGet Html2Xml FindParagraphs AddCategory norm/;
 use NonameTV::DataStore::Helper;
-use NonameTV::Log qw/info progress error logdie 
+use NonameTV::Log qw/progress error 
                      log_to_string log_to_string_result/;
 
 use NonameTV::Importer::BaseDaily;

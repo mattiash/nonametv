@@ -6,7 +6,7 @@ Logging-module for NonameTV.
 
 In each module, do
 
-  use NonameTV::Log qw/info progress error logdie/;
+  use NonameTV::Log qw/progress error logdie/;
 
   info( "Fetching data" ); or progress, error, fatal, debug
 

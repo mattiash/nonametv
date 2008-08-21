@@ -21,7 +21,7 @@ use XML::LibXML;
 
 use NonameTV qw/ParseXml ParseXmltv/;
 use NonameTV::DataStore::Helper;
-use NonameTV::Log qw/info progress error logdie 
+use NonameTV::Log qw/progress error 
                      log_to_string log_to_string_result/;
 
 use NonameTV::Importer::BaseDaily;
@@ -155,7 +155,7 @@ sub LoadChannelsFromSite {
   my $programs = {};
 
   my $ns = $doc->find( "//channel" );
-  foreach my $ch ($ns->get_nodelist()) {
+  foreach my $node ($ns->get_nodelist()) {
     my $id = $node->findvalue( '@id' );
     my $name = $node->findvalue( 'display-name' );
 
@@ -164,7 +164,7 @@ sub LoadChannelsFromSite {
 
   $ns = $doc->find( '//programme' );
   foreach my $ch ($ns->get_nodelist()) {
-
+  }
 }
 
 1;

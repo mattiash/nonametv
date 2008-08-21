@@ -22,7 +22,7 @@ use HTML::Parse;
 use HTML::FormatText;
 
 use NonameTV qw/MyGet norm AddCategory/;
-use NonameTV::Log qw/info progress error logdie/;
+use NonameTV::Log qw/progress error/;
 
 use NonameTV::Importer::BaseOne;
 

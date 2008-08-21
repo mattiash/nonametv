@@ -24,7 +24,7 @@ use XML::LibXML;
 use NonameTV qw/MyGet File2Xml norm/;
 use NonameTV::DataStore::Helper;
 use NonameTV::DataStore::Updater;
-use NonameTV::Log qw/info progress error logdie/;
+use NonameTV::Log qw/progress error logdie/;
 
 use NonameTV::Importer::BaseFile;
 use base 'NonameTV::Importer::BaseFile';

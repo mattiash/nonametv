@@ -3,7 +3,7 @@ package NonameTV::DataStore::Helper;
 use strict;
 
 use Carp;
-use NonameTV::Log qw/info progress error logdie/;
+use NonameTV::Log qw/progress error logdie/;
 
 =head1 NAME
 

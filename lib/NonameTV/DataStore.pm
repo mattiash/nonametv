@@ -3,7 +3,7 @@ package NonameTV::DataStore;
 use strict;
 
 use NonameTV qw/FixProgrammeData/;
-use NonameTV::Log qw/info progress error logdie/;
+use NonameTV::Log qw/progress error logdie/;
 use SQLAbstraction::mysql;
 
 use Carp qw/confess/;

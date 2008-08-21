@@ -9,7 +9,7 @@ use POSIX qw/floor/;
 
 use NonameTV qw/MyGet Word2Xml norm/;
 use NonameTV::DataStore::Helper;
-use NonameTV::Log qw/info progress error logdie/;
+use NonameTV::Log qw/info progress error/;
 
 use NonameTV::Importer::Kanal5_util qw/ParseData/;
 use NonameTV::Importer::BaseWeekly;

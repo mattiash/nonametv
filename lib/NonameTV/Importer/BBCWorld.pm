@@ -15,7 +15,7 @@ use Encode;
 
 use NonameTV qw/MyGet norm Html2Xml/;
 use NonameTV::DataStore::Helper;
-use NonameTV::Log qw/info progress error logdie/;
+use NonameTV::Log qw/progress error/;
 
 use NonameTV::Importer::BaseDaily;
 

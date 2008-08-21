@@ -5,302 +5,197 @@ use warnings;
 
 =pod
 
-Importer for data from ExtremeSports. 
-One file per month downloaded from extreme.com site.
-The downloaded file is in xls-format.
+Import data from Excel files delivered via e-mail.
 
 Features:
 
 =cut
 
+use utf8;
+
 use DateTime;
 use Spreadsheet::ParseExcel;
-use Data::Dumper;
 use File::Temp qw/tempfile/;
 
-use NonameTV qw/MyGet norm AddCategory/;
-use NonameTV::Log qw/info progress error logdie 
+use NonameTV qw/norm AddCategory/;
+use NonameTV::Log qw/progress error 
                      log_to_string log_to_string_result/;
-use NonameTV::Config qw/ReadConfig/;
 
 use NonameTV::Importer::BaseFile;
 
 use base 'NonameTV::Importer::BaseFile';
 
 sub new {
-    my $proto = shift;
-    my $class = ref($proto) || $proto;
-    my $self  = $class->SUPER::new( @_ );
-    bless ($self, $class);
-print "1\n";
+  my $proto = shift;
+  my $class = ref($proto) || $proto;
+  my $self  = $class->SUPER::new( @_ );
+  bless ($self, $class);
 
-    $self->{grabber_name} = "ExtremeSports";
+  $self->{grabber_name} = "ExtremeSports";
 
-    defined( $self->{UrlRoot} ) or die "You must specify UrlRoot";
-
-    my $conf = ReadConfig();
-    $self->{FileStore} = $conf->{FileStore};
-
-    return $self;
+  return $self;
 }
 
-sub ImportContentFile
-{
+sub ImportContentFile {
   my $self = shift;
   my( $file, $chd ) = @_;
 
-  progress( "ExtremeSports: Processing $file" );
-
-  #my( $batch_id, $cref, $chd ) = @_;
-  my( $schedule_date , $start_time , $duration );
-  my( $event_title , $event_episode_title , $event_short_description );
-  my( $genre , $sub_genre , $production_year );
-  my( $episode_number , $episode_season , $episode );
-
   $self->{fileerror} = 0;
 
-  my $xmltvid=$chd->{xmltvid};
-
+  my $xmltvid = $chd->{xmltvid};
   my $channel_id = $chd->{id};
   my $ds = $self->{datastore};
 
-  progress( "ExtremeSports: Processing $file" );
+  # Only process .xls files.
+  return if( $file !~ /\.xls$/i );
+  progress( "ExtremeSports: $xmltvid: Processing $file" );
+
+  my %columns = ();
+  my $date;
+  my $currdate = "x";
+
+
+  my $batch_id = $xmltvid . "_" . $file;
+  $ds->StartBatch( $batch_id , $channel_id );
 
   my $oBook = Spreadsheet::ParseExcel::Workbook->Parse( $file );
 
-  my($iR, $oWkS, $oWkC);
+  # main loop
+  for(my $iSheet=0; $iSheet < $oBook->{SheetCount} ; $iSheet++) {
 
-  # There is only one Worksheet in the xls file
-  # The name of this sheet is in the format: Extreme_ENG_20060901-20060930
-  # We are now not checking against this name
+    my $oWkS = $oBook->{Worksheet}[$iSheet];
+    if( $oWkS->{Name} !~ /Extreme PE Eng/ ){
+      error( "ExtremeSports: $chd->{xmltvid}: Skipping worksheet: $oWkS->{Name}" );
+      next;
+    }
+    progress( "ExtremeSports: $chd->{xmltvid}: Processing worksheet: $oWkS->{Name}" );
 
-  # The columns in the xls file are:
-  # --------------------------------
-  # schedule_date start_time duration event_title event_episode_title event_long_description genre sub_genre
-  # actor_1 actor_2 actor_3 actor_4 actor_5 actor_6
-  # actor_role_1 actor_role_2 actor_role_3 actor_role_4 actor_role_5 actor_role_6
-  # directors presenters guests production distribution year_of_production country_of_production
-  # episode_number vps teletext teletex_lang live stereo two_tone two_tone_lang subtitle subtitle_lang
-  # encription original_language attached_programmes first_showing last_showing repeated_from channel_rating
-  # ori_title ori_episode_title version aka_title emissin_duration ori_language black_white colorised
-  # certification pilot regional silent dolby 16_9
+    # browse through rows
+    for(my $iR = $oWkS->{MinRow} ; defined $oWkS->{MaxRow} && $iR <= $oWkS->{MaxRow} ; $iR++) {
 
-  foreach my $oWkS (@{$oBook->{Worksheet}}) {
-    #print "--------- SHEET:", $oWkS->{Name}, "\n";
-
-    # start from row 1
-    #for(my $iR = $oWkS->{MinRow} ; defined $oWkS->{MaxRow} && $iR <= $oWkS->{MaxRow} ; $iR++) {
-    for(my $iR = 1 ; defined $oWkS->{MaxRow} && $iR <= $oWkS->{MaxRow} ; $iR++) {
-
-      # schedule_date (column 0)
-      $oWkC = $oWkS->{Cells}[$iR][0];
-      $schedule_date = $oWkC->Value;
-
-      # start_time (column 1)
-      $oWkC = $oWkS->{Cells}[$iR][1];
-      $start_time = $oWkC->Value;
-
-      # duration (column 2)
-      $oWkC = $oWkS->{Cells}[$iR][2];
-      $duration = $oWkC->Value;
-
-      # event_title (column 3)
-      $oWkC = $oWkS->{Cells}[$iR][3];
-      $event_title = $oWkC->Value;
-
-      # event_episode_title (column 4)
-      $oWkC = $oWkS->{Cells}[$iR][4];
-      if( $oWkC ){
-        $event_episode_title = $oWkC->Value;
-      }
-
-      # event_short_description (column 5)
-      $oWkC = $oWkS->{Cells}[$iR][5];
-      $event_short_description = $oWkC->Value;
-
-      # genre (column 8)
-      $oWkC = $oWkS->{Cells}[$iR][8];
-      $genre = $oWkC->Value;
-
-      # sub_genre (column 9)
-      $oWkC = $oWkS->{Cells}[$iR][9];
-      $sub_genre = $oWkC->Value;
-
-      # production_year (column 27)
-      $oWkC = $oWkS->{Cells}[$iR][27];
-      if( $oWkC ){
-        $production_year = $oWkC->Value;
-      }
-
-      # episode_number (column 29)
-      $oWkC = $oWkS->{Cells}[$iR][29];
-      $episode_number = $oWkC->Value;
-      $episode_season = 0;
-      $episode = undef;
-      if( $episode_number ){
-        if( ($episode_number > 0) and ($episode_season > 0) )
-        {
-          $episode = sprintf( "%d . %d .", $episode_season-1, $episode_number-1 );
+      # get the names of the columns from the 1st row
+      if( not %columns ){
+        for(my $iC = $oWkS->{MinCol} ; defined $oWkS->{MaxCol} && $iC <= $oWkS->{MaxCol} ; $iC++) {
+          $columns{norm($oWkS->{Cells}[$iR][$iC]->Value)} = $iC;
         }
-        elsif( $episode_number > 0 )
-        {
-          $episode = sprintf( ". %d .", $episode_number-1 );
-        }
+        next;
       }
 
-      # format start and end times
-      my( $start , $end ) = create_dt( $schedule_date , $start_time , $duration );
+      # date - column 0 ('schedule_date')
+      my $oWkC = $oWkS->{Cells}[$iR][$columns{'schedule_date'}];
+      next if( ! $oWkC );
 
-      next if ( ! $start_time );
+      $date = ParseDate( $oWkC->Value );
+      next if( ! $date );
 
-      progress("ExtremeSports: $chd->{xmltvid}: $start - $event_title");
+      # starttime - column ('start_time')
+      $oWkC = $oWkS->{Cells}[$iR][$columns{'start_time'}];
+      next if( ! $oWkC );
+      my $starttime = create_dt( $date , $oWkC->Value ) if( $oWkC->Value );
+      next if( ! $starttime );
+
+      # duration - column ('duration')
+      $oWkC = $oWkS->{Cells}[$iR][$columns{'duration'}];
+      next if( ! $oWkC );
+      my $endtime = create_dt_addduration( $starttime , $oWkC->Value ) if( $oWkC->Value );
+      next if( ! $endtime );
+
+      # title - column ('event_title')
+      $oWkC = $oWkS->{Cells}[$iR][$columns{'event_title'}];
+      next if( ! $oWkC );
+      my $title = $oWkC->Value if( $oWkC->Value );
+      next if( ! $title );
+
+      my $episodetitle = $oWkS->{Cells}[$iR][$columns{'event_episode_title'}]->Value if $oWkS->{Cells}[$iR][$columns{'event_episode_title'}];
+      my $description = $oWkS->{Cells}[$iR][$columns{'event_short_description'}]->Value if $oWkS->{Cells}[$iR][$columns{'event_short_description'}];
+      my $episodenumber = $oWkS->{Cells}[$iR][$columns{'episode_number'}]->Value if $oWkS->{Cells}[$iR][$columns{'episode_number'}];
+
+      progress("ExtremeSports: $xmltvid: $starttime - $title");
 
       my $ce = {
-        channel_id   => $chd->{id},
-        title        => norm($event_title),
-        subtitle     => norm($event_episode_title),
-        description  => norm($event_short_description),
-        start_time   => $start->ymd("-") . " " . $start->hms(":"),
-        end_time     => $end->ymd("-") . " " . $end->hms(":"),
+        channel_id   => $channel_id,
+        start_time   => $starttime->ymd("-") . " " . $starttime->hms(":"),
+        end_time     => $endtime->ymd("-") . " " . $endtime->hms(":"),
+        title        => $title,
       };
 
-      if( defined( $episode ) and ($episode =~ /\S/) )
-      {
-        $ce->{episode} = norm($episode);
+      # subtitle
+      if( $episodetitle ){
+        $ce->{subtitle} = $episodetitle;
+      }
+
+      # description
+      if( $description ){
+        $ce->{description} = $description;
+      }
+
+      # episode
+      if( $episodenumber ){
+        $ce->{episode} = sprintf( ". %d .", $episodenumber-1 );
         $ce->{program_type} = 'series';
       }
 
-      my($program_type, $category ) = $ds->LookupCat( "ExtremeSports", $genre );
-
-      AddCategory( $ce, $program_type, $category );
-
-      if( defined( $production_year ) and ($production_year =~ /(\d\d\d\d)/) )
-      {
-        $ce->{production_date} = "$1-01-01";
-      }
-
       $ds->AddProgramme( $ce );
+    }
 
-    } # next row
-  } # next worksheet
+    %columns = ();
 
-  unlink("/tmp/extremesports.xls");
+  }
 
-  # Success
-  return 1;
+  $ds->EndBatch( 1 );
+
+  return;
+}
+
+sub ParseDate
+{
+  my ( $text ) = @_;
+
+  my( $month, $day, $year ) = ( $text =~ /^(\d+)-(\d+)-(\d+)$/ );
+
+  return undef if( ! $year);
+
+  $year+= 2000 if $year< 100;
+
+  my $dt = DateTime->new( year   => $year,
+                          month  => $month,
+                          day    => $day,
+                          hour   => 0,
+                          minute => 0,
+                          second => 0,
+                          time_zone => 'Europe/Zagreb',
+                          );
+
+  $dt->set_time_zone( "UTC" );
+
+  return $dt;
 }
 
 sub create_dt
 {
-  my( $sd , $st , $du ) = @_;
+  my( $date, $time ) = @_;
 
-  # start time
-  my ( $month , $day , $year ) = split("-", $sd );
+  my( $hour, $min ) = ( $time =~ /^(\d+):(\d+)$/ );
 
-  my ( $hour , $minute ) = split(":", $st );
+  my $dt = $date->clone()->add( hours => $hour , minutes => $min );
 
-  if( not defined $year )
-  {
-    return undef;
-  }
-
-  my $sdt = DateTime->new( year   => 2000 + $year,
-                           month  => $month,
-                           day    => $day,
-                           hour   => $hour,
-                           minute => $minute,
-                           second => 0,
-                           time_zone => 'Europe/Zagreb',
-                           );
-  # times are in CET timezone in original XLS file
-  $sdt->set_time_zone( "UTC" );
-
-  # end time
-  my ( $hours , $minutes , $seconds ) = split(":", $du );
-
-  my $edt = DateTime->new( year   => 2000 + $year,
-                           month  => $month,
-                           day    => $day,
-                           hour   => $hour,
-                           minute => $minute,
-                           second => 0,
-                           time_zone => 'Europe/Zagreb',
-                           );
-  # times are in CET timezone in original XLS file
-  $edt->set_time_zone( "UTC" );
-  $edt->add( hours => $hours,
-             minutes => $minutes,
-             seconds => $seconds,
-             );
-
-  return( $sdt, $edt );
+  return $dt;
 }
 
-sub FetchDataFromSite
+sub create_dt_addduration
 {
-  my $self = shift;
-  my( $batch_id, $data ) = @_;
-print "1\n";
+  my( $firsttime, $duration ) = @_;
 
-  my @mondays = ( 0 , 31 , 28 , 31 , 30 , 31 , 30 , 31 , 31 , 30 , 31 , 30 , 31 );
+  my( $hour, $min, $sec ) = ( $duration =~ /^(\d+):(\d+):(\d+)$/ );
 
-  my( $year, $week ) = ($batch_id =~ /_(\d+)-(\d+)/);
+  my $dt = $firsttime->clone()->add( hours => $hour , minutes => $min , seconds => $sec );
 
-  # the url to fetch data from
-  # is in the format http://express.extreme.com/Files/Months/Listings/Extreme_ENG_20060901-20060930.xls
-  # UrlRoot = http://express.extreme.com/Files/Months/Listings/
-  # GrabberInfo = Extreme_ENG (this is the feed name)
-
-  # get current month and check leap year
-  my $nowmonth = DateTime->today->month();
-  my $is_leap  = DateTime->today->is_leap_year;
-  $mondays[2]++ if $is_leap;
-
-  #my $url = $self->{UrlRoot} . $data->{grabber_info} . "_" .
-  #          strftime( '%Y%m', localtime ) . "01-" . strftime( '%Y%m', localtime ) . $mondays[$nowmonth] .
-  #          ".xls";
-
-  #my $url = "http://express.extreme.com/Files/Months/Listings/Pan%20Euro%20Listings%20Oct%20English%20v7.xls";
-  #my $url = "http://express.extreme.com/Files/Months/Listings/Pan%20Euro%20Listings%20Oct%20English%20v7.xls";
-  #my $url = "http://express.extreme.com/Files/Months/Listings/Pan%20Euro%20Dec%20Listings%20English.xls";
-  #my $url = "http://newsroom.zonemedia.net/Scripts/FileDownload.asp?fName=Extreme%5FPE%5Flistings%5FENG%5FFeb%2Exls&fPath=D%3A%5CZONE%5FPRESS%5CFiles%5CSchedules%5CExtreme%5FPE%5Flistings%5FENG%5FFeb%2Exls";
-  #my $url = "http://newsroom.zonemedia.net/Scripts/FileDownload.asp?fName=Extreme+PE+Listing+March+V4%2Exls&fPath=D%3A%5CZONE%5FPRESS%5CFiles%5CSchedules%5CExtreme+PE+Listing+March+V4%2Exls";
-  #my $url = "http://newsroom.zonemedia.net/Scripts/FileDownload.asp?fName=Extreme+PE+Listing+April+V4%2Exls&fPath=D%3A%5CZONE%5FPRESS%5CFiles%5CSchedules%5CExtreme+PE+Listing+April+V4%2Exls";
-  #my $url = "http://newsroom.zonemedia.net/Scripts/FileDownload.asp?fName=Extreme+PE+May+v2%2Exls&fPath=D%3A%5CZONE%5FPRESS%5CFiles%5CSchedules%5CExtreme+PE+May+v2%2Exls";
-  #my $url = "http://newsroom.zonemedia.net/Scripts/FileDownload.asp?fName=Extreme+PE+Listings+June+2008+v2%2Exls&fPath=D%3A%5CZONE%5FPRESS%5CFiles%5CSchedules%5CExtreme+PE+Listings+June+2008+v2%2Exls";
-  my $url = "http://newsroom.zonemedia.net/Scripts/FileDownload.asp?fName=Extreme+PE+Listings+June+v4%2Exls&fPath=D%3A%5CZONE%5FPRESS%5CFiles%5CSchedules%5CExtreme+PE+Listings+June+v4%2Exls";
-  #my $url = "http://newsroom.zonemedia.net/Scripts/FileDownload.asp?fName=Extreme+August+Pan+Euro+%28English+%26+French%29+V1%2Exls&fPath=D%3A%5CZONE%5FPRESS%5CFiles%5CSchedules%5CExtreme+August+Pan+Euro+%28English+%26+French%29+V1%2Exls";
-
-  progress("ExtremeSports: Fetching xls file from $url");
-
-  my( $content, $code ) = MyGet( $url );
-
-  #############################################
-  # temporary only !!!
-  # todo: avoid using temp file
-  #############################################
-  my $filename = "/tmp/extremesports.xls";
-  open (FILE,">$filename");
-  print FILE $content;
-  close (FILE);
-
-  return( $content, $code );
+  return $dt;
 }
-
-#sub UpdateFiles {
-#  my( $self ) = @_;
-#
-#  foreach my $data ( @{$self->ListChannels()} ) {
-#    my $dir = $data->{grabber_info};
-#    my $xmltvid = $data->{xmltvid};
-#
-#    my $url = $self->{FtpRoot} . $dir . '/' . $self->{Filename};
-#print "URL: $url\n";
-#
-#    ftp_get( $url,
-#             $self->{FileStore} . '/' .
-#             $xmltvid . '/' . $self->{Filename} );
-#  }
-#}
 
 1;
+
+### Setup coding system
+## Local Variables:
+## coding: utf-8
+## End:

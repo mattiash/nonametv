@@ -4,7 +4,7 @@ use strict;
 
 use File::Copy;
 use IO::Scalar;
-use NonameTV::Log qw/info progress error log_to_string log_to_string_result/;
+use NonameTV::Log qw/progress error log_to_string log_to_string_result/;
 
 use Data::Dumper;
 
