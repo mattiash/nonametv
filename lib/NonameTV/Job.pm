@@ -43,7 +43,7 @@ BEGIN
 our @EXPORT_OK;
 
 use NonameTV::Factory qw/CreateDataStore/;
-use NonameTV::Log qw/log_to_string log_to_string_result/;
+use NonameTV::Log qw/StartLogSection EndLogSection/;
 
 use DateTime;
 
@@ -61,14 +61,15 @@ sub StartJob {
     name => $name,
     starttime => DateTime->now(),
     deleteafter => $ddt->ymd() . " " . $ddt->hms(),
-    h => log_to_string( 4 ),
-  }
+  };
+  
+  StartLogSection( $name );
 }
 
 sub EndJob {
   die if not defined $curr;
 
-  my $message = log_to_string_result( $curr->{h} );
+  my $message = EndLogSection( $name );
   
   delete $curr->{h};
 
