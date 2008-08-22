@@ -58,6 +58,8 @@ use warnings;
 use POSIX qw/strftime/;
 use IO::File;
 
+use Carp qw/confess/;
+
 use NonameTV::Config qw/ReadConfig/;
 
 BEGIN 
@@ -199,7 +201,7 @@ sub EndLogSection {
     return $result;
   }
   else { 
-    e "Mismatched LogSections, got $sectionname, expected $section[0][0]";
+    confess "Mismatched LogSections, got $sectionname, expected $section[0][0]";
   }
 }
 

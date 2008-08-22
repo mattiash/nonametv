@@ -1,5 +1,7 @@
 package NonameTV::Job;
 
+use strict;
+
 =pod
 
 StartJob( $type, $name, $deleteafter );
@@ -69,7 +71,7 @@ sub StartJob {
 sub EndJob {
   die if not defined $curr;
 
-  my $message = EndLogSection( $name );
+  my $message = EndLogSection( $curr->{name} );
   
   delete $curr->{h};
 
