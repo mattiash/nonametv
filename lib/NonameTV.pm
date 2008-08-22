@@ -622,14 +622,16 @@ Convert month name to month number
 sub MonthNumber {
   my( $monthname , $lang ) = @_;
 
-  my( @months_1, @months_2 );
+  my( @months_1, @months_2, @months_3 );
 
   if( $lang =~ /^en$/ ){
     @months_1 = qw/jan feb mar apr may jun jul aug sep oct nov dec/;
-    @months_2 = qw/january february march april may june july august september october november december/;
+    @months_2 = qw/janu febr marc apr may june july augu sept octo nov dec/;
+    @months_3 = qw/january february march april may june july august september october november december/;
   } elsif( $lang =~ /^hr$/ ){
-    @months_1 = qw/sijecanj veljaca ozujak travanj svibanj lipanj srpanj kolovoz rujan listopad studeni prosinac/;
-    @months_2 = qw/sijecnja veljace ozujka travnja svibnja lipnja srpnja kolovoza rujna listopada studenoga prosinca/;
+    @months_1 = qw/sij vel ozu tra svi lip srp kol ruj lis stu pro/;
+    @months_2 = qw/sijecanj veljaca ozujak travanj svibanj lipanj srpanj kolovoz rujan listopad studeni prosinac/;
+    @months_3 = qw/sijecnja veljace ozujka travnja svibnja lipnja srpnja kolovoza rujna listopada studenoga prosinca/;
   }
 
   my %monthnames = ();
@@ -640,6 +642,10 @@ sub MonthNumber {
 
   for( my $i = 0; $i < scalar(@months_2); $i++ ){
     $monthnames{$months_2[$i]} = $i+1;
+  }
+
+  for( my $i = 0; $i < scalar(@months_3); $i++ ){
+    $monthnames{$months_3[$i]} = $i+1;
   }
 
   my $month = $monthnames{lc $monthname};
