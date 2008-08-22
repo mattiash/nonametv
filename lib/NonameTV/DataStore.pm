@@ -173,7 +173,7 @@ sub EndBatch {
 
   if ( $success == 0 or $self->{batcherror} ) {
     $self->{sa}->DoSql("Rollback");
-    f "Rolling back changes";
+    d "Rolling back changes";
 
     if ( defined($log) ) {
       $self->SetBatchAbortMessage( $self->{currbatch}, $log );
