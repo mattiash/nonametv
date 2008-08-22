@@ -7,6 +7,7 @@ use lib "$FindBin::Bin/../lib";
 
 use NonameTV::Factory qw/CreateDataStore CreateDataStoreDummy 
                          CreateImporter InitHttpCache/;
+use NonameTV::Job qw/StartJob EndJob/;
 
 use Getopt::Long;
 
@@ -63,5 +64,14 @@ my $option_spec = $imp->{OptionSpec};
 
 my $res = GetOptions( \%opt, @{$option_spec} );
 
+my $jobname = $imp_name;
+if( defined( $opt{'short-grab'} ) and $opt{'short-grab'} ) {
+  $jobname .= "-short";
+}
+
+StartJob( "Import", $jobname, 10 );
+
 # Run importer
 $imp->Import( \%opt );
+
+EndJob();
