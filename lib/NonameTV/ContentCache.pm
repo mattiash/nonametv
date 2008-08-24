@@ -214,6 +214,14 @@ sub GetContent {
     return ($filtered_ref, undef);
   }
   else {
+    # No content was returned for this url.
+    # Clear the cache.
+    unlink( $self->Filename( $objectname, "state" ) ); 
+    unlink( $self->Filename( $objectname, "content", 
+                             $co->ContentExtension() ) );
+    unlink( $self->Filename( $objectname, "filtered", 
+                             $co->FilteredExtension() ) );
+
     return (undef, $geterror );
   }
 }
