@@ -133,9 +133,9 @@ inkluderar alla program på båda kanalerna.
 
 =cut
 
-$channel_data{ "kunskapbarn.svt.se" } =
+$channel_data{ "svtb-kunskap.svt.se" } =
   { 
-    "barnkanalen.svt.se" => 
+    "svtb.svt.se" => 
       [ 
         {
           day => 'all',
