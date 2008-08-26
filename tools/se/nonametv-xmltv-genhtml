@@ -1,11 +1,16 @@
 #!/usr/bin/perl -w
 
+use strict;
+
+use FindBin;
+use lib "$FindBin::Bin/../../lib";
+
+use NonameTV::Factory qw/CreateDataStore/;
+
 use File::Copy;
 
 # How large an empty xmltv-file can be.
 use constant EMPTY_SIZE => 140;
-
-use strict;
 
 if( scalar( @ARGV ) != 2 )
 {
@@ -31,6 +36,8 @@ EODOC
 
 my( $dir, $installdir ) = @ARGV;
 
+my $ds = CreateDataStore();
+
 # Build list of files
 my %files;
 
@@ -50,14 +57,18 @@ foreach my $file (keys %files)
   }
 }
 
-my %channels;
+my @channels;
 my %dates;
 
+my $ch = $ds->sa->LookupMany( "channels", { export => 1 }, ['xmltvid'] );
+
+foreach my $c (@{$ch}) {
+  push @channels, $c->{xmltvid};
+}
+ 
 foreach my $file (keys %files)
 {
   my( $channel, $date ) = split( "_", $file );
-
-  $channels{$channel} = 1;
   $dates{$date} = 1;
 }
 
@@ -93,7 +104,7 @@ print OUT << "EOD";
 
 EOD
 
-foreach my $channel (sort keys %channels)
+foreach my $channel (@channels)
 {
   print OUT << "EOD";
 <tr>
@@ -161,7 +172,7 @@ Background:
   
 EOHEAD
 
-foreach my $channel (sort keys %channels)
+foreach my $channel (@channels)
 {
   print OUT << "EOREC";
 <tr>
