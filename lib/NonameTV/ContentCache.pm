@@ -155,19 +155,19 @@ sub GetContent {
     }
   }
 
+  $self->TouchState( $objectname );
+  my $state = $self->GetState( $objectname );
+  if( $force ) {
+    $state->{contentmd5} = "xx";
+    $state->{filteredmd5} = "xx";
+    delete( $state->{error} );
+  }
+
   if( defined( $cref ) ) {
-    $self->TouchState( $objectname );
-    my $state = $self->GetState( $objectname );
-    
     my $currstate = {
       contentmd5 => "(unknown)",
       filteredmd5 => "(unknown)",
     };
-
-    if( $force ) {
-      $state->{contentmd5} = "xx";
-      $state->{filteredmd5} = "xx";
-    }
 
     # Calculate md5sum of content
     $currstate->{contentmd5} = $self->CalculateMD5( $cref );
@@ -215,8 +215,6 @@ sub GetContent {
   }
   else {
     # No content was returned for this url.
-    $self->TouchState( $objectname );
-    my $state = $self->GetState( $objectname );
 
     if( defined( $state->{error} ) and ($state->{error} eq $geterror) ) {
       # Same error as last time. No point in reporting 
