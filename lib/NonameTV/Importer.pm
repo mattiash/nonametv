@@ -249,6 +249,8 @@ sub SyncChannelsToDb {
   # 1. Convert Channels to _ChannelData. Order by xmltvid.
   # 2. Iterate through _ChannelData and FindGrabberChannels.
 
+  $self->{_ChannelData} = [];
+
   foreach my $xmltvid (sort keys %{$self->{Channels}}) {
     my $e = $self->{Channels}->{$xmltvid};
     my $ce = {
