@@ -14,6 +14,7 @@ Features:
 use utf8;
 
 use DateTime;
+use DateTime::Duration;
 use Spreadsheet::ParseExcel;
 use Data::Dumper;
 use File::Temp qw/tempfile/;
@@ -63,6 +64,8 @@ sub ImportContentFile {
 
   if( $ft eq FT_FLATXLS ){
     $self->ImportFlatXLS( $file, $channel_id, $xmltvid );
+  } elsif( $ft eq FT_GRIDXLS ){
+    $self->ImportGridXLS( $file, $channel_id, $xmltvid );
   } else {
     error( "Jetix: $xmltvid: Unknown file format of $file" );
   }
@@ -93,6 +96,18 @@ sub CheckFileFormat
     }
   }
 
+  # both Jetix and Jetix Play sometimes send
+  # xls files with grid
+  # which can differ from day to day or can
+  # contain the schema for the whole period
+  my $oWkS = $oBook->{Worksheet}[0];
+  my $oWkC = $oWkS->{Cells}[0][0];
+  if( $oWkC ){
+    if( $oWkC->Value =~ /Jetix.*EXCLUDING RUSSIA/ or $oWkC->Value =~ /Jetix Play/ ){
+      return FT_GRIDXLS;
+    }
+  }
+
   return FT_UNKNOWN;
 }
 
@@ -108,18 +123,18 @@ sub ImportFlatXLS
   my $date;
   my $currdate = "x";
 
-  progress( "Jetix: $xmltvid: Processing FlatXLS $file" );
+  progress( "Jetix FlatXLS: $xmltvid: Processing FlatXLS $file" );
 
   my $oBook = Spreadsheet::ParseExcel::Workbook->Parse( $file );
   if( not defined( $oBook ) ) {
-    error( "Jetix: $file: Failed to parse xls" );
+    error( "Jetix FlatXLS: $file: Failed to parse xls" );
     return;
   }
 
   for(my $iSheet=0; $iSheet < $oBook->{SheetCount} ; $iSheet++) {
 
     my $oWkS = $oBook->{Worksheet}[$iSheet];
-    progress("Jetix: $xmltvid: processing worksheet named '$oWkS->{Name}'");
+    progress("Jetix FlatXLS: $xmltvid: processing worksheet named '$oWkS->{Name}'");
 
     # read the rows with data
     for(my $iR = $oWkS->{MinRow} ; defined $oWkS->{MaxRow} && $iR <= $oWkS->{MaxRow} ; $iR++) {
@@ -191,10 +206,10 @@ sub ImportFlatXLS
         $dsh->StartDate( $date , "03:00" );
         $currdate = $date;
 
-        progress("Jetix: $xmltvid: Date is: $date");
+        progress("Jetix FlatXLS: $xmltvid: Date is: $date");
       }
 
-      progress( "Jetix XLS: $xmltvid: $time - $engtitle" );
+      progress( "Jetix FlatXLS: $xmltvid: $time - $engtitle" );
 
       my $ce = {
         channel_id => $channel_id,
@@ -202,6 +217,7 @@ sub ImportFlatXLS
         start_time => $time,
       };
 
+      $ce->{subtitle} = $episodetitle if $episodetitle;
       $ce->{description} = $synopsis if $synopsis;
 
       if( $genre ){
@@ -223,7 +239,7 @@ sub ImportFlatXLS
 }
 
 
-sub ImportGrid
+sub ImportGridXLS
 {
   my $self = shift;
   my( $file, $channel_id, $xmltvid ) = @_;
@@ -233,7 +249,7 @@ sub ImportGrid
 
   # Only process .xls files.
   return if( $file !~ /\.xls$/i );
-  progress( "Jetix: $xmltvid: Processing $file" );
+  progress( "Jetix GridXLS: $xmltvid: Processing $file" );
 
   my $coltime = 0;  # the time is in the column no. 0
   my $firstcol = 1;  # first column - monday
@@ -241,9 +257,7 @@ sub ImportGrid
   my $firstrow = 4;  # schedules are starting from this row
 
   my @shows = ();
-  my $firstdate;
-  my $date;
-  my $currdate = "x";
+  my ( $firstdate, $lastdate );
 
   my $oBook = Spreadsheet::ParseExcel::Workbook->Parse( $file );
 
@@ -251,15 +265,22 @@ sub ImportGrid
   for(my $iSheet=0; $iSheet < $oBook->{SheetCount} ; $iSheet++) {
 
     my $oWkS = $oBook->{Worksheet}[$iSheet];
-    progress( "Jetix: $xmltvid: Processing worksheet: $oWkS->{Name}" );
+    progress( "Jetix GridXLS: $xmltvid: Processing worksheet: $oWkS->{Name}" );
 
-    $firstdate = ParseFirstDate( $oWkS->{Name} );
-    progress( "Jetix: $xmltvid: First date in the sheet is " . $firstdate->ymd("-") );
+    ( $firstdate, $lastdate ) = ParsePeriod( $oWkS->{Name} );
+    progress( "Jetix GridXLS: $xmltvid: Importing data for period from " . $firstdate->ymd("-") . " to " . $lastdate->ymd("-") );
+    my $period = $lastdate - $firstdate;
+    my $spreadweeks = int( $period->delta_days / 7 ) + 1;
+    if( $period->delta_days > 6 ){
+      progress( "Jetix GridXLS: $xmltvid: Schedules scheme will spread accross $spreadweeks weeks" );
+    }
+
+    my $dayno = 0;
 
     # browse through columns
     for(my $iC = $firstcol ; $iC <= $lastcol ; $iC++) {
 
-#print "kolona $iC\n";
+#print "kolona $iC dayno $dayno\n";
 
       # browse through rows
       # start at row firstrow
@@ -285,17 +306,19 @@ sub ImportGrid
           start_time => $time,
           title => $title,
         };
-        @{$shows[$iC]} = () if not $shows[$iC];
-        push( @{$shows[$iC]} , $show );
+        @{$shows[$dayno]} = () if not $shows[$dayno];
+        push( @{$shows[$dayno]} , $show );
 
         # find to how many columns this column spreads to the right
         # all these days have the same show at this time slot
         for( my $c = $iC + 1 ; $c <= $lastcol ; $c++) {
+          my $dayoff = $dayno + ($c - $iC);
+#print "dayoff $dayoff\n";
           $oWkC = $oWkS->{Cells}[$iR][$c];
           if( ! $oWkC->Value ){
-#print "spread $c " . $show->{title} . "\n";
-            @{$shows[$c]} = () if not $shows[$c];
-            push( @{$shows[$c]} , $show );
+#print "spread " . $show->{title} . "\n";
+            @{$shows[ $dayno + ($c - $iC) ]} = () if not $shows[ $dayno + ($c - $iC) ];
+            push( @{$shows[ $dayno + ($c - $iC) ]} , $show );
           } else {
             last;
           }
@@ -304,18 +327,47 @@ sub ImportGrid
 
       } # next row
 #print "zadnje u koloni $iC\n----------------\n";
+
+      $dayno++;
+
     } # next column
+
+    if( $spreadweeks ){
+      @shows = SpreadWeeks( $spreadweeks, @shows );
+    }
+
+    FlushData( $dsh, $firstdate, $lastdate, $channel_id, $xmltvid, @shows );
 
   } # next worksheet
 
-  # insert data to database
-  for( my $i = 1 ; $i <= 7 ; $i++ ){
-#print "DAN: $i\n";
-    $date = SetDate( $firstdate , $i );
+  return;
+}
+
+sub SpreadWeeks {
+  my ( $spreadweeks, @shows ) = @_;
+
+  for( my $w = 1; $w < $spreadweeks; $w++ ){
+    for( my $d = 0; $d < 7; $d++ ){
+      my @tmpshows = @{$shows[$d]};
+      @{$shows[ ( $w * 7 ) + $d ]} = @tmpshows;
+    }
+  }
+
+  return @shows;
+}
+
+sub FlushData {
+  my ( $dsh, $firstdate, $lastdate, $channel_id, $xmltvid, @shows ) = @_;
+
+  my $date = $firstdate;
+  my $currdate = "x";
+
+  # run through the shows
+  foreach my $dayshows ( @shows ) {
 
     if( $date ) {
 
-      progress( "Jetix: $xmltvid: Date is " . $date->ymd("-") );
+      progress( "Jetix GridXLS: $xmltvid: Date is " . $date->ymd("-") );
 
       if( $date ne $currdate ) {
 
@@ -326,13 +378,13 @@ sub ImportGrid
         my $batch_id = "${xmltvid}_" . $date->ymd("-");
         $dsh->StartBatch( $batch_id, $channel_id );
         $dsh->StartDate( $date->ymd("-") , "06:00" );
-        $currdate = $date;
+        $currdate = $date->clone;
       }
     }
 
-    foreach my $s ( @{$shows[$i]} ) {
+    foreach my $s ( @{$dayshows} ) {
 
-      #progress( "Jetix: $xmltvid: $s->{start_time} - $s->{title}" );
+      progress( "Jetix GridXLS: $xmltvid: $s->{start_time} - $s->{title}" );
 
       my $ce = {
         channel_id => $channel_id,
@@ -342,47 +394,73 @@ sub ImportGrid
 
       $dsh->AddProgramme( $ce );
 
-    } # next show
+    } # next show in the day
+
+    # increment the date
+    $date->add( days => 1 );
 
   } # next day
 
   $dsh->EndBatch( 1 );
 
-  return;
 }
 
-sub ParseFirstDate {
+sub ParsePeriod {
   my ( $text ) = @_;
 
-#print ">$text<\n";
-  my( $day, $monthname );
+print ">$text<\n";
+  my( $day1, $monthname1 );
+  my( $day2, $monthname2 );
 
   # format '28th July - 3rd August'
-  if( $text =~ /^\s*\d+(st|nd|rd|th)\s*\S+\s*-\d+(st|nd|rd|th)\s*\S+\s*$/i ){
+  #if( $text =~ /^\s*\d+(st|nd|rd|th)\s+\S+\s*-\d+(st|nd|rd|th)\s+\S+\s*$/i ){
+  if( $text =~ /^\s*\d+(st|nd|rd|th)\s+\S+\s*-\s*\d+(st|nd|rd|th)\s+\S+\s*$/i ){
 #print "f1\n";
-    ( $day, $monthname ) = ( $text =~ /^\s*(\d+)\S+\s*(\S+)\s*-\d+\S+\s*\S+/ );
+    ( $day1, $monthname1, $day2, $monthname2 ) = ( $text =~ /^\s*(\d+)\S+\s+(\S+)\s*-\s*(\d+)\S+\s+(\S+)\s*$/ );
   }
+
   # format '4th - 10th Aug'
   elsif( $text =~ /^\s*\d+(st|nd|rd|th)\s*-\s*\d+(st|nd|rd|th)\s+\S+\s*$/i ){
 #print "f2\n";
-    ( $day, $monthname ) = ( $text =~ /^\s*(\d+)\S+\s*-\s*\d+\S+\s+(\S+)\s*$/ );
+    ( $day1, $day2, $monthname1 ) = ( $text =~ /^\s*(\d+)\S+\s*-\s*(\d+)\S+\s+(\S+)\s*$/ );
+    $monthname2 = $monthname1;
   }
-#print "DAY: $day\n";
-#print "MON: $monthname\n";
+
+  # format 'JETIX PLAY 7th July to 3rd Aug'
+  elsif( $text =~ /^\s*JETIX PLAY\s+\d+(st|nd|rd|th)\s+\S+\s+to\s+\d+(st|nd|rd|th)\s+\S+\s*$/i ){
+#print "f3\n";
+    ( $day1, $monthname1, $day2, $monthname2 ) = ( $text =~ /^\s*JETIX PLAY\s+(\d+)\S+\s+(\S+)\s+to\s+(\d+)\S+\s+(\S+)\s*$/ );
+  }
+
+#print "DAY1: $day1\n";
+#print "MON1: $monthname1\n";
+#print "DAY2: $day2\n";
+#print "MON2: $monthname2\n";
 
   my $year = 2008;
 
-  my $month = MonthNumber( $monthname , 'en' );
+  my $month1 = MonthNumber( $monthname1 , 'en' );
 
-  my $dt = DateTime->new( year   => $year,
-                          month  => $month,
-                          day    => $day,
+  my $dt1 = DateTime->new( year   => $year,
+                          month  => $month1,
+                          day    => $day1,
                           hour   => 0,
                           minute => 0,
                           second => 0,
-                          time_zone => 'Europe/Zagreb',
+                          time_zone => 'Europe/London',
                           );
-  return $dt;
+
+  my $month2 = MonthNumber( $monthname2 , 'en' );
+
+  my $dt2 = DateTime->new( year   => $year,
+                          month  => $month2,
+                          day    => $day2,
+                          hour   => 0,
+                          minute => 0,
+                          second => 0,
+                          time_zone => 'Europe/London',
+                          );
+  return ( $dt1, $dt2 );
 }
 
 sub SetDate {

@@ -125,7 +125,7 @@ sub ImportContent
 
       $title = decode("windows-1250", $title);
 
-      progress("Bnet: $xmltvid: $time - $title");
+      progress("PinkTV: $xmltvid: $time - $title");
 
       my $ce = {
         channel_id => $channel_id,
