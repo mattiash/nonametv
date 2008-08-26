@@ -215,14 +215,22 @@ sub GetContent {
   }
   else {
     # No content was returned for this url.
-    # Clear the cache.
-    unlink( $self->Filename( $objectname, "state" ) ); 
-    unlink( $self->Filename( $objectname, "content", 
-                             $co->ContentExtension() ) );
-    unlink( $self->Filename( $objectname, "filtered", 
-                             $co->FilteredExtension() ) );
+    $self->TouchState( $objectname );
+    my $state = $self->GetState( $objectname );
 
-    return (undef, $geterror );
+    if( defined( $state->{error} ) and ($state->{error} eq $geterror) ) {
+      # Same error as last time. No point in reporting 
+      # it again.
+      return (undef, undef);
+    }
+    else {
+      unlink( $self->Filename( $objectname, "content", 
+			       $co->ContentExtension() ) );
+      unlink( $self->Filename( $objectname, "filtered", 
+			       $co->FilteredExtension() ) );
+      $self->SetState( $objectname, { error => $geterror } );
+      return (undef, $geterror );
+    }
   }
 }
 
