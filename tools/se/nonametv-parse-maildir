@@ -9,7 +9,7 @@ use Mail::Box;
 use Mail::Box::Manager;
 
 use File::Temp qw/tempdir/;
-use File::Copy qw/move/;
+use File::Copy qw/move copy/;
 use File::Basename;
 
 use Getopt::Long;
@@ -172,6 +172,12 @@ sub process_parts
     my $md5 = md5sum( $filename );
     my $oldmd5 = $ds->sa->Lookup( 'files', { channelid => $chd->{id},
                                          filename => $name }, 'md5sum' );
+
+    if( defined( $oldmd5 ) and not -f "$dir/name" ) {
+      verbose( "Restoring $dir/$name" );
+      sleep( 1 );
+      copy( $filename, "$dir/$name" );
+    }
 
     # Check if the file exists even though there was no record in the db.
     # This is the case if the importer has not been run since the file
