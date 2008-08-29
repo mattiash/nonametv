@@ -140,7 +140,7 @@ sub ParseData
       $type = T_TIME;
     }
     elsif( ($start, $stop, $text2) = 
-           ( $text =~ /^(\d+[:\.]\d+)\s*\-\s*(\d+[\.]:\d+)\s+(.*)$/ ) )
+           ( $text =~ /^(\d+[:\.]\d+)\s*\-\s*(\d+[\.:]\d+)\s+(.*)$/ ) )
     {
       $type = T_TIME_TITLE;
     }
