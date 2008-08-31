@@ -4,21 +4,52 @@ package NonameTV::Log;
 
 Logging-module for NonameTV.
 
-SEVERITIES
+=head2 USAGE
 
-d Debug
-p Progress
-w Warning. Execution of this task continued anyway. 
-f Fatal error. Execution of this task aborted.
+The logging functions all take a string as argument. This string is
+prefixed with the chosen severity and current context and appended to
+the different logging outputs that are available.
 
-StartLogSection( "batchname" );
-my( $messages, $highestpriority ) = EndLogSection( "batchname" );
+The following logging functions are available:
 
-StartLogSection can be nested. The outer LogSection will NOT catch messages
-that are caught by the inner LogSection.
+ d Debug
+ p Progress
+ w Warning. Execution of this task continued anyway. 
+ f Fatal error. Execution of this task will be aborted.
+
+For example:
+
+  if( $errorcondition ) {
+    w "Something wrong";
+  }
+
+  if( $downloadfailed ) {
+    f "Download failed";
+    return 0;
+  }
+
+
+=head3 LogSection
+
+StartLogSection/EndLogSection can be used to catch all warnings and
+fatal errors in a section of code. This is for example used to catch
+log messages emitted for each batch in an importer.
+
+ 
+  StartLogSection( "batchname" );
+    (do stuff that may emit log messages)
+  my( $messages, $highestpriority ) = EndLogSection( "batchname" );
+
+
+StartLogSection can be nested. An outer LogSection will NOT catch
+messages that are caught by the inner LogSection.
+
+=head2 LOGGING OUTPUTS
 
 STDERR
-Each message is prefixed with the severity and the current LogSection name.
+
+Each message is prefixed with the severity and the current LogSection
+name.
 
 Normally, severities Warning and Fatal are printed.
 
@@ -41,14 +72,6 @@ messages are prefixed with the severity.
 Compatibility functions
 
 LogSection is not appended to these strings.
-debug not available
-info not available
-progress => p
-error => w
-logdie not available
-
-log_to_string not available
-log_to_string_result not available
 
 =cut
 
