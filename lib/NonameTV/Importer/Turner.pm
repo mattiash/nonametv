@@ -7,7 +7,7 @@ use warnings;
 
 Channels: Boomerang, TCM, Cartoon Network
 
-Import data from Word-files delivered via e-mail.  Each day
+Import data from Word or XLS files delivered via e-mail.  Each day
 is handled as a separate batch.
 
 Features:
@@ -19,6 +19,7 @@ use utf8;
 use POSIX;
 use DateTime;
 use XML::LibXML;
+use Spreadsheet::ParseExcel;
 #use Text::Capitalize qw/capitalize_title/;
 
 use NonameTV qw/MyGet Wordfile2Xml Htmlfile2Xml norm AddCategory MonthNumber/;
@@ -51,14 +52,30 @@ sub ImportContentFile
 
   $self->{fileerror} = 0;
 
-  my $xmltvid = $chd->{xmltvid};
   my $channel_id = $chd->{id};
+  my $xmltvid = $chd->{xmltvid};
   my $dsh = $self->{datastorehelper};
   my $ds = $self->{datastore};
   
+  if( $file =~ /\.doc$/i ){
+    $self->ImportDOC( $file, $channel_id, $xmltvid );
+  } elsif( $file =~ /\.xls$/i ){
+    $self->ImportXLS( $file, $channel_id, $xmltvid );
+  }
+
+  return;
+}
+
+sub ImportDOC
+{
+  my $self = shift;
+  my( $file, $channel_id, $xmltvid ) = @_;
+
+  my $dsh = $self->{datastorehelper};
+
   return if( $file !~ /\.doc$/i );
 
-  progress( "Turner: $xmltvid: Processing $file" );
+  progress( "Turner DOC: $xmltvid: Processing $file" );
   
   my $doc;
   $doc = Wordfile2Xml( $file );
@@ -99,7 +116,7 @@ sub ImportContentFile
 
       if( $date ) {
 
-        progress("Turner: $xmltvid: Date is $date");
+        progress("Turner DOC: $xmltvid: Date is $date");
 
         if( $date ne $currdate ) {
 
@@ -125,7 +142,7 @@ sub ImportContentFile
       my( $time, $title ) = ParseShow( $text );
 
       my $ce = {
-        channel_id => $chd->{id},
+        channel_id => $channel_id,
         start_time => $time,
         title => norm($title),
       };
@@ -144,6 +161,113 @@ sub ImportContentFile
 
     }
   }
+
+  # save last day if we have it in memory
+  FlushDayData( $xmltvid, $dsh , @ces );
+
+  $dsh->EndBatch( 1 );
+    
+  return;
+}
+
+sub ImportXLS
+{
+  my $self = shift;
+  my( $file, $channel_id, $xmltvid ) = @_;
+
+  my $dsh = $self->{datastorehelper};
+  my $ds = $self->{datastore};
+
+  return if( $file !~ /\.xls$/i );
+
+  progress( "Turner XLS: $xmltvid: Processing $file" );
+
+  my $oBook = Spreadsheet::ParseExcel::Workbook->Parse( $file );
+  if( not defined( $oBook ) ) {
+    error( "Turner XLS: Failed to parse xls" );
+    return;
+  }
+
+  my $date;
+  my $currdate = "x";
+  my @ces = ();
+
+  for(my $iSheet=0; $iSheet < $oBook->{SheetCount} ; $iSheet++){
+
+    my $oWkS = $oBook->{Worksheet}[$iSheet];
+    if( $oWkS->{Name} =~ /Header/ ){
+      progress("Turner XLS: $xmltvid: skipping worksheet '$oWkS->{Name}'");
+      next;
+    }
+    progress("Turner XLS: $xmltvid: processing worksheet '$oWkS->{Name}'");
+
+    # the time is in the column 0
+    # the columns from 1 to 7 are each for one day
+    for(my $iC = 1 ; $iC <= 7  ; $iC++) {
+
+      # get the date from row 1
+      my $oWkC = $oWkS->{Cells}[1][$iC];
+      next if( ! $oWkC );
+      $date = ParseDateXLS( $oWkC->Value );
+      next if( ! $date );
+
+      if( $date ne $currdate ) {
+
+        if( $currdate ne "x" ) {
+          # save last day if we have it in memory
+          FlushDayData( $xmltvid, $dsh , @ces );
+          $dsh->EndBatch( 1 );
+          @ces = ();
+        }
+
+        my $batch_id = $xmltvid . "_" . $date;
+        $dsh->StartBatch( $batch_id , $channel_id );
+        $dsh->StartDate( $date , "06:00" );
+        $currdate = $date;
+
+        progress("Turner XLS: $xmltvid: Date is: $date");
+      }
+
+      my $time;
+      my $title = "x";
+      my $description;
+
+      # browse through the shows
+      # starting at row 2
+      for(my $iR = 2 ; defined $oWkS->{MaxRow} && $iR <= $oWkS->{MaxRow} ; $iR++){
+
+        my $oWkC = $oWkS->{Cells}[$iR][$iC];
+        next if( ! $oWkC );
+        my $text = $oWkC->Value;
+
+        if( isTimeAndTitle( $text ) ){
+
+          # check if we have something
+          # in the memory already
+          if( $title ne "x" ){
+
+            my $ce = {
+              channel_id   => $channel_id,
+              start_time => $time,
+              title => norm($title),
+            };
+
+            $ce->{description} = $description if $description;
+
+            push( @ces , $ce );
+            $description = "";
+          }
+
+          ( $time, $title ) = ParseTimeAndTitle( $text );
+
+        } else {
+          $description .= $text;
+        }
+
+      } # next row
+
+    } # next column
+  } # next sheet
 
   # save last day if we have it in memory
   FlushDayData( $xmltvid, $dsh , @ces );
@@ -187,6 +311,19 @@ sub ParseDate {
   return sprintf( '%d-%02d-%02d', $year, $month, $day );
 }
 
+sub ParseDateXLS {
+  my( $text ) = @_;
+
+  return undef if ( ! $text );
+
+  # format '8-1-08'
+  my( $month, $day, $year ) = ( $text =~ /^(\d+)-(\d+)-(\d+)$/ );
+
+  $year += 2000 if( $year < 100 );
+
+  return sprintf( '%d-%02d-%02d', $year, $month, $day );
+}
+
 sub isShow {
   my ( $text ) = @_;
 
@@ -204,6 +341,25 @@ sub ParseShow {
   my( $text ) = @_;
 
   my( $hour, $min, $title ) = ( $text =~ /^UK\s+\S*\s*\d+\.\d+\s+\/\s+CET\s+(\d+)\.(\d+)\s+\/\s+CAT\s+\d+\.\d+\s+(.*)/ );
+
+  return( $hour . ":" . $min , $title );
+}
+
+sub isTimeAndTitle {
+  my ( $text ) = @_;
+
+  # format '09:10 The Addams Family'
+  if( $text =~ /^\d{2}:\d{2}\s+\S+/ ){
+    return 1;
+  }
+
+  return 0;
+}
+
+sub ParseTimeAndTitle {
+  my( $text ) = @_;
+
+  my( $hour, $min, $title ) = ( $text =~ /^(\d{2}):(\d{2})\s+(.*)$/ );
 
   return( $hour . ":" . $min , $title );
 }

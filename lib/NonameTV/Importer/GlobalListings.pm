@@ -162,7 +162,7 @@ sub ImportFull
     if( ( $lang =~ /^en$/ and $text =~ /^(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\s*\d+\s*\D+\s*\d+$/i )
       or ( $lang =~ /^en$/ and $text =~ /^(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\s*\D+\s*\d+,\s*\d+$/i )
       or ( $lang =~ /^se$/ and $text =~ /^(måndag|tisdag|onsdag|torsdag|fredag|lördag|söndag)\s*\d+\s*\D+\s*\d+$/i )
-      or ( $lang =~ /^hr$/ and $text =~ /^(ponedjeljak|utorak|srijeda|èvrtak|petak|subota|nedjelja)\s*\d+\.\s*\D+\s*\d+\.$/i )
+      or ( $lang =~ /^hr$/ and $text =~ /^(ponedjeljak|utorak|srijeda|èvrtak|petak|subota|nedjelja)\s*\d+\.\s*\D+\,*\s*\d+\.$/i )
     )
     {
       $type = T_DATE;
@@ -579,8 +579,8 @@ sub parse_date
   } elsif( $lang =~ /^hr$/ ){
 
       # try 'utorak 1. srpnja 2008.'
-      if( $text =~ /^(ponedjeljak|utorak|srijeda|èvrtak|petak|subota|nedjelja)\s*\d+\.\s*\D+\s*\d+\.$/i ){
-        ( $weekday, $day, $monthname, $year ) = ( $text =~ /^(\S+?)\s*(\d+)\.\s*(\S+?)\s*(\d+)\.$/ );
+      if( $text =~ /^(ponedjeljak|utorak|srijeda|èvrtak|petak|subota|nedjelja)\s*\d+\.\s*\D+\,*\s*\d+\.$/i ){
+        ( $weekday, $day, $monthname, $year ) = ( $text =~ /^(\S+?)\s*(\d+)\.\s*(\S+?)\,*\s*(\d+)\.$/ );
       }
 
   }

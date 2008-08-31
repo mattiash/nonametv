@@ -81,11 +81,11 @@ sub ImportContentFile
 
     last if $type eq 'eof';
 
-#print "--------------------------------------------------------------------\n";
-#print "type: $type\n";
-#print "arg: $arg\n";
-#print "param: $param\n";
-#print "--------------------------------------------------------------------\n";
+print "--------------------------------------------------------------------\n";
+print "type: $type\n";
+print "arg: $arg\n";
+print "param: $param\n";
+print "--------------------------------------------------------------------\n";
 
     if( ( $type eq 'control' ) and ( $arg eq 'par' ) ){
       $textfull = 1;
@@ -119,12 +119,13 @@ sub ImportContentFile
       #my $cod = Locale::Recode->new( from => 'ISO-8859-2' , to => 'UTF-8' );
       #$cod->recode( $text );
 
-#print "TEXT: $text\n";
+print "TEXT: $text\n";
 
       if( $text eq "" ) {
         # blank line
       }
       elsif( isDate( $text ) ) { # the token with the date in format 'MONDAY 12.4.'
+print "DATE\n";
 
         $date = ParseDate( $text );
 
@@ -174,7 +175,8 @@ sub isDate {
   my ( $text ) = @_;
 
   # format 'Wednesday, August 13'
-  if( $text =~ /^(monday|tuesday|wednesday|thursday|friday|saturday|sunday),\s*\S+\s*\d+$/i ){
+  # format 'Monday, September, 1'
+  if( $text =~ /^\s*(monday|tuesday|wednesday|thursday|friday|saturday|sunday),\s*\S+,*\s*\d+$/i ){
     return 1;
   }
 
@@ -196,7 +198,7 @@ sub ParseDate {
   my( $text ) = @_;
 
   # format 'Wednesday, August 13'
-  my( $dayname, $monthname, $day ) = ( $text =~ /^(\S+),\s*(\S+)\s*(\d+)$/ );
+  my( $dayname, $monthname, $day ) = ( $text =~ /^\s*(\S+),\s*(\S+),*\s*(\d+)$/ );
 
   my $year = DateTime->today->year();
   my $month = MonthNumber( $monthname , "en" );
