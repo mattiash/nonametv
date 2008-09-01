@@ -17,7 +17,7 @@ use DateTime;
 use Spreadsheet::ParseExcel;
 use File::Temp qw/tempfile/;
 
-use NonameTV qw/norm AddCategory/;
+use NonameTV qw/norm AddCategory MonthNumber/;
 use NonameTV::Log qw/progress error 
                      log_to_string log_to_string_result/;
 
@@ -76,8 +76,11 @@ sub ImportContentFile {
         }
         next;
       }
+#foreach my $col (%columns) {
+#print "$col\n";
+#}
 
-      # date - column 0 ('Datum')
+      # date - column 0 ('Date')
       my $oWkC = $oWkS->{Cells}[$iR][$columns{'Date'}];
       next if( ! $oWkC );
 
@@ -99,19 +102,19 @@ sub ImportContentFile {
       next if( ! $oWkC );
       my $title = $oWkC->Value if( $oWkC->Value );
 
-      my $type = $oWkS->{Cells}[$iR][$columns{'Type'}]->Value if $oWkS->{Cells}[$iR][$columns{'Type'}];
-      my $prodno = $oWkS->{Cells}[$iR][$columns{'Prod No.'}]->Value if $oWkS->{Cells}[$iR][$columns{'Prod No.'}];
-      my $episodetitle = $oWkS->{Cells}[$iR][$columns{'Episode Title'}]->Value if $oWkS->{Cells}[$iR][$columns{'Episode Title'}];
-      my $slotlen = $oWkS->{Cells}[$iR][$columns{'Slot Len'}]->Value if $oWkS->{Cells}[$iR][$columns{'Slot Len'}];
-      my $epino = $oWkS->{Cells}[$iR][$columns{'Epi No.'}]->Value if $oWkS->{Cells}[$iR][$columns{'Epi No.'}];
-      my $cert = $oWkS->{Cells}[$iR][$columns{'Cert'}]->Value if $oWkS->{Cells}[$iR][$columns{'Cert'}];
-      my $genre = $oWkS->{Cells}[$iR][$columns{'Genre'}]->Value if $oWkS->{Cells}[$iR][$columns{'Genre'}];
-      my $year = $oWkS->{Cells}[$iR][$columns{'Year'}]->Value if $oWkS->{Cells}[$iR][$columns{'Year'}];
-      my $director = $oWkS->{Cells}[$iR][$columns{'Director'}]->Value if $oWkS->{Cells}[$iR][$columns{'Director'}];
-      my $actor = $oWkS->{Cells}[$iR][$columns{'Actor'}]->Value if $oWkS->{Cells}[$iR][$columns{'Actor'}];
-      my $episodesynopsis = $oWkS->{Cells}[$iR][$columns{'Episode Synopsis'}]->Value if $oWkS->{Cells}[$iR][$columns{'Episode Synopsis'}];
-      my $minisynopsis = $oWkS->{Cells}[$iR][$columns{'Mini Synopsis'}]->Value if $oWkS->{Cells}[$iR][$columns{'Mini Synopsis'}];
-      my $synopsis = $oWkS->{Cells}[$iR][$columns{'Synopsis'}]->Value if $oWkS->{Cells}[$iR][$columns{'Synopsis'}];
+#      my $type = $oWkS->{Cells}[$iR][$columns{'Type'}]->Value if $oWkS->{Cells}[$iR][$columns{'Type'}];
+#      my $prodno = $oWkS->{Cells}[$iR][$columns{'Prod No.'}]->Value if $oWkS->{Cells}[$iR][$columns{'Prod No.'}];
+#      my $episodetitle = $oWkS->{Cells}[$iR][$columns{'Episode Title'}]->Value if $oWkS->{Cells}[$iR][$columns{'Episode Title'}];
+#      my $slotlen = $oWkS->{Cells}[$iR][$columns{'Slot Len'}]->Value if $oWkS->{Cells}[$iR][$columns{'Slot Len'}];
+#      my $epino = $oWkS->{Cells}[$iR][$columns{'Epi No.'}]->Value if $oWkS->{Cells}[$iR][$columns{'Epi No.'}];
+#      my $cert = $oWkS->{Cells}[$iR][$columns{'Cert'}]->Value if $oWkS->{Cells}[$iR][$columns{'Cert'}];
+#      my $genre = $oWkS->{Cells}[$iR][$columns{'Genre'}]->Value if $oWkS->{Cells}[$iR][$columns{'Genre'}];
+#      my $year = $oWkS->{Cells}[$iR][$columns{'Year'}]->Value if $oWkS->{Cells}[$iR][$columns{'Year'}];
+#      my $director = $oWkS->{Cells}[$iR][$columns{'Director'}]->Value if $oWkS->{Cells}[$iR][$columns{'Director'}];
+#      my $actor = $oWkS->{Cells}[$iR][$columns{'Actor'}]->Value if $oWkS->{Cells}[$iR][$columns{'Actor'}];
+#      my $episodesynopsis = $oWkS->{Cells}[$iR][$columns{'Episode Synopsis'}]->Value if $oWkS->{Cells}[$iR][$columns{'Episode Synopsis'}];
+#      my $minisynopsis = $oWkS->{Cells}[$iR][$columns{'Mini Synopsis'}]->Value if $oWkS->{Cells}[$iR][$columns{'Mini Synopsis'}];
+#      my $synopsis = $oWkS->{Cells}[$iR][$columns{'Synopsis'}]->Value if $oWkS->{Cells}[$iR][$columns{'Synopsis'}];
 
       progress("Hallmark: $xmltvid: $starttime - $title");
 
@@ -122,47 +125,47 @@ sub ImportContentFile {
         title        => $title,
       };
 
-      # subtitle
-      if( $episodetitle ){
-        $ce->{subtitle} = $episodetitle;
-      }
+#      # subtitle
+#      if( $episodetitle ){
+#        $ce->{subtitle} = $episodetitle;
+#      }
 
-      # description
-      if( $synopsis ){
-        $ce->{description} = $synopsis;
-      }
+#      # description
+#      if( $synopsis ){
+#        $ce->{description} = $synopsis;
+#      }
 
-      # episode
-      if( $epino ){
-        $ce->{episode} = sprintf( ". %d .", $epino-1 );
-        $ce->{program_type} = 'series';
-      }
+#      # episode
+#      if( $epino ){
+#        $ce->{episode} = sprintf( ". %d .", $epino-1 );
+#        $ce->{program_type} = 'series';
+#      }
 
-      # type
-      if( $type ){
-        $ce->{program_type} = $type;
-      }
+#      # type
+#      if( $type ){
+#        $ce->{program_type} = $type;
+#      }
 
-      # genre
-      if( $genre ){
-        my($program_type, $category ) = $ds->LookupCat( "Hallmark_genre", $genre );
-        AddCategory( $ce, $program_type, $category );
-      }
+#      # genre
+#      if( $genre ){
+#        my($program_type, $category ) = $ds->LookupCat( "Hallmark_genre", $genre );
+#        AddCategory( $ce, $program_type, $category );
+#      }
 
-      # production year
-      if( $year ){
-        $ce->{production_date} = "$year-01-01";
-      }
+#      # production year
+#      if( $year ){
+#        $ce->{production_date} = "$year-01-01";
+#      }
 
-      # directors
-      if( $director ){
-        $ce->{directors} = $director;
-      }
+#      # directors
+#      if( $director ){
+#        $ce->{directors} = $director;
+#      }
 
-      # actors
-      if( $actor ){
-        $ce->{actors} = $actor;
-      }
+#      # actors
+#      if( $actor ){
+#        $ce->{actors} = $actor;
+#      }
 
       $ds->AddProgramme( $ce );
     }
@@ -180,25 +183,30 @@ sub ParseDate
 {
   my ( $dinfo ) = @_;
 
-  my( $day, $monthname, $year ) = ( $dinfo =~ /\d+\s+(\d+)\s+(\S+)\s+(\d+)/ );
+  my( $day, $monthname, $year );
+
+  # format '033 03 Jul 2008'
+  if( $dinfo =~ /^\d+\s+\d+\s+\S+\s+\d+$/ ){
+    ( $day, $monthname, $year ) = ( $dinfo =~ /^\d+\s+(\d+)\s+(\S+)\s+(\d+)$/ );
+
+  # format '05-sep-08'
+  } elsif( $dinfo =~ /^\d+-(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)-\d+$/i ){
+    ( $day, $monthname, $year ) = ( $dinfo =~ /^(\d+)-(\S+)-(\d+)$/ );
+  }
+
+  else {
+    return undef;
+  }
 
   return undef if( ! $year);
 
   $year+= 2000 if $year< 100;
 
-  my $mon;
-  $mon = 1 if( $monthname=~ /Jan/i );
-  $mon = 2 if( $monthname=~ /Feb/i );
-  $mon = 3 if( $monthname=~ /Mar/i );
-  $mon = 4 if( $monthname=~ /Apr/i );
-  $mon = 5 if( $monthname=~ /May/i );
-  $mon = 6 if( $monthname=~ /Jun/i );
-  $mon = 7 if( $monthname=~ /Jul/i );
-  $mon = 8 if( $monthname=~ /Aug/i );
-  $mon = 9 if( $monthname=~ /Sep/i );
-  $mon = 10 if( $monthname=~ /Oct/i );
-  $mon = 11 if( $monthname=~ /Nov/i );
-  $mon = 12 if( $monthname=~ /Dec/i );
+  my $mon = MonthNumber( $monthname, "en" );
+
+#print "DAY: $day\n";
+#print "MON: $mon\n";
+#print "YEA: $year\n";
 
   my $dt = DateTime->new( year   => $year,
                           month  => $mon,

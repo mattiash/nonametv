@@ -111,10 +111,10 @@ sub ImportDOC
     # all after 'TJEDNI PROGRAM'
     last if( $text =~ /^Produced by EBS New Media/ );
 
-#print ">$text<\n";
+print ">$text<\n";
 
     if( isDate( $text ) ) { # the line with the date in format 'FRIDAY 1 AUGUST 2008 - ZONE REALITY EMEA 1'
-
+print "DATUM--------------------------------------\n";
       $date = ParseDate( $text );
 
       if( $date ) {
@@ -141,6 +141,7 @@ sub ImportDOC
       undef $description;
 
     } elsif( isShow( $text ) ) {
+print "SHOW--------------------------------------\n";
 
       my( $time, $title, $genre ) = ParseShow( $text );
 
@@ -163,6 +164,7 @@ sub ImportDOC
       push( @ces , $ce );
 
     } else {
+print "OPIS--------------------------------------\n";
 
         # the last element is the one to which
         # this description belongs to

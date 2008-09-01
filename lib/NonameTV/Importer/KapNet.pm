@@ -135,7 +135,7 @@ sub ImportContentFile {
             channel_id   => $channel_id,
             start_time   => $lasttime->ymd("-") . " " . $lasttime->hms(":"),
             end_time     => $newtime->ymd("-") . " " . $newtime->hms(":"),
-            title        => $lasttitle,
+            title        => norm($lasttitle),
             description  => $lastdescription,
           };
 

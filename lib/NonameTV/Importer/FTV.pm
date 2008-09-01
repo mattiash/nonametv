@@ -179,7 +179,8 @@ sub FetchDataFromSite
   #my $url = $self->{UrlRoot} . "/d18/" . "Grid-EPGMay_2008Hotbird-Yamal.xls";
   #my $url = $self->{UrlRoot} . "/d19/Grid-_EPG_June_2008_Hotbird-Yamal.xls";
   #my $url = $self->{UrlRoot} . "/d20/GRID-EPG_July_2008_HotBird-Yamal1.xls";
-  my $url = $self->{UrlRoot} . "/d20/GRID-EPG-AUGUST2008HotBird-Yamal.xls";
+  #my $url = $self->{UrlRoot} . "/d20/GRID-EPG-AUGUST2008HotBird-Yamal.xls";
+  my $url = $self->{UrlRoot} . "/d21/Grid_EPG_September_2008_HotBird-ABS1-UK.xls";
 
 
   progress("Fetching xls file from $url");

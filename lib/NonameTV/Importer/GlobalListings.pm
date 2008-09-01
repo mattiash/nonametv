@@ -21,7 +21,7 @@ use utf8;
 use DateTime;
 use XML::LibXML;
 
-use NonameTV qw/MyGet File2Xml norm/;
+use NonameTV qw/MyGet File2Xml norm MonthNumber/;
 use NonameTV::DataStore::Helper;
 use NonameTV::DataStore::Updater;
 use NonameTV::Log qw/progress error logdie/;
@@ -73,6 +73,8 @@ sub ImportContentFile
   my $schedlang = $chd->{sched_lang};
   progress( "GlobalListings: $chd->{xmltvid}: Setting schedules language to '$schedlang'" );
 
+  return if( $file !~ /\.doc$/i );
+
   if( $file =~ /\bhigh/i )
   {
     error( "GlobalListings: $chd->{xmltvid} Skipping highlights file $file" );
@@ -91,12 +93,10 @@ sub ImportContentFile
   }
 
   if( $file =~ /amend/i ) {
-    $self->ImportAmendments( $file, $doc, 
-                             $channel_xmltvid, $channel_id, $schedlang );
+    $self->ImportAmendments( $file, $doc, $channel_xmltvid, $channel_id, $schedlang );
   }
   else {
-    $self->ImportFull( $file, $doc, 
-                       $channel_xmltvid, $channel_id, $schedlang );
+    $self->ImportFull( $file, $doc, $channel_xmltvid, $channel_id, $schedlang );
   }
 }
 
@@ -155,18 +155,13 @@ sub ImportFull
     my( $text ) = norm( $div->findvalue( './/text()' ) );
     next if $text eq "";
 
-    #print "Text: $text\n";
+#print ">$text<\n";
 
     my $type;
 
-    if( ( $lang =~ /^en$/ and $text =~ /^(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\s*\d+\s*\D+\s*\d+$/i )
-      or ( $lang =~ /^en$/ and $text =~ /^(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\s*\D+\s*\d+,\s*\d+$/i )
-      or ( $lang =~ /^se$/ and $text =~ /^(måndag|tisdag|onsdag|torsdag|fredag|lördag|söndag)\s*\d+\s*\D+\s*\d+$/i )
-      or ( $lang =~ /^hr$/ and $text =~ /^(ponedjeljak|utorak|srijeda|èvrtak|petak|subota|nedjelja)\s*\d+\.\s*\D+\,*\s*\d+\.$/i )
-    )
-    {
+    if( isDate( $text, $lang ) ){
       $type = T_DATE;
-      $date = parse_date( $text, $lang );
+      $date = ParseDate( $text, $lang );
       if( not defined $date ) {
 	error( "GlobalListings: $channel_xmltvid: $filename Invalid date $text" );
       }
@@ -236,7 +231,7 @@ sub ImportFull
       else
       {
 	extract_extra_info( $ce );
-        progress("GlobalListings: $channel_xmltvid: $start - $title");
+        #progress("GlobalListings: $channel_xmltvid: $start - $title");
 	$dsh->AddProgramme( $ce );
 	$ce = {};
 	$state = ST_FDATE;
@@ -344,7 +339,7 @@ sub ImportAmendments
           if( $self->{process_batch} ); 
       }
 
-      $date = parse_date( $text, $lang );
+      $date = ParseDate( $text, $lang );
       if( not defined $date ) {
 	error( "GlobalListings: $channel_xmltvid: $filename Invalid date $text" );
       }
@@ -531,32 +526,45 @@ sub extract_extra_info
   return;
 }
 
+sub isDate {
+  my ( $text, $lang ) = @_;
 
-sub parse_date
+  #
+  # English formats
+  #
+
+  # format 'Friday 1st August 2008'
+  if( $text =~ /^(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\s+\d+\S*\s+\S+\s+\d+$/i ){
+    return 1;
+  }
+
+  # format 'Sunday 1 June 2008'
+  if( $text =~ /^(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\s*\d+\s*\D+\s*\d+$/i ){
+    return 1;
+  }
+
+  # format 'Tuesday July 01, 2008'
+  if( $text =~ /^(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\s*\D+\s*\d+,\s*\d+$/i ){
+    return 1;
+  } 
+
+  #
+  # Croatian formats
+  #
+
+  # format 'utorak 1(.) srpnja 2008(.)'
+  if( $text =~ /^(ponedjeljak|utorak|srijeda|èvrtak|petak|subota|nedjelja)\s*\d+\.*\s*\D+\,*\s*\d+\.*$/i ){
+    return 1;
+  }
+
+  return 0;
+}
+
+sub ParseDate
 {
   my( $text, $lang ) = @_;
 
-  my @months = qw/januari februari mars april maj juni juli augusti
-      september oktober november december/;
-
-  my @months_eng = qw/january february march april may june july
-    august september october november december/;
-  
-  my @months_hr = qw/sijecnja veljace ozujka travnja svibnja lipnja srpnja
-    kolovoza rujna listopada studenoga prosinca/;
-  
-  my %monthnames = ();
-  for( my $i = 0; $i < scalar(@months); $i++ ) 
-  { $monthnames{$months[$i]} = $i+1;}
-
-  for( my $i = 0; $i < scalar(@months_eng); $i++ ) 
-  { $monthnames{$months_eng[$i]} = $i+1;}
-  
-  for( my $i = 0; $i < scalar(@months_hr); $i++ ) 
-  { $monthnames{$months_hr[$i]} = $i+1;}
-  
   my( $weekday, $day, $monthname, $year );
-  my $month;
 
   if( $lang =~ /^en$/ ){
 
@@ -579,10 +587,12 @@ sub parse_date
   } elsif( $lang =~ /^hr$/ ){
 
       # try 'utorak 1. srpnja 2008.'
-      if( $text =~ /^(ponedjeljak|utorak|srijeda|èvrtak|petak|subota|nedjelja)\s*\d+\.\s*\D+\,*\s*\d+\.$/i ){
-        ( $weekday, $day, $monthname, $year ) = ( $text =~ /^(\S+?)\s*(\d+)\.\s*(\S+?)\,*\s*(\d+)\.$/ );
+      if( $text =~ /^(ponedjeljak|utorak|srijeda|èvrtak|petak|subota|nedjelja)\s*\d+\.*\s*\D+\,*\s*\d+\.*$/i ){
+        ( $weekday, $day, $monthname, $year ) = ( $text =~ /^(\S+?)\s*(\d+)\.*\s*(\S+?)\,*\s*(\d+)\.*$/ );
       }
 
+  } else {
+    return undef;
   }
   
 #print "WDAY: >$weekday<\n";
@@ -590,8 +600,7 @@ sub parse_date
 #print "MON : >$monthname<\n";
 #print "YEAR: >$year<\n";
 
-  $month = $monthnames{lc $monthname};
-#print "MONT: $month\n";
+  my $month = MonthNumber( $monthname, $lang );
 
   return undef unless defined( $month );
 
