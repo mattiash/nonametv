@@ -195,6 +195,10 @@ sub ImportData {
 	$res = -1;
       }
 
+      # Make sure that all error-messages have been produced before
+      # EndLogSection.
+      $dsh->CommitPrograms();
+
       my $message = EndLogSection( $batch_id );
       $dsh->EndBatch( $res, $message );
     }

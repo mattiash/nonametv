@@ -144,6 +144,17 @@ sub ClearBatch {
   delete $self->{batcherror};
 }
 
+=item CommitPrograms
+
+CommitPrograms is a dummy method in this class. It only actually does
+something in NonameTV::DataStore::Helper.
+
+=cut
+
+sub CommitPrograms {
+  my $self = shift;
+}
+
 =item EndBatch
 
 Called by an importer to signal the end of a batch of updates.
