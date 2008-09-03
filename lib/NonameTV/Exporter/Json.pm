@@ -14,7 +14,7 @@ use NonameTV::Exporter;
 use NonameTV::Language qw/LoadLanguage/;
 use NonameTV qw/norm/;
 
-use NonameTV::Log qw/info progress error logdie/;
+use NonameTV::Log qw/progress error/;
 
 use base 'NonameTV::Exporter';
 
@@ -304,7 +304,7 @@ sub create_dt
   ( $year, $month, $day ) =
     ( $str =~ /^(\d{4})-(\d{2})-(\d{2})$/ );
 
-  logdie( "Xmltv: Unknown time format $str" )
+  die( "Xmltv: Unknown time format $str" )
     unless defined $day;
 
   return DateTime->new(
@@ -410,8 +410,6 @@ sub CreateWriter
   my $path = $self->{Root};
   my $filename =  $xmltvid . "_" . $date . ".js";
 
-  info( "Json: $filename" );
-
   $self->{writer_filename} = $filename;
   $self->{writer_entries} = 0;
   # Make sure that writer_entries is always true if we don't require data
@@ -434,7 +432,7 @@ sub CloseWriter
   delete $self->{writer_filename};
 
   open( my $fh, ">$path$filename.new")
-    or logdie( "Json: cannot write to $path$filename.new" );
+    or die( "Json: cannot write to $path$filename.new" );
 
   my $odata = { 
     jsontv => { 
@@ -675,7 +673,6 @@ sub RemoveOld
       # Compare date-strings.
       if( $date lt $keep_date )
       {
-        info( "Json: Removing $file" );
         unlink( $file );
         $removed++;
       }

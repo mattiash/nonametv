@@ -16,7 +16,7 @@ use NonameTV qw/norm/;
 
 use XMLTV::ValidateFile qw/LoadDtd ValidateFile/;
 
-use NonameTV::Log qw/info progress error logdie/;
+use NonameTV::Log qw/progress error/;
 
 use base 'NonameTV::Exporter';
 
@@ -325,7 +325,7 @@ sub create_dt
   ( $year, $month, $day ) =
     ( $str =~ /^(\d{4})-(\d{2})-(\d{2})$/ );
 
-  logdie( "Xmltv: Unknown time format $str" )
+  die( "Xmltv: Unknown time format $str" )
     unless defined $day;
 
   return DateTime->new(
@@ -431,8 +431,6 @@ sub CreateWriter
   my $path = $self->{Root};
   my $filename =  $xmltvid . "_" . $date . ".xml";
 
-  info( "Xmltv: $filename" );
-
   $self->{writer_filename} = $filename;
   $self->{writer_entries} = 0;
   # Make sure that writer_entries is always true if we don't require data
@@ -441,7 +439,7 @@ sub CreateWriter
     if( ($date gt $self->{LastRequiredDate}) or $chd->{empty_ok} );
 
   open( my $fh, '>:encoding(' . $self->{Encoding} . ')', "$path$filename.new")
-    or logdie( "Xmltv: cannot write to $path$filename.new" );
+    or die( "Xmltv: cannot write to $path$filename.new" );
 
   my $w = new XMLTV::Writer( encoding => $self->{Encoding},
                              OUTPUT   => $fh );
@@ -734,13 +732,10 @@ sub ExportChannelList
     $outfile = "$self->{Root}channels.xml";
   }
   open( my $fh, '>:encoding(' . $self->{Encoding} . ')', $outfile )
-    or logdie( "Xmltv: cannot write to $outfile" );
+    or die( "Xmltv: cannot write to $outfile" );
 
   $odoc->toFH( $fh, 1 );
   close( $fh );
-
-#  $odoc->toFile( "$self->{Root}channels.xml", 1 )
-#      or logdie( "Xmltv: cannot write to $self->{Root}channels.xml" );
 
   if( $self->{KeepXml} ){
     progress( "Keeping $outfile" );
@@ -775,7 +770,6 @@ sub RemoveOld
       # Compare date-strings.
       if( $date lt $keep_date )
       {
-        info( "Xmltv: Removing $file" );
         unlink( $file );
         $removed++;
       }

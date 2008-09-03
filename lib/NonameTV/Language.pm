@@ -9,7 +9,6 @@ Languages module for NonameTV.
 use strict;
 use warnings;
 
-use NonameTV::Log qw/logdie/;
 BEGIN 
 {
   use Exporter   ();
@@ -32,8 +31,8 @@ sub LoadLanguage
                               { language => $lang, module => $module } );
   if( not defined( $sth ) )
   {
-     logdie( "No strings found in database for language $lang, " .
-             "module $module." );
+     die( "No strings found in database for language $lang, " .
+	  "module $module." );
     return;
   }
 

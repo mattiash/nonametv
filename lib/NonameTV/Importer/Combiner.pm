@@ -253,7 +253,7 @@ use NonameTV qw/MyGet ParseXmltv/;
 
 use NonameTV::Importer::BaseDaily;
 
-use NonameTV::Log qw/info progress error logdie/;
+use NonameTV::Log qw/progress error/;
 
 use NonameTV::Importer;
 
@@ -295,7 +295,7 @@ sub Import
   foreach my $data (@{$self->ListChannels()} ) {
     if( not exists( $channel_data{$data->{xmltvid} } ) )
     {
-      logdie( "Unknown channel '$data->{xmltvid}'" );
+      die "Unknown channel '$data->{xmltvid}'";
     }
 
     if( $p->{'force-update'} and not $p->{'short-grab'} )
@@ -313,8 +313,6 @@ sub Import
       $dt=$dt->add( days => $days );
 
       my $batch_id = $data->{xmltvid} . "_" . $dt->ymd('-');
-
-      info( "$batch_id: Fetching data" );
 
       my %ch_content;
       my $changed = 0;

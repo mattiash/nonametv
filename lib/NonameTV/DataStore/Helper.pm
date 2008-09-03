@@ -214,7 +214,7 @@ sub AddProgramme
 
   if( not defined( $self->{curr_date} ) )
   {
-    logdie( "Helper $self->{batch_id}: You must call StartDate before AddProgramme" );
+    confess "Helper $self->{batch_id}: You must call StartDate before AddProgramme";
   }
 
   my $start_time = $self->create_dt( $self->{curr_date}, 

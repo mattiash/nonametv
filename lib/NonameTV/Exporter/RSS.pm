@@ -14,7 +14,7 @@ use NonameTV::Exporter;
 use NonameTV::Language qw/LoadLanguage/;
 use NonameTV qw/norm/;
 
-use NonameTV::Log qw/info progress error logdie/;
+use NonameTV::Log qw/progress error/;
 
 use base 'NonameTV::Exporter';
 
@@ -294,7 +294,7 @@ sub create_dt
   ( $year, $month, $day ) =
     ( $str =~ /^(\d{4})-(\d{2})-(\d{2})$/ );
 
-  logdie( "RSS: Unknown time format $str" )
+  die( "RSS: Unknown time format $str" )
     unless defined $day;
 
   return DateTime->new(
@@ -592,7 +592,6 @@ sub RemoveOld
       # Compare date-strings.
       if( $date lt $keep_date )
       {
-        info( "RSS: Removing $file" );
         unlink( $file );
         $removed++;
       }
