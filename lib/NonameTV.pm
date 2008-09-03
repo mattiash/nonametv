@@ -522,6 +522,7 @@ sub ParseXmltv {
     my $cat2 = $pgm->findvalue( 'category[2]' );
     my $episode = $pgm->findvalue( 'episode-num[@system="xmltv_ns"]' );
     my $production_date = $pgm->findvalue( 'date' );
+    my $url = $pgm->findvalue( 'url' );
 
     my $aspect = $pgm->findvalue( 'video/aspect' );
 
@@ -552,6 +553,10 @@ sub ParseXmltv {
 
     if( $episode =~ /\S/ ) {
       $e{episode} = $episode;
+    }
+
+    if( $url =~ /\S/ ) {
+      $e{url} = $url;
     }
 
     if( $cat1 =~ /^[a-z]/ ) {
