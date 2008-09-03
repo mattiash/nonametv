@@ -32,7 +32,7 @@ use POSIX qw/floor/;
 
 use NonameTV qw/Word2Xml Html2Xml ParseXml norm AddCategory ParseDescCatSwe/;
 use NonameTV::DataStore::Helper;
-use NonameTV::Log qw/info progress error/;
+use NonameTV::Log qw/progress error/;
 
 BEGIN {
     use Exporter   ();
@@ -288,7 +288,7 @@ sub extract_extra_info
   }
   else
   {
-    info( "$ctag: No category found for $ce->{title}" );
+#    info( "$ctag: No category found for $ce->{title}" );
   }
 
   #

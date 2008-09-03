@@ -9,7 +9,7 @@ use POSIX qw/floor/;
 
 use NonameTV qw/MyGet Word2Xml norm/;
 use NonameTV::DataStore::Helper;
-use NonameTV::Log qw/info progress error/;
+use NonameTV::Log qw/progress error/;
 
 use NonameTV::Importer::Kanal5_util qw/ParseData/;
 use NonameTV::Importer::BaseWeekly;
@@ -91,7 +91,7 @@ sub FetchCategories
 
   my $cat = {};
 
-  info( "$batch_id: Fetching categories" );
+#  info( "$batch_id: Fetching categories" );
 
   my( $content, $code ) = $self->FetchData( $batch_id , $data );
             
