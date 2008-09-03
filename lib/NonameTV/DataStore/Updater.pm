@@ -161,7 +161,7 @@ sub AddProgramme
 
 #  print "AP: $data->{title}\n";
 
-  die( "You must call StartBatchUpdate before AddProgramme"
+  die "You must call StartBatchUpdate before AddProgramme"
     unless exists $self->{currbatch};
 
   return if $self->{batcherror};
