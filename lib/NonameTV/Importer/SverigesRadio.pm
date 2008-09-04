@@ -18,6 +18,7 @@ use utf8;
 
 use DateTime;
 use XML::LibXML;
+use Encode qw/encode/;
 
 use NonameTV qw/ParseXml ParseXmltv/;
 use NonameTV::DataStore::Helper;
@@ -36,7 +37,22 @@ sub new {
 
   $self->{grabber_name} = "SverigesRadio";
 
+  push @{$self->{OptionSpec}}, "list-channels";
+  $self->{OptionDefaults}->{'list-channels'} = 0;
+
   return $self;
+}
+
+sub InitiateDownload {
+  my $self = shift;
+  my( $p ) = @_;
+
+  if( $p->{'list-channels'} ) {
+    $self->ListChannels();
+    exit;
+  }
+
+  return undef;
 }
 
 sub FilterContent {
@@ -95,7 +111,6 @@ sub ImportContent {
   return 1;
 }
 
-
 sub Object2Url {
   my $self = shift;
   my( $objectname, $chd ) = @_;
@@ -107,36 +122,7 @@ sub Object2Url {
   return( $url, undef );
 }
 
-=pod
-
-Compare the list of channels in the database to the set of channels
-in the sourcefile that have programmes.
-
-=cut
-
-sub UpdateChannelList {
-  my $self = shift;
-
-  my $dbch = $self->LoadChannelsFromDb();
-  my $sitech = $self->LoadChannelsFromSite();
-
-}
-
-sub LoadChannelsFromDb {
-  my $self = shift;
-
-  my $ds = $self->{datastore};
-
-  my $res = {};
-
-  foreach my $ch (@{$self->ListChannels()}) {
-    $res->{$ch->{xmltvid}} = $ch;
-  }
-
-  return $res;
-}
-
-sub LoadChannelsFromSite {
+sub ListChannels {
   my $self = shift;
 
   my $cc = $self->{cc};
@@ -162,8 +148,12 @@ sub LoadChannelsFromSite {
     $channelname->{$id} = $name;
   }
 
-  $ns = $doc->find( '//programme' );
-  foreach my $ch ($ns->get_nodelist()) {
+  foreach my $id (sort keys %{$channelname}) {
+    my $count = $doc->findvalue( "count(//programme[\@channel='$id'])" );
+    next if $count == 0;
+
+    print encode( "utf-8", 
+		  "        '$id' => [ '$channelname->{$id}', '' 'sv', 0]\n" );
   }
 }
 
