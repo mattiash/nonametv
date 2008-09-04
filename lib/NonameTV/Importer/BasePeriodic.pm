@@ -141,7 +141,7 @@ sub ImportData {
 
   my $h = log_to_string( 4 );
 
-  my $error1 = $self->InitiateDownload();
+  my $error1 = $self->InitiateDownload( $p );
   error( $error1 ) if defined $error1;
 
   my $dsh = exists( $self->{datastorehelper} ) ? $self->{datastorehelper} : 
