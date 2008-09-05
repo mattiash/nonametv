@@ -67,9 +67,14 @@ LOGSECTION
 
 EndLogSection returns all messages with priority warning and fatal
 that have been issued since the matching call to StartLogSection. The
-messages are prefixed with the severity.
+messages are prefixed with the severity. In array context,
+EndLogSection returns the messages and an integer describing the
+highest log level used in the section.
 
 Compatibility functions
+
+error
+progress
 
 LogSection is not appended to these strings.
 
@@ -207,21 +212,32 @@ sub writelog {
   if( $level >= WARNING ) {
     $section[0][1] .= "$levelstr: $message\n";
   }
+
+  if( $level > $section[0][2] ) {
+    $section[0][2] = $level;
+  }
 }
 
 sub StartLogSection {
   my( $sectionname ) = @_;
 
-  unshift @section, [ $sectionname, "" ];
+  unshift @section, [ $sectionname, "", 0 ];
 }
 
 sub EndLogSection {
   my( $sectionname ) = @_;
 
   if( $sectionname eq $section[0][0] ) {
-    my $result = $section[0][1];
+    my $logstring = $section[0][1];
+    my $logstring_highest = $section[0][2];
     shift @section;
-    return $result;
+
+    if( wantarray ) {
+      return ($logstring, $logstring_highest);
+    }
+    else {
+      return $logstring;
+    }
   }
   else { 
     confess "Mismatched LogSections, got $sectionname, expected $section[0][0]";
