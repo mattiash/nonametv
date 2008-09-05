@@ -7,15 +7,12 @@ use Getopt::Long;
 
 use NonameTV::Job qw/StartJob EndJob/;
 use NonameTV::Log qw/error/;
-use NonameTV::Factory qw/InitLog/;
 use NonameTV::Config qw/ReadConfig/;
 
 my $opt = { verbose      => 0,
 	  };
 
 my $res = GetOptions( $opt, qw/verbose/ );
-
-InitLog();
 
 foreach my $server (@ARGV) {
   StartJob( "Upload", $server, 10 );

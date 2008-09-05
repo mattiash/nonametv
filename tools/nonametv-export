@@ -6,11 +6,9 @@ use FindBin;
 use lib "$FindBin::Bin/../lib";
 
 use NonameTV::Factory qw/CreateDataStore CreateDataStoreDummy 
-                         CreateExporter InitLog InitHttpCache/;
+                         CreateExporter InitHttpCache/;
 
 use Getopt::Long;
-
-InitLog();
 
 my $ds = CreateDataStore();
 
