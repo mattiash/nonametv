@@ -19,7 +19,7 @@ use XML::LibXML;
 use HTTP::Date;
 
 use NonameTV qw/ParseXml norm AddCategory/;
-use NonameTV::Log qw/progress error/;
+use NonameTV::Log qw/w f progress error/;
 
 use NonameTV::Importer::BaseWeekly;
 
@@ -147,7 +147,7 @@ sub ImportContent
     my $start = $self->create_dt( $sc->findvalue( './@calendarDate' ) );
     if( not defined $start ) {
       w "Invalid starttime '" 
-	  . $sc->findvalue( './@calendarDate' ) . "'. Skipping." );
+	  . $sc->findvalue( './@calendarDate' ) . "'. Skipping.";
       next;
     }
 
