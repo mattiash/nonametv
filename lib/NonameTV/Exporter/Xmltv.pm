@@ -126,7 +126,7 @@ EOH
     return;
   }
 
-  NonameTV::Log::verbose( $p->{verbose}, $p->{quiet} );
+  NonameTV::Log::SetVerbosity( $p->{verbose}, $p->{quiet} );
 
   if( $p->{'export-channels'} )
   {
