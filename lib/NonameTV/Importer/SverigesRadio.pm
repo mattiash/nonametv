@@ -48,7 +48,7 @@ sub InitiateDownload {
   my( $p ) = @_;
 
   if( $p->{'list-channels'} ) {
-    $self->ListChannels();
+    $self->PrintChannelList();
     exit;
   }
 
@@ -122,7 +122,7 @@ sub Object2Url {
   return( $url, undef );
 }
 
-sub ListChannels {
+sub PrintChannelList {
   my $self = shift;
 
   my $cc = $self->{cc};
@@ -153,7 +153,7 @@ sub ListChannels {
     next if $count == 0;
 
     print encode( "utf-8", 
-		  "        '$id' => [ '$channelname->{$id}', '' 'sv', 0]\n" );
+      "        '$id' => [ '$channelname->{$id}', '', 'sv', 0],\n" );
   }
 }
 
