@@ -697,7 +697,7 @@ sub ExportChannelList
   {
     $query .= "AND chgroup=\'$channelgroup\' ";
   }
-  $query .= "ORDER BY xmltvid";
+  $query .= "ORDER BY display_name";
   my( $res, $sth ) = $ds->sa->Sql( $query );
 
   while( my $data = $sth->fetchrow_hashref() )
