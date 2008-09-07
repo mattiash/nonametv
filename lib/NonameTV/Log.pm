@@ -124,7 +124,7 @@ my $file_level = PROGRESS;
 
 
 my $logfile;
-my @section = [ undef, "" ];
+my @section = [ undef, "", 0 ];
 
 BEGIN {
   my $conf = ReadConfig();
