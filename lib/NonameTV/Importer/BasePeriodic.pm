@@ -209,7 +209,7 @@ sub ImportOld {
   my $self = shift;
   my( $p ) = @_;
 
-  NonameTV::Log::verbose( $p->{verbose}, $p->{quiet} );
+  NonameTV::Log::SetVerbosity( $p->{verbose}, $p->{quiet} );
 
   my $ds = $self->{datastore};
 
