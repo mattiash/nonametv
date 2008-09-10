@@ -111,7 +111,7 @@ sub DoImportContentFile {
 
   my $ds = $self->{datastore};
 
-  StartLogSection( $self->{grabber_name} . " $file" );
+  StartLogSection( $self->{grabber_name} . " $file", 1 );
 
   $ds->StartTransaction();
   

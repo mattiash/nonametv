@@ -36,7 +36,7 @@ fatal errors in a section of code. This is for example used to catch
 log messages emitted for each batch in an importer.
 
  
-  StartLogSection( "batchname" );
+  StartLogSection( "batchname", 1 );
     (do stuff that may emit log messages)
   my( $messages, $highestpriority ) = EndLogSection( "batchname" );
 
@@ -201,7 +201,10 @@ sub writelog {
 
   my $time = strftime( '%F %T', localtime );
 
-  if( $level >= $stderr_level ) {
+  # Print to STDERR if the verbosity level says so
+  # or if the current logsection is not captured.
+  if( ($level >= $stderr_level) or 
+      ($level >= WARNING and not $section[0][3]) ) {
     print STDERR "$levelstr: $pmessage\n";
   }
 
@@ -219,9 +222,12 @@ sub writelog {
 }
 
 sub StartLogSection {
-  my( $sectionname ) = @_;
+  my( $sectionname, $captured ) = @_;
 
-  unshift @section, [ $sectionname, "", 0 ];
+  confess "You need to specify $captured to StartLogSection"
+      if not defined $captured;
+
+  unshift @section, [ $sectionname, "", 0, $captured ];
 }
 
 sub EndLogSection {

@@ -65,7 +65,7 @@ sub StartJob {
     deleteafter => $ddt->ymd() . " " . $ddt->hms(),
   };
   
-  StartLogSection( $name );
+  StartLogSection( $name, 1 );
 }
 
 sub EndJob {

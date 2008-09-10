@@ -138,10 +138,10 @@ sub ImportData {
 
   SetVerbosity( $p->{verbose}, $p->{quiet} );
 
-  StartLogSection( $self->{grabber_name} );
+  StartLogSection( $self->{grabber_name}, 1 );
 
   my $error1 = $self->InitiateDownload( $p );
-  e( $error1 ) if defined $error1;
+  f $error1 if defined $error1;
 
   my $dsh = exists( $self->{datastorehelper} ) ? $self->{datastorehelper} : 
       $self->{datastore};
@@ -151,9 +151,9 @@ sub ImportData {
   my $message1 = EndLogSection( $self->{grabber_name} );
 
   foreach my $data (@{$self->ListChannels()} ) {
-    StartLogSection( $data->{xmltvid} );
+    StartLogSection( $data->{xmltvid}, 1 );
     my $error2 = $self->InitiateChannelDownload( $data );
-    e( $error2 ) if defined $error2;
+    f $error2 if defined $error2;
 
     if( $p->{'force-update'} and not $p->{'short-grab'} ) {
       # Delete all data for this channel.
@@ -168,7 +168,7 @@ sub ImportData {
     foreach my $period (@batch_periods) {
       my $batch_id = $data->{xmltvid} . "_" . $period;
 
-      StartLogSection( $batch_id );
+      StartLogSection( $batch_id, 1 );
 
       my $error = $message1 . $message2;
 
@@ -246,7 +246,7 @@ sub ImportBatch {
 
   my $ds;
 
-  StartLogSection( $batch_id );  
+  StartLogSection( $batch_id, 1 );  
 
   d "Fetching data";
   
