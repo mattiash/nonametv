@@ -16,7 +16,7 @@ use NonameTV qw/norm/;
 
 use XMLTV::ValidateFile qw/LoadDtd ValidateFile/;
 
-use NonameTV::Log qw/progress error/;
+use NonameTV::Log qw/d p w StartLogSection EndLogSection SetVerbosity/;
 
 use base 'NonameTV::Exporter';
 
@@ -68,7 +68,7 @@ sub new {
 
     $self->{OptionSpec} = [ qw/export-channels remove-old force-export 
 			    channel-group=s
-			    verbose quiet help/ ];
+			    verbose+ quiet help/ ];
 
     $self->{OptionDefaults} = { 
       'export-channels' => 0,
@@ -126,35 +126,34 @@ EOH
     return;
   }
 
-  NonameTV::Log::SetVerbosity( $p->{verbose}, $p->{quiet} );
+  SetVerbosity( $p->{verbose}, $p->{quiet} );
 
-  if( $p->{'export-channels'} )
-  {
+  StartLogSection( "Xmltv", 0 );
+
+  if( $p->{'export-channels'} ) {
     $self->ExportChannelList( $channelgroup );
-    return;
   }
-
-  if( $p->{'remove-old'} )
-  {
+  elsif( $p->{'remove-old'} ) {
     $self->RemoveOld();
-    return;
-  }
-
-  my $todo = {};
-  my $update_started = time();
-  my $last_update = $self->ReadState();
-
-  if( $p->{'force-export'} ) {
-    $self->FindAll( $todo );
   }
   else {
-    $self->FindUpdated( $todo, $last_update );
-    $self->FindUnexportedDays( $todo, $last_update );
+    my $todo = {};
+    my $update_started = time();
+    my $last_update = $self->ReadState();
+    
+    if( $p->{'force-export'} ) {
+      $self->FindAll( $todo );
+    }
+    else {
+      $self->FindUpdated( $todo, $last_update );
+      $self->FindUnexportedDays( $todo, $last_update );
+    }
+    
+    $self->ExportData( $todo );
+
+    $self->WriteState( $update_started );
   }
-
-  $self->ExportData( $todo );
-
-  $self->WriteState( $update_started );
+  EndLogSection( "Xmltv" );
 }
 
 
@@ -344,6 +343,12 @@ sub ExportFile {
   my $self = shift;
   my( $chd, $date ) = @_;
 
+  my $section = "Xmltv $chd->{xmltvid}_$date";
+
+  StartLogSection( $section, 0 );
+
+  d "Generating";
+
   my $startdate = $date;
   my $enddate = create_dt( $date, 'UTC' )->add( days => 1 )->ymd('-');
 
@@ -364,6 +369,7 @@ sub ExportFile {
   if( (not defined $d1) or ($d1->{start_time} gt "$startdate 23:59:59") ) {
     $self->CloseWriter( $w );
     $sth->finish();
+    EndLogSection( $section );
     return;
   }
 
@@ -380,8 +386,7 @@ sub ExportFile {
     {
       # The previous programme ends after the current programme starts.
       # Adjust the end_time of the previous programme.
-      error( "Xmltv: Adjusted endtime for $chd->{xmltvid}: " . 
-             "$d1->{end_time} => $d2->{start_time}" );
+      w "Adjusted endtime $d1->{end_time} => $d2->{start_time}";
 
       $d1->{end_time} = $d2->{start_time}
     }        
@@ -411,14 +416,15 @@ sub ExportFile {
     }
     else
     {
-      error( "Xmltv: Missing end-time for last entry for " .
-             "$chd->{xmltvid}_$date" ) 
+      w "Missing end-time for last entry"
 	  unless $date gt $self->{LastRequiredDate};
     }
   }
 
   $self->CloseWriter( $w );
   $sth->finish();
+
+  EndLogSection( $section );
 }
 
 sub CreateWriter
@@ -463,7 +469,6 @@ sub CloseWriter
   if( $self->{KeepXml} ){
     system("gzip -c -f -n $path$filename.new > $path$filename.new.gz");
     move( "$path$filename.new" , "$path$filename" );
-    progress( "Kept $filename" );
   } else {
     system("gzip -f -n $path$filename.new");
   }
@@ -474,22 +479,20 @@ sub CloseWriter
     if( $? )
     {
       move( "$path$filename.new.gz", "$path$filename.gz" );
-      progress( "Exported $filename.gz" );
+      p "Generated";
       if( $self->{KeepXml} ){
         move( "$path$filename.new" , "$path$filename" );
-        progress( "Kept $filename" );
       }
       if( not $self->{writer_entries} )
       {
-        error( "Xmltv: $filename.gz is empty" );
+        w "Created empty file";
       }
       elsif( $self->{writer_entries} > 0 )
       {
         my @errors = ValidateFile( "$path$filename.gz" );
         if( scalar( @errors ) > 0 )
         {
-          error( "Xmltv: $filename.gz contains errors: " . 
-                 join( ", ", @errors ) );
+          w "Validation failed: " . join( ", ", @errors );
         }
       }
     }
@@ -504,18 +507,17 @@ sub CloseWriter
   else
   {
     move( "$path$filename.new.gz", "$path$filename.gz" );
-    progress( "Xmltv: Exported $filename.gz" );
+    p "Generated";
     if( not $self->{writer_entries} )
     {
-      error( "Xmltv: $filename.gz is empty" );
+      w "Empty file";
     }
     elsif( $self->{writer_entries} > 0 )
     {
       my @errors = ValidateFile( "$path$filename.gz" );
       if( scalar( @errors ) > 0 )
       {
-        error( "Xmltv: $filename.gz contains errors: " . 
-               join( ", ", @errors ) );
+        w "Validation failed: " . join( ", ", @errors );
       }
     }
   }
@@ -635,7 +637,7 @@ sub WriteEntry
   {
     $d->{credits}->{actor} = [split( ", ", $data->{actors})];
     foreach my $actor (@{$d->{credits}->{actor}} ) {
-      error( "Xmltv: Bad actor $data->{actors} in $self->{writer_filename}" )
+      w "Bad actor $data->{actors}"
 	  if( $actor =~ /^\s*$/ );
     }
   }
@@ -738,7 +740,6 @@ sub ExportChannelList
   close( $fh );
 
   if( $self->{KeepXml} ){
-    progress( "Keeping $outfile" );
     system("gzip -c -f -n $outfile > $outfile.gz");
   } else {
     system("gzip -f -n $outfile");
@@ -776,7 +777,7 @@ sub RemoveOld
     }
   }
 
-  progress( "Xmltv: Removed $removed files" )
+  p "Removed $removed files"
     if( $removed > 0 );
 }
 
