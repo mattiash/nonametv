@@ -29,28 +29,28 @@ foreach my $msg ($infolder->messages) {
   if( $fromaddr =~ /\@dr.dk/ ) {
     MoveMessage( $msg, "DR" );
   }
-  elsif( $fromaddr =~ /\@millenniumgroup.se/ ) {
+  elsif( $fromaddr =~ /\@millenniumgroup.se/i ) {
     MoveMessage( $msg, "Nonstop" );
   }
-  elsif( $fromaddr =~ /\@voicetv.se/ ) {
+  elsif( $fromaddr =~ /\@voicetv.se/i ) {
     MoveMessage( $msg, "TheVoice" );
   }
-  elsif( $fromaddr =~ /\@kanallokal.tv/ ) {
+  elsif( $fromaddr =~ /\@kanallokal.tv/i ) {
     MoveMessage( $msg, "KanalLokal" );
   }
-  elsif( $fromaddr =~ /\@mtvne.com/ ) {
+  elsif( $fromaddr =~ /\@mtvne.com/i ) {
     MoveMessage( $msg, "MTV" );
   }
   elsif( $fromaddr =~ /\@tv7games.se/ ) {
     MoveMessage( $msg, "TV7" );
   }
-  elsif( $fromaddr =~ /\@tv3.se/ ) {
+  elsif( $fromaddr =~ /\@tv3.se/i ) {
     MoveMessage( $msg, "Viasat" );
   }
-  elsif( $fromaddr =~ /\@viasat.se/ ) {
+  elsif( $fromaddr =~ /\@viasat.se/i ) {
     MoveMessage( $msg, "Viasat" );
   }
-  elsif( $fromaddr =~ /\@disney.com/ ) {
+  elsif( $fromaddr =~ /\@disney.com/i ) {
     MoveMessage( $msg, "Disney" );
   }
 
