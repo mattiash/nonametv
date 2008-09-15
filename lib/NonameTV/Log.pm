@@ -54,7 +54,8 @@ Logging is done at four different severities.
 
 The perl built-in "warn" is overridden by this module and will print a
 message at severity Warning. This means that the message will be
-prefixed by the current LogSection to aid in debugging.
+prefixed by the current LogSection to aid in debugging. The message
+will include the entire stack-trace as printed by Carp::confess.
 
 Topic: Log outputs
 
@@ -107,7 +108,7 @@ BEGIN {
   $logfile->autoflush( 1 );
 
   # Turn all "warn" statements into w():s.
-  $SIG{'__WARN__'} = \&w;
+  $SIG{'__WARN__'} = \&mywarn;
 }
 
 =begin nd
@@ -430,6 +431,12 @@ sub error #( $message )
   my( $message ) = @_;
 
   writelog( WARNING, "ERROR", undef, $message );
+}
+
+sub mywarn {
+  my( $message ) = @_;
+
+  w Carp::longmess( $message );
 }
 
 
