@@ -95,8 +95,9 @@ sub ImportContent {
       'tt:TVRBroadcast/tt:BroadcastDateTime/tt:EndDateTime', $pb );
     my $url = $xp->findvalue( 
       'tt:TVRBroadcast/tt:BroadcastInformation/tt:WebPage/@URL', $pb );
-    my $title = $xp->findvalue( 'tt:TVRProgram/tt:Title', $pb );
-    my $subtitle = $xp->findvalue( 'tt:TVRProgram/tt:EpisodeTitle', $pb );
+    my $title = norm( $xp->findvalue( 'tt:TVRProgram/tt:Title', $pb ) );
+    my $subtitle = norm( 
+      $xp->findvalue( 'tt:TVRProgram/tt:EpisodeTitle', $pb ) );
 
     if( $title eq $subtitle ) {
       my( $title2, $subtitle2 ) = ( $title =~ /(.*?) - (.*)/ );
@@ -124,7 +125,7 @@ sub ImportContent {
     };
 
     if( $subtitle ne "" ) {
-      $ce->{subtitle} = $subtitle;
+      $ce->{subtitle} = norm( $subtitle );
     }
 
     if( $episodenum ne "" ) {
