@@ -29,7 +29,7 @@ use Encode;
 
 use NonameTV qw/norm/;
 use NonameTV::DataStore::Helper;
-use NonameTV::Log qw/progress error/;
+use NonameTV::Log qw/p w f/;
 
 use NonameTV::Importer::BaseWeekly;
 
@@ -107,7 +107,7 @@ sub ImportContent {
   my @rows = split("\n", $str );
 
   if( scalar( @rows < 2 ) ) {
-    error( "$batch_id: No data found" );
+    f "No data found";
     return 0;
   }
 
@@ -127,7 +127,7 @@ sub ImportContent {
     }
     elsif( $columns[0] eq "O" ) {
       if( not defined( $date ) ) {
-	error( "$batch_id: O without D." );
+	w "O without D.";
 	next;
       }
       
@@ -147,7 +147,7 @@ sub ImportContent {
       # Ignore
     }
     else {
-      error( "$batch_id: Unknown row-type '$columns[0]' in row $i" );
+      f "Unknown row-type '$columns[0]' in row $i";
       return 0;
     } 
   }
