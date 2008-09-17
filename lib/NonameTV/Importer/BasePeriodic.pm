@@ -44,13 +44,14 @@ sub new {
     bless ($self, $class);
 
     $self->{OptionSpec} = [ qw/force-update verbose+ quiet 
-			    short-grab remove-old/ ];
+			    short-grab remove-old clear/ ];
     $self->{OptionDefaults} = { 
       'force-update' => 0,
       'verbose'      => 0,
       'quiet'        => 0,
       'short-grab'   => 0,
       'remove-old'   => 0,
+      'clear'        => 0,
     };
 
     # $self->{grabber_name} hasn't been set yet, so we'll build our
@@ -155,10 +156,11 @@ sub ImportData {
     my $error2 = $self->InitiateChannelDownload( $data );
     f $error2 if defined $error2;
 
-    if( $p->{'force-update'} and not $p->{'short-grab'} ) {
+    if( $p->{'clear'} ) {
       # Delete all data for this channel.
       my $deleted = $ds->ClearChannel( $data->{id} );
       p "Deleted $deleted records";
+      $p->{'force-update'} =1;
     }
 
     my @batch_periods = $self->BatchPeriods( $p->{'short-grab'} );
