@@ -295,8 +295,7 @@ sub AddProgramme {
 
   if ( exists( $data->{end_time} ) ) {
     if ( $data->{start_time} ge $data->{end_time} ) {
-      w $self->{currbatchname}
-          . "Stoptime must be later than starttime: "
+      w "Stoptime must be later than starttime: "
           . $data->{start_time} . " -> "
           . $data->{end_time} . ": "
           . $data->{title};
@@ -438,6 +437,8 @@ sub ClearChannel {
   my ($chid) = @_;
 
   my $deleted = $self->{sa}->Delete( 'programs', { channel_id => $chid } );
+
+  $self->{sa}->DoSQL( "delete from batches where name like '${chid}_%'", [] );
 
   return $deleted;
 }
