@@ -482,7 +482,7 @@ sub ParseXml {
     $doc = $xml->parse_string($$cref); 
   };
   if( $@ ne "" )   {
-    error( "???: Failed to parse: $@" );
+    w "Failed to parse xml: $@";
     return undef;
   }
 
