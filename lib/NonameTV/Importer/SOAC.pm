@@ -18,7 +18,7 @@ use utf8;
 
 use DateTime;
 use Spreadsheet::ParseExcel;
-use PDF::API2;
+use PDF::OCR::Thorough;
 
 use NonameTV::DataStore::Helper;
 use NonameTV::Log qw/progress error 
@@ -55,7 +55,7 @@ sub ImportContentFile {
   my $ds = $self->{datastore};
 
   if( $file =~ /\.xls$/i ){
-    $self->ImportXLS( $file, $channel_id, $xmltvid );
+    #$self->ImportXLS( $file, $channel_id, $xmltvid );
   } elsif( $file =~ /\.pdf$/i ){
     $self->ImportPDF( $file, $channel_id, $xmltvid );
   }
@@ -78,7 +78,7 @@ sub ImportXLS
   my $currdate = "x";
   my $timecol = 0;
 
-  progress( "SOAC: $xmltvid:  Processing $file" );
+  progress( "SOAC: $xmltvid:  Processing XLS $file" );
   
   my( $oBook, $oWkS, $oWkC );
 
@@ -180,17 +180,14 @@ sub ImportPDF
   my $currdate = "x";
   my $timecol = 0;
 
-  progress( "SOAC: $xmltvid:  Processing $file" );
+  progress( "SOAC: $xmltvid:  Processing PDF $file" );
 
-  open( my $fh, $file) or die "$@";
-  my @pdf = <$fh>;
-  my $pdf = PDF::API->openScalar(join('',@pdf));
+  my $p = new PDF::OCR::Thorough( $file );
+print "$p\n";
+  my $text = $p->get_text;
 
-  #my $string = $pdf->stringify;
-#print ">$string<\n";  
+print "$text\n";
 
-
-  close( $fh );
 
   return;
 }

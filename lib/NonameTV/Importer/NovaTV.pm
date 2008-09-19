@@ -14,6 +14,9 @@ Features:
 
 use utf8;
 
+binmode STDOUT, ":utf8";
+binmode STDERR, ":utf8";
+
 use POSIX;
 use DateTime;
 use XML::LibXML;

@@ -140,7 +140,7 @@ sub ImportContentFile {
         $premiere = $oWkC->Value;
       }
 
-      progress( "FOX: $xmltvid: $starttime - $title" );
+      progress( "NetTV: $xmltvid: $starttime - $title" );
 
       my $ce = {
         channel_id => $channel_id,
