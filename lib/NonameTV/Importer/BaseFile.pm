@@ -15,8 +15,7 @@ use DateTime;
 use POSIX qw/floor/;
 use Encode;
 
-use NonameTV::Log qw/progress error 
-  log_to_string log_to_string_result/;
+use NonameTV::Log qw/progress error StartLogSection EndLogSection/;
 
 use NonameTV::Config qw/ReadConfig/;
 
@@ -47,7 +46,7 @@ sub ImportData {
   my $self = shift;
   my( $p ) = @_;
   
-  NonameTV::Log::verbose( $p->{verbose}, $p->{quiet} );
+  NonameTV::Log::SetVerbosity( $p->{verbose}, $p->{quiet} );
 
   $self->UpdateFiles();
 
@@ -112,8 +111,7 @@ sub DoImportContentFile {
 
   my $ds = $self->{datastore};
 
-  # Log ERROR and FATAL
-  my $h = log_to_string( 4 );
+  StartLogSection( $self->{grabber_name} . " $file", 1 );
 
   $ds->StartTransaction();
   
@@ -123,7 +121,7 @@ sub DoImportContentFile {
   # Import file
   my $dir = $self->{conf}->{FileStore} . "/" . $data->{xmltvid};
   eval { $self->ImportContentFile( "$dir/$file", $data ); };
-  my( $message, $highest ) = log_to_string_result( $h );
+  my( $message, $highest ) = EndLogSection( $self->{grabber_name} . " $file" );
   if( $@ ) {
     $message .= $@;
     $highest = 5;

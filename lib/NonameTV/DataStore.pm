@@ -3,7 +3,7 @@ package NonameTV::DataStore;
 use strict;
 
 use NonameTV qw/FixProgrammeData/;
-use NonameTV::Log qw/progress error logdie/;
+use NonameTV::Log qw/d p w f/;
 use SQLAbstraction::mysql;
 
 use Carp qw/confess/;
@@ -144,6 +144,17 @@ sub ClearBatch {
   delete $self->{batcherror};
 }
 
+=item CommitPrograms
+
+CommitPrograms is a dummy method in this class. It only actually does
+something in NonameTV::DataStore::Helper.
+
+=cut
+
+sub CommitPrograms {
+  my $self = shift;
+}
+
 =item EndBatch
 
 Called by an importer to signal the end of a batch of updates.
@@ -173,7 +184,7 @@ sub EndBatch {
 
   if ( $success == 0 or $self->{batcherror} ) {
     $self->{sa}->DoSql("Rollback");
-    error( $self->{currbatchname} . ": Rolling back changes" );
+    d "Rolling back changes";
 
     if ( defined($log) ) {
       $self->SetBatchAbortMessage( $self->{currbatch}, $log );
@@ -245,11 +256,11 @@ programme explicitly, or add a special program like this:
 sub AddProgramme {
   my ( $self, $data ) = @_;
 
-  logdie("You must call StartBatch before AddProgramme")
-    unless exists $self->{currbatch};
+  confess("You must call StartBatch before AddProgramme")
+      unless exists $self->{currbatch};
 
-  logdie(
-"Required item channel_id missing in call to NonameTV::DataStore::AddProgramme"
+  confess(
+    "Required item channel_id missing"
   ) if not defined( $data->{channel_id} );
 
   return if $self->{batcherror};
@@ -257,17 +268,15 @@ sub AddProgramme {
   if (  ( $data->{start_time} eq $self->{last_start} )
     and ( $data->{title} = $self->{last_title} ) )
   {
-    error( $self->{currbatchname}
-        . ": Skipping duplicate entry for $data->{start_time}" )
+    w "Skipping duplicate entry for $data->{start_time}"
       unless $self->{SILENCE_DUPLICATE_SKIP};
     return;
   }
   elsif ( $data->{start_time} le $self->{last_start} ) {
-    error($self->{currbatchname}
-        . ": Starttime must be later than last starttime: "
+    w "Starttime must be later than last starttime: "
         . $self->{last_start} . " -> "
         . $data->{start_time} . ": "
-        . $data->{title} );
+        . $data->{title};
     return;
   }
 
@@ -286,11 +295,10 @@ sub AddProgramme {
 
   if ( exists( $data->{end_time} ) ) {
     if ( $data->{start_time} ge $data->{end_time} ) {
-      error($self->{currbatchname}
-          . ": Stoptime must be later than starttime: "
+      w "Stoptime must be later than starttime: "
           . $data->{start_time} . " -> "
           . $data->{end_time} . ": "
-          . $data->{title} );
+          . $data->{title};
       return;
     }
   }
@@ -310,10 +318,9 @@ sub AddLastProgramme {
   if ( defined($nextstart) ) {
     if ( defined( $data->{end_time} ) ) {
       if ( $nextstart lt $data->{end_time} ) {
-        error($self->{currbatchname}
-            . " Starttime must be later than or equal to last endtime: "
+        w "Starttime must be later than or equal to last endtime: "
             . $data->{end_time} . " -> "
-            . $nextstart )
+            . $nextstart
           unless $self->{SILENCE_END_START_OVERLAP};
 
         $data->{end_time} = $nextstart;
@@ -338,13 +345,13 @@ require that the programmes are added in order.
 sub AddProgrammeRaw {
   my ( $self, $data ) = @_;
 
-  logdie("You must call StartBatch before AddProgramme")
+  die("You must call StartBatch before AddProgramme")
     unless exists $self->{currbatch};
 
   return if $self->{batcherror};
 
   if ( $data->{title} !~ /\S/ ) {
-    error( $self->{currbatchname} . ": Empty title at " . $data->{start_time} );
+    w "Empty title at " . $data->{start_time};
     $data->{title} = "end-of-transmission";
   }
 
@@ -379,9 +386,8 @@ sub AddProgrammeRaw {
 
     if ( defined($data_org) ) {
       if ( $data_org->{title} eq "end-of-transmission" ) {
-        error($self->{currbatchname}
-            . ": Replacing end-of-transmission "
-            . "for $data->{channel_id}-$data->{start_time}" );
+        w "Replacing end-of-transmission "
+            . "for $data->{channel_id}-$data->{start_time}";
 
         $self->{sa}->Delete(
           "programs",
@@ -392,28 +398,26 @@ sub AddProgrammeRaw {
         );
 
         if ( $self->{sa}->Add( 'programs', $data, 0 ) == -1 ) {
-          error( $self->{currbatchname} . ": " . $self->{dbh_errstr} );
+          w $self->{dbh_errstr};
           $self->{batcherror} = 1;
         }
       }
       elsif ( $data_org->{title} eq $data->{title} ) {
-        error($self->{currbatchname}
-            . ": Skipping duplicate entry "
-            . "for $data->{channel_id}-$data->{start_time}" )
+        w "Skipping duplicate entry "
+            . "for $data->{channel_id}-$data->{start_time}"
           unless $self->{SILENCE_DUPLICATE_SKIP};
       }
       else {
-        error($self->{currbatchname}
-            . ": Duplicate programs "
+        w "Duplicate programs "
             . $data->{start_time} . ": '"
             . $data->{title} . "', '"
             . $data_org->{title}
-            . "'" );
+            . "'";
         $self->{batcherror} = 1;
       }
     }
     else {
-      error( $self->{currbatchname} . ": $err" );
+      w $err;
       $self->{batcherror} = 1;
     }
   }
@@ -433,6 +437,8 @@ sub ClearChannel {
   my ($chid) = @_;
 
   my $deleted = $self->{sa}->Delete( 'programs', { channel_id => $chid } );
+
+  $self->{sa}->DoSQL( "delete from batches where name like '${chid}_%'", [] );
 
   return $deleted;
 }
@@ -577,7 +583,7 @@ sub LoadCategories {
   my $sth = $self->{sa}->Iterate( 'trans_cat', {} );
   if ( not defined($sth) ) {
     $self->{categories} = {};
-    error("No categories found in database.");
+    w "No categories found in database.";
     return;
   }
 

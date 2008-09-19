@@ -16,8 +16,7 @@ use XML::LibXML;
 
 use NonameTV qw/ParseXml norm/;
 use NonameTV::DataStore::Helper;
-use NonameTV::Log qw/progress error 
-                     log_to_string log_to_string_result/;
+use NonameTV::Log qw/f/;
 
 use NonameTV::Importer::BaseOne;
 
@@ -56,10 +55,15 @@ sub ImportContent {
 
   my $doc = ParseXml( $cref );
 
+  if( not defined( $doc ) ) {
+    f "Failed to parse XML.";
+    return 0;
+  }
+
   my $ns = $doc->find( "//BROADCAST" );
 
   if( $ns->size() == 0 ) {
-    error( "$batch_id: No data found" );
+    f "No data found";
     return 0;
   }
   

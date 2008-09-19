@@ -3,7 +3,7 @@ package NonameTV::DataStore::Helper;
 use strict;
 
 use Carp;
-use NonameTV::Log qw/progress error logdie/;
+use NonameTV::Log qw/d p w f/;
 
 =head1 NAME
 
@@ -159,7 +159,7 @@ sub StartDate
     $self->CommitPrograms();
   }
 
-  #print "StartDate: $date\n";
+  d "StartDate: $date";
   my( $year, $month, $day ) = split( '-', $date );
   $self->{curr_date} = DateTime->new( 
                                       year   => $year,
@@ -172,8 +172,8 @@ sub StartDate
 
   if( $self->{curr_date} < DateTime->today->subtract( days => 31 ) )
   {
-    error( "$self->{batch_id}: StartDate called with old date, " .
-           $self->{curr_date}->ymd("-") . "." );
+    w "StartDate called with old date, " .
+           $self->{curr_date}->ymd("-") . ".";
   }
   if( defined( $time ) )
   {
@@ -214,7 +214,7 @@ sub AddProgramme
 
   if( not defined( $self->{curr_date} ) )
   {
-    logdie( "Helper $self->{batch_id}: You must call StartDate before AddProgramme" );
+    confess "Helper $self->{batch_id}: You must call StartDate before AddProgramme";
   }
 
   my $start_time = $self->create_dt( $self->{curr_date}, 
@@ -247,8 +247,8 @@ sub AddProgramme
       # moves backwards in the schedule.
       if( not $self->{ds}->{SILENCE_END_START_OVERLAP} ) 
       {
-        error( "$self->{batch_id}: Improbable program start " . 
-               $start_time->ymd . " " . $start_time->hms . " skipped" );
+        w "Improbable program start " . 
+               $start_time->ymd . " " . $start_time->hms . " skipped";
         return;
       }
     }
@@ -342,9 +342,9 @@ sub create_dt
 
   if( not defined $res )
   {
-    error( $self->{batch_id} . ": " . $dt->ymd('-') . " $hour:$minute: $@" );
+    w $dt->ymd('-') . " $hour:$minute: $@";
     $hour++;
-    error( "Adjusting to $hour:$minute" );
+    w "Adjusting to $hour:$minute";
     $dt->set( hour   => $hour,
               minute => $minute,
               );

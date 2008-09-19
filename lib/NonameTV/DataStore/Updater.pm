@@ -3,7 +3,7 @@ package NonameTV::DataStore::Updater;
 use strict;
 
 use Carp;
-use NonameTV::Log qw/progress error logdie/;
+use NonameTV::Log qw/progress error/;
 
 =head1 NAME
 
@@ -116,7 +116,7 @@ sub EndBatchUpdate
   
 #  print "EBU: $success\n";
 
-  logdie( "You must call StartBatchUpdate before EndBatchUpdate" ) 
+  die "You must call StartBatchUpdate before EndBatchUpdate"
     unless exists $self->{currbatch};
 
   my $ds = $self->{ds};
@@ -161,7 +161,7 @@ sub AddProgramme
 
 #  print "AP: $data->{title}\n";
 
-  logdie( "You must call StartBatchUpdate before AddProgramme" ) 
+  die "You must call StartBatchUpdate before AddProgramme"
     unless exists $self->{currbatch};
 
   return if $self->{batcherror};
@@ -186,7 +186,7 @@ sub DeleteProgramme
 
 #  print "DP: $data->{title}\n";
 
-  logdie( "You must call StartBatch before DeleteProgramme" ) 
+  die "You must call StartBatch before DeleteProgramme"
     unless exists $self->{currbatch};
   
   $ignore_batch_id = 0
@@ -210,7 +210,7 @@ sub DeleteProgramme
     {
       $mess .= "$key: '$data->{$key}' ";
     }
-    logdie( $self->{currbatchname} . ": $mess" );
+    die $self->{currbatchname} . ": $mess";
   }
 
   return $del_data;

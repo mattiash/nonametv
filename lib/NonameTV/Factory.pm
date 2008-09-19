@@ -25,7 +25,7 @@ BEGIN {
     %EXPORT_TAGS = ( );     # eg: TAG => [ qw!name1 name2! ],
     @EXPORT_OK   = qw/ CreateDataStore CreateDataStoreDummy
                        CreateImporter CreateExporter
-                       InitLog InitHttpCache
+                       InitHttpCache
                      /;
 }
 our @EXPORT_OK;
@@ -98,14 +98,22 @@ sub CreateExporter {
 Create a NonameTV::DataStore from the configuration.
 
 Returns the newly created datastore or dies if creation fails.
+If CreateDataStore is called more than once, the same DataStore object
+will be returned avery time.
 
 =cut
 
+my $ds;
+
 sub CreateDataStore {
+  return $ds if defined $ds;
+
   my $conf = ReadConfig();
   
   require NonameTV::DataStore;
-  return NonameTV::DataStore->new( $conf->{DataStore} );
+  $ds = NonameTV::DataStore->new( $conf->{DataStore} );
+
+  return $ds;
 }
 
 =item CreateDataStoreDummy
@@ -124,19 +132,7 @@ sub CreateDataStoreDummy {
   return NonameTV::DataStore::Dummy->new( $conf->{DataStore} );;
 }
 
-=item InitLog
-
-Initialize the NonameTV::Log module from the configuration.
-
-=cut
-
-sub InitLog {
-  require NonameTV::Log;
-  my $conf = ReadConfig();
-  NonameTV::Log::init( $conf );
-}
-
-=item InitLog
+=item InitHttpCache
 
 Initialize the HTTP::Cache::Transparent module from the configuration.
 

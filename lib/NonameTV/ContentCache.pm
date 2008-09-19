@@ -169,6 +169,9 @@ sub GetContent {
       filteredmd5 => "(unknown)",
     };
 
+    # Treat undef as an empty string.
+    $$cref = "" if not defined $$cref;
+
     # Calculate md5sum of content
     $currstate->{contentmd5} = $self->CalculateMD5( $cref );
 

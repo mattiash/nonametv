@@ -24,7 +24,7 @@ use XML::LibXML;
 use NonameTV qw/MyGet File2Xml norm MonthNumber/;
 use NonameTV::DataStore::Helper;
 use NonameTV::DataStore::Updater;
-use NonameTV::Log qw/progress error logdie/;
+use NonameTV::Log qw/progress error/;
 
 use NonameTV::Importer::BaseFile;
 use base 'NonameTV::Importer::BaseFile';
@@ -360,7 +360,7 @@ sub ImportAmendments
     {
       if( $state != ST_FOUND_DATE )
       {
-        logdie( "GlobalListings: $channel_xmltvid: $filename Wrong state for $text" );
+        die( "GlobalListings: $channel_xmltvid: $filename Wrong state for $text" );
       }
 
       $self->process_command( $channel_id, $e )
@@ -377,7 +377,7 @@ sub ImportAmendments
     {
       if( $state != ST_FOUND_DATE )
       {
-        logdie( "GlobalListings: $channel_xmltvid: $filename Wrong state for $text" );
+        die( "GlobalListings: $channel_xmltvid: $filename Wrong state for $text" );
       }
 
       $self->process_command( $channel_id, $e )
@@ -503,7 +503,7 @@ sub process_command
   {}
   else
   {
-    logdie( "GlobalListings: Unknown command $e->{command}" );
+    die( "GlobalListings: Unknown command $e->{command}" );
   }
 }
 

@@ -21,7 +21,7 @@ use XML::LibXML;
 use HTTP::Date;
 
 use NonameTV qw/ParseXml norm AddCategory/;
-use NonameTV::Log qw/progress error logdie/;
+use NonameTV::Log qw/w f/;
 
 use NonameTV::Importer::BaseWeekly;
 
@@ -121,7 +121,7 @@ sub ImportContent
   eval { $doc = $xml->parse_string($$cref); };
   if( $@ ne "" )
   {
-    error( "$batch_id: Failed to parse $@" );
+    f "Failed to parse $@";
     return 0;
   }
   
@@ -130,7 +130,7 @@ sub ImportContent
 
   if( $ns->size() == 0 )
   {
-    error( "$batch_id: No data found" );
+    f "No data found";
     return 0;
   }
   
@@ -138,15 +138,17 @@ sub ImportContent
   {
     # Sanity check. 
     # What does it mean if there are several programs?
-    logdie "Wrong number of Programs for Schedule " .
-      $sc->findvalue( '@Id' )
-      if( $sc->findvalue( 'count(.//Program)' ) ) != 1;
-    
+    if( $sc->findvalue( 'count(.//Program)' ) != 1 ) {
+      f "Wrong number of Programs for Schedule " .
+          $sc->findvalue( '@Id' );
+      return 0;
+    } 
+
     my $start = $self->create_dt( $sc->findvalue( './@CalendarDate' ) );
     if( not defined $start )
     {
-      error( "$batch_id: Invalid starttime '" 
-             . $sc->findvalue( './@CalendarDate' ) . "'. Skipping." );
+      w "Invalid starttime '" 
+          . $sc->findvalue( './@CalendarDate' ) . "'. Skipping.";
       next;
     }
 
@@ -159,7 +161,7 @@ sub ImportContent
     }
 
     my $length  = $sc->findvalue( './Program/@Length ' );
-    error( "$batch_id: $length is not numeric." ) 
+    w "$length is not numeric."
       if( $length !~ /^\d*$/ );
 
     my $end;
@@ -202,7 +204,7 @@ sub ImportContent
     my $series = $sc->findvalue( './Program/@Series' );
 
     if( $series and ($series_title eq "") ) {
-      error( "$batch_id: Series without SeriesTitle: $title" );
+      w "Series without SeriesTitle: $title";
     }
  
     my $production_year = $sc->findvalue( './Program/@ProductionYear' );

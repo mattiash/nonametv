@@ -17,8 +17,7 @@ use XML::LibXML;
 
 use NonameTV qw/MyGet norm/;
 use NonameTV::DataStore::Helper;
-use NonameTV::Log qw/progress error 
-                     log_to_string log_to_string_result/;
+use NonameTV::Log qw/progress error/;
 
 use NonameTV::Config qw/ReadConfig/;
 

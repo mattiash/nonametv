@@ -19,7 +19,7 @@ use XML::LibXML;
 use HTTP::Date;
 
 use NonameTV qw/ParseXml norm AddCategory/;
-use NonameTV::Log qw/progress error logdie/;
+use NonameTV::Log qw/w f progress error/;
 
 use NonameTV::Importer::BaseWeekly;
 
@@ -138,14 +138,16 @@ sub ImportContent
   foreach my $sc ($ns->get_nodelist) {
     # Sanity check. 
     # What does it mean if there are several programs?
-    logdie "Wrong number of Programs for Schedule " .
-      $sc->findvalue( '@calendarDate' )
-      if( $sc->findvalue( 'count(.//program)' ) ) != 1;
-    
+    if( $sc->findvalue( 'count(.//program)' ) != 1 ) {
+      w "Wrong number of Programs for Schedule " .
+	  $sc->findvalue( '@calendarDate' );
+      return 0;
+    }
+	  
     my $start = $self->create_dt( $sc->findvalue( './@calendarDate' ) );
     if( not defined $start ) {
-      error( "$batch_id: Invalid starttime '" 
-             . $sc->findvalue( './@calendarDate' ) . "'. Skipping." );
+      w "Invalid starttime '" 
+	  . $sc->findvalue( './@calendarDate' ) . "'. Skipping.";
       next;
     }
 

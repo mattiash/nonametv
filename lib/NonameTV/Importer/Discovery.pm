@@ -24,7 +24,7 @@ use XML::LibXML;
 use NonameTV qw/MyGet File2Xml norm/;
 use NonameTV::DataStore::Helper;
 use NonameTV::DataStore::Updater;
-use NonameTV::Log qw/progress error logdie/;
+use NonameTV::Log qw/progress error/;
 
 use NonameTV::Importer::BaseFile;
 use base 'NonameTV::Importer::BaseFile';
@@ -348,7 +348,7 @@ sub ImportAmendments
     {
       if( $state != ST_FOUND_DATE )
       {
-        logdie( "Discovery: $filename Wrong state for $text" );
+        die "Discovery: $filename Wrong state for $text";
       }
 
       $self->process_command( $channel_id, $e )
@@ -365,7 +365,7 @@ sub ImportAmendments
     {
       if( $state != ST_FOUND_DATE )
       {
-        logdie( "Discovery: $filename Wrong state for $text" );
+        die "Discovery: $filename Wrong state for $text";
       }
 
       $self->process_command( $channel_id, $e )
@@ -491,7 +491,7 @@ sub process_command
   {}
   else
   {
-    logdie( "Discovery: Unknown command $e->{command}" );
+    die "Discovery: Unknown command $e->{command}";
   }
 }
 
