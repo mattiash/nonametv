@@ -16,6 +16,7 @@ use NonameTV::Log qw/progress error/;
 use NonameTV qw/ParseXml norm/;
 
 use DateTime;
+use Encode;
 
 use NonameTV::Importer::BaseDaily;
 
@@ -56,6 +57,33 @@ sub Object2Url {
 
   # Only one url to look at and no error
   return ([$url], undef);
+}
+
+sub FilterContent {
+  my $self = shift;
+  my( $cref, $chd ) = @_;
+
+  if( $$cref eq "" ) {
+    return (undef, "No data found." );
+  }
+
+  my $doc = ParseXml( $cref );
+  
+  if( not defined $doc ) {
+    return (undef, "ParseXml failed" );
+  } 
+
+  # Remove all OtherBroadcast since they change
+  # each time the data for today is downloaded.
+  my $ns = $doc->find( "//OtherBroadcast" );
+
+  foreach my $n ($ns->get_nodelist) {
+    $n->unbindNode();
+  }
+
+  my $str = encode( "utf-8", $doc->toString( 1 ) );
+
+  return( \$str, undef );
 }
 
 sub ContentExtension {
