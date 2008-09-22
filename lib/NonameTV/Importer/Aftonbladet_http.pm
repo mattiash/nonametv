@@ -91,6 +91,8 @@ sub ImportContent {
   foreach my $text (@paragraphs) {
     next if $text =~/^Releaser.*Bilder.*Kontakt$/i;
     next if $text =~/^TV7-TABL. VECKA \d+/i;
+    next if $text =~/^Aftonbladet$/;
+    next if $text =~/^Sverige$/;
 
 
     if( ($text =~ /^\S+dag \d{1,2} \S+ \d{1,2}\.\d\d\b/i) or
