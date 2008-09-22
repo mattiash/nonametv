@@ -438,7 +438,7 @@ sub ClearChannel {
 
   my $deleted = $self->{sa}->Delete( 'programs', { channel_id => $chid } );
 
-  $self->{sa}->DoSQL( "delete from batches where name like '${chid}_%'", [] );
+  $self->{sa}->DoSql( "delete from batches where name like '${chid}_%'", [] );
 
   return $deleted;
 }
