@@ -29,7 +29,9 @@ foreach my $msg ($infolder->messages) {
   if( $fromaddr =~ /\@dr.dk/ ) {
     MoveMessage( $msg, "DR" );
   }
-  elsif( $fromaddr =~ /\@millenniumgroup.se/i ) {
+  elsif( $fromaddr =~ /millenniumgroup.se/i ) {
+    # Matches both @millenniumgroup.se and 
+    # millenniumgroup.se@bounce.maildirect.se
     MoveMessage( $msg, "Nonstop" );
   }
   elsif( $fromaddr =~ /\@voicetv.se/i ) {
