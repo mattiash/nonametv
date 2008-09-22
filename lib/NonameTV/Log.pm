@@ -436,7 +436,8 @@ sub error #( $message )
 sub mywarn {
   my( $message ) = @_;
 
-  w Carp::longmess( $message );
+#  w Carp::longmess( $message );
+  w $message;
 }
 
 
