@@ -33,6 +33,8 @@ sub new {
 
   $self->{grabber_name} = "KanalLokal";
 
+  $self->{datastore}->{SILENCE_DUPLICATE_SKIP} = 1;
+
   return $self;
 }
 

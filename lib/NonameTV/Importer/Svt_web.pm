@@ -44,6 +44,8 @@ sub new {
     my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore} );
     $self->{datastorehelper} = $dsh;
 
+    $self->{datastore}->{SILENCE_DUPLICATE_SKIP} = 1;
+
     return $self;
 }
 
