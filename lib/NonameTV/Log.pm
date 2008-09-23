@@ -264,21 +264,25 @@ Set the lowest Severity level that will be printed on STDERR.
 
 Parameters:
 
-  $verbose - Verbosity level, 0, 1 or 2.
-  $quiet - Be quiet, 0 or 1.
+  $verbose - Verbosity level, 0, 1, or 2.
+  $quiet - Be quiet, 0, 1, or 2.
 
-Normally, severities Warning and Fatal are printed to STDERR. The SetVerbosity
-function is meant to be used with command-line option parsing where
-each occurence of --verbose increases $verbose with 1 and each
-occurence of --quiet increases $quiet by 1. It gives the following
-result.
+Normally, severities Warning and Fatal are printed to STDERR. The
+SetVerbosity function is meant to be used with command-line option
+parsing where each occurence of --verbose increases $verbose with 1
+and each occurence of --quiet increases $quiet by 1. It gives the
+following result.
 
   --verbose prints Progress as well.
   --verbose --verbose prints Debug and Progress as well.
   --quiet prints only Fatal.
   --quiet --quiet prints nothing
 
-Note that --quiet only applies to output that is generated within a LogSection where $captured is true. Otherwise, Warning and Fatal are always printed to STDERR. The idea behind this is that --quiet silences output that is captured elsewhere, i.e. in the database somewhere.
+Note that --quiet only applies to output that is generated within a
+LogSection where $captured is true. Otherwise, Warning and Fatal are
+always printed to STDERR. The idea behind this is that --quiet
+silences output that is captured elsewhere, i.e. in the database
+somewhere.
 
 =cut
  
