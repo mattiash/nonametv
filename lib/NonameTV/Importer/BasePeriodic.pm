@@ -43,7 +43,7 @@ sub new {
     
     bless ($self, $class);
 
-    $self->{OptionSpec} = [ qw/force-update verbose+ quiet 
+    $self->{OptionSpec} = [ qw/force-update verbose+ quiet+ 
 			    short-grab remove-old clear/ ];
     $self->{OptionDefaults} = { 
       'force-update' => 0,

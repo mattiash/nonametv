@@ -20,9 +20,9 @@ getmail -q -rtv-data-swedb.se.rc
 tools/se/nonametv-filter-mail
 tools/se/nonametv-parse-maildir
 
-tools/nonametv-import Kanal5_mail
-tools/nonametv-import KanalLokal
-tools/nonametv-import DisneyChannel
-tools/nonametv-import Discovery
+tools/nonametv-import Kanal5_mail --quiet --quiet
+tools/nonametv-import KanalLokal --quiet --quiet
+tools/nonametv-import DisneyChannel --quiet --quiet
+tools/nonametv-import Discovery --quiet --quiet
 
 

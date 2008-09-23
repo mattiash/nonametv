@@ -68,7 +68,7 @@ sub new {
 
     $self->{OptionSpec} = [ qw/export-channels remove-old force-export 
 			    channel-group=s
-			    verbose+ quiet help/ ];
+			    verbose+ quiet+ help/ ];
 
     $self->{OptionDefaults} = { 
       'export-channels' => 0,

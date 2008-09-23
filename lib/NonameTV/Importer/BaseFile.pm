@@ -29,7 +29,7 @@ sub new {
     my $self  = $class->SUPER::new( @_ );
     bless ($self, $class);
 
-    $self->{OptionSpec} = [ qw/force-update verbose+ quiet remove-missing/ ];
+    $self->{OptionSpec} = [ qw/force-update verbose+ quiet+ remove-missing/ ];
     $self->{OptionDefaults} = { 
       'force-update' => 0,
       'verbose'      => 0,

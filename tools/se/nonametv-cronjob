@@ -3,6 +3,8 @@
 NROOT=/var/local/nonametv
 PROOT=/home/mattias/development/nonametv
 
+Q="--quiet --quiet"
+
 h=true
 d=true
 
@@ -30,30 +32,30 @@ fi
 
 tools/se/nonametv-update-mark > $NROOT/xmltv_staging/last_updated
 
-$d tools/se/nonametv-import-allhttp --quiet
-$h tools/se/nonametv-import-allhttp --quiet --short-grab
-$d perl -I lib tools/nonametv-import Eurosport --quiet
-$d perl -I lib tools/nonametv-import Discovery_xml --quiet
+$d tools/se/nonametv-import-allhttp $Q
+$h tools/se/nonametv-import-allhttp $Q --short-grab
+$d perl -I lib tools/nonametv-import Eurosport $Q
+$d perl -I lib tools/nonametv-import Discovery_xml $Q
 tools/se/nonametv-import-allmail
 
 $d perl -I lib/ tools/nonametv-export Xmltv --remove-old
 $d perl -I lib/ tools/nonametv-export Json --remove-old
 $d tools/nonametv-icon-update --quiet --unattended
 
-tools/se/nonametv-updatesite
+tools/se/nonametv-updatesite $Q
 
 # This shouldn't produce any output, but there seems to be a bug
 # somewhere.
-$d perl -I lib tools/nonametv-export Xmltv --force-export --verbose 2>&1 | grep -v INFO
+$d perl -I lib tools/nonametv-export Xmltv --force-export --verbose 
 
 # Update the Combiner-channels as well.
-$d perl -I lib tools/nonametv-import Combiner --quiet
-$h perl -I lib tools/nonametv-import Combiner --short-grab --quiet
+$d perl -I lib tools/nonametv-import Combiner $Q
+$h perl -I lib tools/nonametv-import Combiner --short-grab $Q
 
-$d perl -I lib tools/nonametv-import Timeshifter --quiet
-$h perl -I lib tools/nonametv-import Timeshifter --short-grab --quiet
+$d perl -I lib tools/nonametv-import Timeshifter $Q
+$h perl -I lib tools/nonametv-import Timeshifter --short-grab $Q
 
-tools/se/nonametv-updatesite
+tools/se/nonametv-updatesite $Q
 
 $d tools/se/nonametv-xmltv-compare-run
 perl -I lib tools/nonametv-batchlog > /srv/web/converter.xmltv.se/root/status/batchlog.html

@@ -58,7 +58,7 @@ sub new {
       DateTime->today->add( days => $self->{MinDays}-1 )->ymd("-");
 
     $self->{OptionSpec} = [ qw/export-channels remove-old force-export 
-			    verbose quiet help/ ];
+			    verbose+ quiet+ help/ ];
 
     $self->{OptionDefaults} = { 
       'export-channels' => 0,
