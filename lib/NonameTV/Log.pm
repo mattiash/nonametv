@@ -97,6 +97,10 @@ my $logfile;
 my @section = [ undef, "", 0 ];
 
 BEGIN {
+  # Set STDOUT to use utf8 encoding. This avoids "Wide character in print"
+  # warnings.
+  binmode STDOUT, ":encoding(UTF8)";
+  
   my $conf = ReadConfig();
 
   $logfile = new IO::File "$conf->{LogFile}", O_WRONLY|O_APPEND|O_CREAT;
