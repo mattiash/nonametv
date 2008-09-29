@@ -14,7 +14,7 @@ use NonameTV::Exporter;
 use NonameTV::Language qw/LoadLanguage/;
 use NonameTV qw/norm/;
 
-use NonameTV::Log qw/progress error/;
+use NonameTV::Log qw/d p w StartLogSection EndLogSection SetVerbosity/;
 
 use base 'NonameTV::Exporter';
 
@@ -105,7 +105,9 @@ EOH
     return;
   }
 
-  NonameTV::Log::SetVerbosity( $p->{verbose}, $p->{quiet} );
+  SetVerbosity( $p->{verbose}, $p->{quiet} );
+
+  StartLogSection( "Json", 0 );
 
   if( $p->{'export-channels'} )
   {
@@ -134,6 +136,7 @@ EOH
   $self->ExportData( $todo );
 
   $self->WriteState( $update_started );
+  EndLogSection( "Json" );
 }
 
 
@@ -323,6 +326,12 @@ sub ExportFile {
   my $self = shift;
   my( $chd, $date ) = @_;
 
+  my $section = "Json $chd->{xmltvid}_$date";
+
+  StartLogSection( $section, 0 );
+
+  d "Generating";
+
   my $startdate = $date;
   my $enddate = create_dt( $date, 'UTC' )->add( days => 1 )->ymd('-');
 
@@ -343,6 +352,7 @@ sub ExportFile {
   if( (not defined $d1) or ($d1->{start_time} gt "$startdate 23:59:59") ) {
     $self->CloseWriter( $w );
     $sth->finish();
+    EndLogSection( $section );
     return;
   }
 
@@ -359,8 +369,7 @@ sub ExportFile {
     {
       # The previous programme ends after the current programme starts.
       # Adjust the end_time of the previous programme.
-      error( "Json: Adjusted endtime for $chd->{xmltvid}: " . 
-             "$d1->{end_time} => $d2->{start_time}" );
+      w "Adjusted endtime $d1->{end_time} => $d2->{start_time}";
 
       $d1->{end_time} = $d2->{start_time}
     }        
@@ -390,14 +399,15 @@ sub ExportFile {
     }
     else
     {
-      error( "Json: Missing end-time for last entry for " .
-             "$chd->{xmltvid}_$date" ) 
+      w "Missing end-time for last entry"
 	  unless $date gt $self->{LastRequiredDate};
     }
   }
 
   $self->CloseWriter( $w );
   $sth->finish();
+
+  EndLogSection( $section );
 }
 
 sub CreateWriter
@@ -453,10 +463,10 @@ sub CloseWriter
     if( $? )
     {
       move( "$path$filename.new.gz", "$path$filename.gz" );
-      progress( "Exported $filename.gz" );
+      p "Exported";
       if( not $self->{writer_entries} )
       {
-        error( "Json: $filename.gz is empty" );
+        w "Created empty file";
       }
     }
     else
@@ -467,10 +477,10 @@ sub CloseWriter
   else
   {
     move( "$path$filename.new.gz", "$path$filename.gz" );
-    progress( "Json: Exported $filename.gz" );
+    p "Generated";
     if( not $self->{writer_entries} )
     {
-      error( "Json: $filename.gz is empty" );
+      w "Empty file";
     }
   }
 }
@@ -679,7 +689,7 @@ sub RemoveOld
     }
   }
 
-  progress( "Json: Removed $removed files" )
+  p "Removed $removed files"
     if( $removed > 0 );
 }
 

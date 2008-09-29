@@ -563,7 +563,7 @@ sub WriteEntry
     }
     else
     {
-      print "Simple episode '$data->{episode}'\n";
+      w "Simple episode '$data->{episode}'";
       $ep = $data->{episode};
     }
 
