@@ -101,19 +101,19 @@ sub ImportContentFile {
       next if( ! $oWkC );
       my $title = $oWkC->Value if( $oWkC->Value );
 
-#      my $type = $oWkS->{Cells}[$iR][$columns{'Type'}]->Value if $oWkS->{Cells}[$iR][$columns{'Type'}];
-#      my $prodno = $oWkS->{Cells}[$iR][$columns{'Prod No.'}]->Value if $oWkS->{Cells}[$iR][$columns{'Prod No.'}];
-#      my $episodetitle = $oWkS->{Cells}[$iR][$columns{'Episode Title'}]->Value if $oWkS->{Cells}[$iR][$columns{'Episode Title'}];
-#      my $slotlen = $oWkS->{Cells}[$iR][$columns{'Slot Len'}]->Value if $oWkS->{Cells}[$iR][$columns{'Slot Len'}];
-#      my $epino = $oWkS->{Cells}[$iR][$columns{'Epi No.'}]->Value if $oWkS->{Cells}[$iR][$columns{'Epi No.'}];
-#      my $cert = $oWkS->{Cells}[$iR][$columns{'Cert'}]->Value if $oWkS->{Cells}[$iR][$columns{'Cert'}];
-#      my $genre = $oWkS->{Cells}[$iR][$columns{'Genre'}]->Value if $oWkS->{Cells}[$iR][$columns{'Genre'}];
-#      my $year = $oWkS->{Cells}[$iR][$columns{'Year'}]->Value if $oWkS->{Cells}[$iR][$columns{'Year'}];
-#      my $director = $oWkS->{Cells}[$iR][$columns{'Director'}]->Value if $oWkS->{Cells}[$iR][$columns{'Director'}];
-#      my $actor = $oWkS->{Cells}[$iR][$columns{'Actor'}]->Value if $oWkS->{Cells}[$iR][$columns{'Actor'}];
-#      my $episodesynopsis = $oWkS->{Cells}[$iR][$columns{'Episode Synopsis'}]->Value if $oWkS->{Cells}[$iR][$columns{'Episode Synopsis'}];
-#      my $minisynopsis = $oWkS->{Cells}[$iR][$columns{'Mini Synopsis'}]->Value if $oWkS->{Cells}[$iR][$columns{'Mini Synopsis'}];
-#      my $synopsis = $oWkS->{Cells}[$iR][$columns{'Synopsis'}]->Value if $oWkS->{Cells}[$iR][$columns{'Synopsis'}];
+      my $type = $oWkS->{Cells}[$iR][$columns{'Type'}]->Value if $oWkS->{Cells}[$iR][$columns{'Type'}];
+      my $prodno = $oWkS->{Cells}[$iR][$columns{'Prod No.'}]->Value if $oWkS->{Cells}[$iR][$columns{'Prod No.'}];
+      my $episodetitle = $oWkS->{Cells}[$iR][$columns{'Episode Title'}]->Value if $oWkS->{Cells}[$iR][$columns{'Episode Title'}];
+      my $slotlen = $oWkS->{Cells}[$iR][$columns{'Slot Len'}]->Value if $oWkS->{Cells}[$iR][$columns{'Slot Len'}];
+      my $epino = $oWkS->{Cells}[$iR][$columns{'Epi No.'}]->Value if $oWkS->{Cells}[$iR][$columns{'Epi No.'}];
+      my $cert = $oWkS->{Cells}[$iR][$columns{'Cert'}]->Value if $oWkS->{Cells}[$iR][$columns{'Cert'}];
+      my $genre = $oWkS->{Cells}[$iR][$columns{'Genre'}]->Value if $oWkS->{Cells}[$iR][$columns{'Genre'}];
+      my $year = $oWkS->{Cells}[$iR][$columns{'Year'}]->Value if $oWkS->{Cells}[$iR][$columns{'Year'}];
+      my $director = $oWkS->{Cells}[$iR][$columns{'Director'}]->Value if $oWkS->{Cells}[$iR][$columns{'Director'}];
+      my $actor = $oWkS->{Cells}[$iR][$columns{'Actor'}]->Value if $oWkS->{Cells}[$iR][$columns{'Actor'}];
+      my $episodesynopsis = $oWkS->{Cells}[$iR][$columns{'Episode Synopsis'}]->Value if $oWkS->{Cells}[$iR][$columns{'Episode Synopsis'}];
+      my $minisynopsis = $oWkS->{Cells}[$iR][$columns{'Mini Synopsis'}]->Value if $oWkS->{Cells}[$iR][$columns{'Mini Synopsis'}];
+      my $synopsis = $oWkS->{Cells}[$iR][$columns{'Synopsis'}]->Value if $oWkS->{Cells}[$iR][$columns{'Synopsis'}];
 
       progress("Hallmark: $xmltvid: $starttime - $title");
 
@@ -124,47 +124,47 @@ sub ImportContentFile {
         title        => $title,
       };
 
-#      # subtitle
-#      if( $episodetitle ){
-#        $ce->{subtitle} = $episodetitle;
-#      }
+      # subtitle
+      if( $episodetitle ){
+        $ce->{subtitle} = $episodetitle;
+      }
 
-#      # description
-#      if( $synopsis ){
-#        $ce->{description} = $synopsis;
-#      }
+      # description
+      if( $synopsis ){
+        $ce->{description} = $synopsis;
+      }
 
-#      # episode
-#      if( $epino ){
-#        $ce->{episode} = sprintf( ". %d .", $epino-1 );
-#        $ce->{program_type} = 'series';
-#      }
+      # episode
+      if( $epino ){
+        $ce->{episode} = sprintf( ". %d .", $epino-1 );
+        $ce->{program_type} = 'series';
+      }
 
-#      # type
-#      if( $type ){
-#        $ce->{program_type} = $type;
-#      }
+      # type
+      if( $type ){
+        $ce->{program_type} = $type;
+      }
 
-#      # genre
-#      if( $genre ){
-#        my($program_type, $category ) = $ds->LookupCat( "Hallmark_genre", $genre );
-#        AddCategory( $ce, $program_type, $category );
-#      }
+      # genre
+      if( $genre ){
+        my($program_type, $category ) = $ds->LookupCat( "Hallmark_genre", $genre );
+        AddCategory( $ce, $program_type, $category );
+      }
 
-#      # production year
-#      if( $year ){
-#        $ce->{production_date} = "$year-01-01";
-#      }
+      # production year
+      if( $year ){
+        $ce->{production_date} = "$year-01-01";
+      }
 
-#      # directors
-#      if( $director ){
-#        $ce->{directors} = $director;
-#      }
+      # directors
+      if( $director ){
+        $ce->{directors} = $director;
+      }
 
-#      # actors
-#      if( $actor ){
-#        $ce->{actors} = $actor;
-#      }
+      # actors
+      if( $actor ){
+        $ce->{actors} = $actor;
+      }
 
       $ds->AddProgramme( $ce );
     }

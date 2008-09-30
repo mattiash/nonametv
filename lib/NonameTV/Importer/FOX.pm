@@ -21,7 +21,7 @@ use Archive::Zip;
 use Data::Dumper;
 use File::Temp qw/tempfile/;
 
-use NonameTV qw/norm AddCategory/;
+use NonameTV qw/norm AddCategory MonthNumber/;
 use NonameTV::DataStore::Helper;
 use NonameTV::Log qw/progress error/;
 
@@ -349,40 +349,30 @@ sub ExtractDate {
   # or
   # 'Life Programa 05 - 11 May 08 CRO.xml'
 
-  my( $day , $monname );
+  my( $day , $monthname );
 
+  # format: 'Programa 29 Sept - 05 Oct CRO.xls'
   if( $fn =~ m/.*\s+\d+\s+\S+\s*-\s*\d+\s+\S+.*/ ){
-print "FORMAT 1\n";
-    ( $day , $monname ) = ($fn =~ m/.*\s+(\d+)\s+(\S+)\s*-\s*\d+\s+\S+.*/ );
+    ( $day , $monthname ) = ($fn =~ m/.*\s+(\d+)\s+(\S+)\s*-\s*\d+\s+\S+.*/ );
+
+  # format: 'Programa 15 - 21 Sep 08 CRO.xls'
   } elsif( $fn =~ m/.*\s+\d+\s*-\s*\d+\s+\S+.*/ ){
-print "FORMAT 2\n";
-    ( $day , $monname ) = ($fn =~ m/.*\s+(\d+)\s*-\s*\d+\s+(\S+).*/ );
+    ( $day , $monthname ) = ($fn =~ m/.*\s+(\d+)\s*-\s*\d+\s+(\S+).*/ );
   }
 
   # try the first format
-  ###my( $day , $monname ) = ($fn =~ m/\s(\d\d)\s(\S+)\s/ );
+  ###my( $day , $monthname ) = ($fn =~ m/\s(\d\d)\s(\S+)\s/ );
   
   # try the second if the first failed
-  ###if( not defined( $monname ) or ( $monname eq '-' ) ) {
-    ###( $day , $monname ) = ($fn =~ m/\s(\d\d)\s\-\s\d\d\s(\S+)\s/ );
+  ###if( not defined( $monthname ) or ( $monthname eq '-' ) ) {
+    ###( $day , $monthname ) = ($fn =~ m/\s(\d\d)\s\-\s\d\d\s(\S+)\s/ );
   ###}
 
   if( not defined( $day ) ) {
     return undef;
   }
 
-  $month = 1 if( $monname eq 'Jan' or $monname eq 'January' );
-  $month = 2 if( $monname eq 'Feb' or $monname eq 'February' );
-  $month = 3 if( $monname eq 'Mar' or $monname eq 'March' );
-  $month = 4 if( $monname eq 'Apr' or $monname eq 'April' );
-  $month = 5 if( $monname eq 'May' );
-  $month = 6 if( $monname eq 'Jun' or $monname eq 'June' );
-  $month = 7 if( $monname eq 'Jul' or $monname eq 'July' );
-  $month = 8 if( $monname eq 'Aug' or $monname eq 'August' );
-  $month = 9 if( $monname eq 'Sep' or $monname eq 'September' );
-  $month = 10 if( $monname eq 'Oct' or $monname eq 'October' );
-  $month = 11 if( $monname eq 'Nov' or $monname eq 'November' );
-  $month = 12 if( $monname eq 'Dec' or $monname eq 'December' );
+  my $month = MonthNumber( $monthname, 'en' );
 
   return ($month,$day);
 }

@@ -74,6 +74,10 @@ sub ImportContentFile {
 
     # The name of the sheet is the date in format DD.M.YYYY.
     my ( $date ) = ParseDate( $oWkS->{Name} );
+    if( ! $date ){
+      error( "Croatel: $chd->{xmltvid}: Invalid worksheet name: $oWkS->{Name} - skipping" );
+      next;
+    }
 
     if( defined $date ) {
 
@@ -146,6 +150,9 @@ sub ParseDate
   $dinfo =~ s/[ ]//g;
 
   my( $day, $mon, $yea ) = ( $dinfo =~ /(\d+)\.(\d+)\.(\d+)/ );
+  if( ! $day or ! $mon or ! $yea ){
+    return undef;
+  }
 
   # there is an error in the file, so fix it
   $yea = 2008 if( $yea eq 3008 );

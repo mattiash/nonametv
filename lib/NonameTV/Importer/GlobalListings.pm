@@ -155,8 +155,6 @@ sub ImportFull
     my( $text ) = norm( $div->findvalue( './/text()' ) );
     next if $text eq "";
 
-#print ">$text<\n";
-
     my $type;
 
     if( isDate( $text, $lang ) ){

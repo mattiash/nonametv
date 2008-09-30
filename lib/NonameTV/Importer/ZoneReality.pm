@@ -19,6 +19,7 @@ use utf8;
 use POSIX;
 use DateTime;
 use XML::LibXML;
+use Spreadsheet::ParseExcel;
 #use Text::Capitalize qw/capitalize_title/;
 
 use NonameTV qw/MyGet Wordfile2Xml Htmlfile2Xml norm AddCategory MonthNumber/;
@@ -56,6 +57,8 @@ sub ImportContentFile {
 
   if( $file =~ /\.xml$/i ){
     $self->ImportXML( $file, $channel_id, $xmltvid );
+  } elsif( $file =~ /\.xls$/i ){
+    $self->ImportXLS( $file, $channel_id, $xmltvid );
   } elsif( $file =~ /\.doc$/i ){
     $self->ImportDOC( $file, $channel_id, $xmltvid );
   }
@@ -63,6 +66,108 @@ sub ImportContentFile {
   return;
 }
 
+sub ImportXLS
+{
+  my $self = shift;
+  my( $file, $channel_id, $xmltvid ) = @_;
+
+  my $dsh = $self->{datastorehelper};
+  my $ds = $self->{datastore};
+  
+  return if( $file !~ /\.xls$/i );
+
+  progress( "ZoneReality: $xmltvid: Processing $file" );
+
+  my %columns = ();
+  my $date;
+  my $currdate = "x";
+
+  my $oBook = Spreadsheet::ParseExcel::Workbook->Parse( $file );
+
+  # main loop
+  for(my $iSheet=0; $iSheet < $oBook->{SheetCount} ; $iSheet++) {
+
+    my $oWkS = $oBook->{Worksheet}[$iSheet];
+    progress( "ZoneReality: $xmltvid: Processing worksheet: $oWkS->{Name}" );
+
+    # browse through rows
+    for(my $iR = $oWkS->{MinRow} ; defined $oWkS->{MaxRow} && $iR <= $oWkS->{MaxRow} ; $iR++) {
+
+
+      # get the names of the columns from the 1st row
+      if( not %columns ){
+        for(my $iC = $oWkS->{MinCol} ; defined $oWkS->{MaxCol} && $iC <= $oWkS->{MaxCol} ; $iC++) {
+          $columns{norm($oWkS->{Cells}[$iR][$iC]->Value)} = $iC;
+        }
+        next;
+      }
+
+#foreach my $col (%columns) {
+#print "$col\n";
+#}
+
+      # date - column 0 ('Date')
+      my $oWkC = $oWkS->{Cells}[$iR][$columns{'Date'}];
+      next if( ! $oWkC );
+
+      $date = ParseDate( $oWkC->Value );
+      next if( ! $date );
+
+      if( $date ne $currdate ) {
+
+        progress("ZoneReality: $xmltvid: Date is $date");
+
+        if( $currdate ne "x" ){
+          # save last day if we have it in memory
+          $dsh->EndBatch( 1 );
+        }
+
+        my $batch_id = "${xmltvid}_" . $date;
+        $dsh->StartBatch( $batch_id, $channel_id );
+        $dsh->StartDate( $date , "00:00" ); 
+        $currdate = $date;
+      }
+
+      # starttime - column ('Film start hour')
+      $oWkC = $oWkS->{Cells}[$iR][$columns{'Film start hour'}];
+      next if( ! $oWkC );
+      my $starttime = $oWkC->Value;
+      next if( ! $starttime );
+
+      # title - column ('Polish Title')
+      $oWkC = $oWkS->{Cells}[$iR][$columns{'Polish Title'}];
+      next if( ! $oWkC );
+      my $title = $oWkC->Value if( $oWkC->Value );
+
+      my $epino = $oWkS->{Cells}[$iR][$columns{'Episode number'}]->Value if $oWkS->{Cells}[$iR][$columns{'Episode number'}];
+      my $seano = $oWkS->{Cells}[$iR][$columns{'Season'}]->Value if $oWkS->{Cells}[$iR][$columns{'Season'}];
+
+      progress("ZoneReality: $xmltvid: $starttime - $title");
+
+      my $ce = {
+        channel_id => $channel_id,
+        title => $title,
+        start_time => $starttime,
+      };
+
+      if( $epino ){
+        if( $seano ){
+          $ce->{episode} = sprintf( "%d . %d .", $seano-1, $epino-1 );
+        } else {
+          $ce->{episode} = sprintf( ". %d .", $epino-1 );
+        }
+      }
+
+      $dsh->AddProgramme( $ce );
+
+    } # next row
+  } # next worksheet
+
+  $dsh->EndBatch( 1 );
+
+  return;
+}
+  
 sub ImportDOC
 {
   my $self = shift;
@@ -110,10 +215,9 @@ sub ImportDOC
     # all after 'TJEDNI PROGRAM'
     last if( $text =~ /^Produced by EBS New Media/ );
 
-print ">$text<\n";
+#print ">$text<\n";
 
     if( isDate( $text ) ) { # the line with the date in format 'FRIDAY 1 AUGUST 2008 - ZONE REALITY EMEA 1'
-print "DATUM--------------------------------------\n";
       $date = ParseDate( $text );
 
       if( $date ) {
@@ -140,7 +244,6 @@ print "DATUM--------------------------------------\n";
       undef $description;
 
     } elsif( isShow( $text ) ) {
-print "SHOW--------------------------------------\n";
 
       my( $time, $title, $genre ) = ParseShow( $text );
 
@@ -163,7 +266,6 @@ print "SHOW--------------------------------------\n";
       push( @ces , $ce );
 
     } else {
-print "OPIS--------------------------------------\n";
 
         # the last element is the one to which
         # this description belongs to
@@ -210,9 +312,16 @@ sub isDate {
 sub ParseDate {
   my( $text ) = @_;
 
-  my( $dayname, $day, $monthname, $year ) = ( $text =~ /^(\S+)\s+(\d+)\s+(\S+)\s+(\d+)/ );
+  my( $dayname, $day, $monthname, $year );
+  my $month;
 
-  my $month = MonthNumber( $monthname, 'en' );
+  if( $text =~ /^\S+\s+\d+\s+\S+\s+\d+/ ) {
+    ( $dayname, $day, $monthname, $year ) = ( $text =~ /^(\S+)\s+(\d+)\s+(\S+)\s+(\d+)/ );
+    $month = MonthNumber( $monthname, 'en' );
+  } elsif( $text =~ /^\d+-\d+-\d+$/ ) { # format '10-1-08'
+    ( $month, $day, $year ) = ( $text =~ /^(\d+)-(\d+)-(\d+)$/ );
+    $year += 2000 if $year lt 100;
+  }
 
   return sprintf( '%d-%02d-%02d', $year, $month, $day );
 }
