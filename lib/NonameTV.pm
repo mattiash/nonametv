@@ -640,6 +640,10 @@ sub MonthNumber {
     @months_1 = qw/sij vel ozu tra svi lip srp kol ruj lis stu pro/;
     @months_2 = qw/sijecanj veljaca ozujak travanj svibanj lipanj srpanj kolovoz rujan listopad studeni prosinac/;
     @months_3 = qw/sijecnja veljace ozujka travnja svibnja lipnja srpnja kolovoza rujna listopada studenoga prosinca/;
+  } elsif( $lang =~ /^sr$/ ){
+    @months_1 = qw/jan feb mar apr maj jun jul aug sep okt nov dec/;
+    @months_2 = qw/januar februar mart april maj jun juli august septembar oktobar novembar decembar/;
+    @months_3 = qw/januara februara marta aprila maja juna jula augusta septembra oktobra novembra decembra/;
   }
 
   my %monthnames = ();
