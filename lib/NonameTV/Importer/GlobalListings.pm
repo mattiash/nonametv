@@ -157,6 +157,7 @@ sub ImportFull
 
     my $type;
 
+#print "$text\n";
     if( isDate( $text, $lang ) ){
       $type = T_DATE;
       $date = ParseDate( $text, $lang );

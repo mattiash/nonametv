@@ -154,7 +154,7 @@ sub isDate {
   my ( $text ) = @_;
 
   # format 'PETAK: 11. srpnja 2008.god.'
-  if( $text =~ /^(ponedjeljak|utorak|srijeda|ČETVRTAK|petak|subota|nedjelja):\s*\d+\.\s*(srpnja|kolovoza)\s*\d+\.\s*god\.$/i ){
+  if( $text =~ /^(ponedjeljak|utorak|srijeda|ČETVRTAK|petak|subota|nedjelja):\s*\d+\.\s*(sijecnja|veljace|ozujka|travnja|svibnja|lipnja|srpnja|kolovoza|rujna|listopada|studenoga|prosinca)\s*\d+\.\s*god\.$/i ){
     return 1;
   }
 

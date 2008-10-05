@@ -66,7 +66,7 @@ sub ImportContentFile
   if( $file =~ /\.xml$/i ){
     $self->ImportXML( $file, $channel_id, $channel_xmltvid );
   } elsif( $file =~ /\.html$/i ){
-    #$self->ImportHTML( $file, $channel_id, $channel_xmltvid );
+    $self->ImportHTML( $file, $channel_id, $channel_xmltvid );
   }
 
   return;

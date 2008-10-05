@@ -372,7 +372,7 @@ sub ExtractDate {
     return undef;
   }
 
-  my $month = MonthNumber( $monthname, 'en' );
+  $month = MonthNumber( $monthname, 'en' );
 
   return ($month,$day);
 }

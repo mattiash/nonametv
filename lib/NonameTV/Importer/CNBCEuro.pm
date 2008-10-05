@@ -67,6 +67,7 @@ sub ImportContentFile {
 
     my $oWkS = $oBook->{Worksheet}[$iSheet];
 
+print "SHEET $oWkS->{Name}\n";
     if( $oWkS->{Name} !~ /PE FEED/ ){
       progress( "CNBCEuro: $chd->{xmltvid}: Skipping worksheet: $oWkS->{Name}" );
       next;
@@ -95,42 +96,47 @@ sub ImportContentFile {
         }
       }
 
+print "1\n";
+      # the date information
+      # is in the 2nd row
+      my $oWkC = $oWkS->{Cells}[1][$iC];
+      next if( ! $oWkC );
+      my $dateinfo = $oWkC->Value;
+print "DATEINFo $dateinfo\n";
+
+      $date = ParseDate( $dateinfo );
+print "DATUM: $date\n";
+
+      if( $date ) {
+
+        progress( "CNBCEuro: $chd->{xmltvid}: Date is $date" );
+
+        if( $date ne $currdate ) {
+
+          if( $currdate ne "x" ){
+            $dsh->EndBatch( 1 );
+          }
+
+          my $batch_id = "${xmltvid}_" . $date;
+          $dsh->StartBatch( $batch_id, $channel_id );
+          $dsh->StartDate( $date , "00:00" );
+          $currdate = $date;
+        }
+      }
+
       # browse through rows
-      # start at row 1
-      for(my $iR = 1 ; defined $oWkS->{MaxRow} && $iR <= $oWkS->{MaxRow} ; $iR++) {
+      # start at row 2
+      for(my $iR = 2 ; defined $oWkS->{MaxRow} && $iR <= $oWkS->{MaxRow} ; $iR++) {
 
         my $oWkC = $oWkS->{Cells}[$iR][$iC];
         next if( ! $oWkC );
         my $text = $oWkC->Value;
-#print ">$text<\n";
-
         next if( ! $text );
-
-        if( isDate( $text ) ){
-
-          $date = ParseDate( $text );
-
-          if( $date ) {
-
-            progress( "CNBCEuro: $chd->{xmltvid}: Date is $date" );
-
-            if( $date ne $currdate ) {
-
-              if( $currdate ne "x" ){
-                $dsh->EndBatch( 1 );
-              }
-
-              my $batch_id = "${xmltvid}_" . $date;
-              $dsh->StartBatch( $batch_id, $channel_id );
-              $dsh->StartDate( $date , "00:00" );
-              $currdate = $date;
-            }
-          }
-        }
+print ">$iC $iR $text<\n";
 
         # if this is the first line of the title
         # then read the time from the $coltime
-        if( $text and ( $title eq "" ) ){
+        if( $text and !$title ){
           $oWkC = $oWkS->{Cells}[$iR][$coltime];
           next if( ! $oWkC );
           $time = ParseTime( $oWkC->Value );
@@ -158,7 +164,7 @@ sub ImportContentFile {
 
             $dsh->AddProgramme( $ce );
 
-            $title = "";
+            $title = undef;
           }
 
           # add the text to current title string
@@ -178,7 +184,7 @@ sub ImportContentFile {
 
             $dsh->AddProgramme( $ce );
 
-            $title = "";
+            $title = undef;
           }
         }
 
@@ -199,23 +205,23 @@ sub ImportContentFile {
   return;
 }
 
-sub isDate {
-  my ( $text ) = @_;
-
-  # format '7th June'
-  if( $text =~ /^\d+(st|nd|th)\s+(january|february|march|april|may|june|july|august|september|october|novenber|december)$/i){
-    return 1;
-  }
-
-  return 0;
-}
-
 sub ParseDate
 {
   my ( $text ) = @_;
 
+  my( $day, $monthname );
+
+print "DATEINFO: >$text<\n";
+
   # format '7th July'
-  my( $day, $monthname ) = ( $text =~ /^(\d+)\S*\s+(\S+)$/ );
+  if( $text =~ /^\d+(st|nd|rd|th)\s+\S+$/ ){
+print "OK format\n";
+    ( $day, $monthname ) = ( $text =~ /^(\d+)\S+\s+(\S+)$/ );
+  } else {
+    return undef;
+  }
+print "DAY: $day\n";
+print "MON: $monthname\n";
 
   return undef if( ! $day );
 
