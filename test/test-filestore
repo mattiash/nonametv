@@ -13,3 +13,14 @@ my $content = "Hello";
 
 $fs->AddFile( "p1.sr.se", "test", \$content );
 
+my @files = $fs->ListFiles( "p1.sr.se" );
+foreach my $file (@files) {
+  print join( ", ", @{$file} ) . "\n";
+}
+
+$fs->RecreateIndex( "p1.sr.se" );
+
+@files = $fs->ListFiles( "p1.sr.se" );
+foreach my $file (@files) {
+  print join( ", ", @{$file} ) . "\n";
+}

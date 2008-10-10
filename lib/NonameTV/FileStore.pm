@@ -8,6 +8,7 @@ use File::Slurp qw/read_file/;
 use LWP::Simple qw/get/;
 use Digest::MD5 qw/md5_hex/;
 use File::Path qw/mkpath/;
+use File::stat;
 
 use Carp qw/croak carp/;
 
@@ -76,7 +77,6 @@ sub AddFile #( $xmltvid, $filename, $cref )
 
   my $newmd5 = md5_hex( $$cref );
   if( not defined( $oldmd5 ) or ($oldmd5 ne $newmd5 ) ) {
-    print "$oldmd5 - $newmd5\n";
     my $fullname = "$dir/$filename";
     open( OUT, "> $fullname" ) or die "Failed to write to $fullname";
     print OUT $$cref;
@@ -114,6 +114,9 @@ sub ListFiles #( $xmltvid )
   my $self = shift;
   my( $xmltvid ) = @_;
 
+  $self->LoadFileList( $xmltvid );
+
+  return @{$self->{_fl}->{$xmltvid}};
 }
 
 =begin nd
@@ -178,13 +181,52 @@ sub LoadFileList {
 
   my $fl = $self->GetFile( $xmltvid, "00files" );
 
-  foreach my $line (split( "\n", $fl)) {
-    my( $filename, $md5sum, $ts ) = split( "\t", $line );
-    push @d, [ $filename, $md5sum, $ts ];
+  if( not defined $fl ) {
+    $self->{_fl}->{$xmltvid} = [];
+    $self->{_flmodified}->{$xmltvid} = 0;
+  }
+  else {
+    foreach my $line (split( "\n", $fl)) {
+      my( $filename, $md5sum, $ts ) = split( "\t", $line );
+      push @d, [ $filename, $md5sum, $ts ];
+    }
+    
+    $self->{_fl}->{$xmltvid} = \@d;
+    $self->{_flmodified}->{$xmltvid} = 0;
+  }
+}
+
+=begin nd
+
+Method: RecreateIndex
+
+Recreate the index file from the files stored in the correct location.
+
+=cut
+
+sub RecreateIndex #( $xmltvid )
+{
+  my $self = shift;
+  my( $xmltvid ) = @_;
+
+  my @data;
+
+  unlink( $self->{Path} . "/$xmltvid/00files" );
+
+  foreach my $file (glob( $self->{Path} . "/$xmltvid/*" )) {
+    my( $name ) = ($file =~ /.*\/(.*)/ );
+    open(FILE, $file) or die "Can’t open ’$file’: $!";
+    binmode(FILE);
+
+    my $md5 = Digest::MD5->new->addfile(*FILE)->hexdigest;
+    my $st = stat($file) or die "Couldn't stat $file: $!";
+    my $mtime = $st->mtime;
+
+    push( @data, [$name, $md5, $mtime] );
   }
 
-  $self->{_fl}->{$xmltvid} = \@d;
-  $self->{_flmodified}->{$xmltvid} = 0;
+  $self->{_fl}->{$xmltvid} = [ sort { $a->[2] <=> $b->[2] } @data ];
+  $self->{_flmodified}->{$xmltvid} = 1;
 }
 
 sub DESTROY {
