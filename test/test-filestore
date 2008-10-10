@@ -1,0 +1,15 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+
+use NonameTV::FileStore;
+
+my $fs = NonameTV::FileStore->new( { Path => "/tmp/fs" } );
+
+my $content = "Hello";
+
+$fs->AddFile( "p1.sr.se", "test", \$content );
+
