@@ -446,7 +446,7 @@ print ">$text<\n";
                           hour   => 0,
                           minute => 0,
                           second => 0,
-                          time_zone => 'Europe/London',
+                          time_zone => 'Europe/Zagreb',
                           );
 
   my $month2 = MonthNumber( $monthname2 , 'en' );
@@ -457,7 +457,7 @@ print ">$text<\n";
                           hour   => 0,
                           minute => 0,
                           second => 0,
-                          time_zone => 'Europe/London',
+                          time_zone => 'Europe/Zagreb',
                           );
   return ( $dt1, $dt2 );
 }

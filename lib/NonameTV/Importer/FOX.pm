@@ -1,11 +1,11 @@
 package NonameTV::Importer::FOX;
 
-use strict;
-use warnings;
+#use strict;
+#use warnings;
 
 =pod
 
-Import data from Xml-files delivered via e-mail.  Each
+Import data from Xls or Xml files delivered via e-mail.  Each
 day is handled as a separate batch.
 
 Features:
@@ -15,6 +15,8 @@ Features:
 use utf8;
 
 use DateTime;
+use Encode;
+use Encode::Guess;
 use XML::LibXML;
 use Spreadsheet::ParseExcel;
 use Archive::Zip;
@@ -79,11 +81,11 @@ sub ImportXML
   my $dayoff = 0;
   my $year = DateTime->today->year();
 
-  progress( "FOX: $channel_xmltvid: Processing XML $file" );
+  progress( "FOX XML: $channel_xmltvid: Processing XML $file" );
   
   my( $month, $firstday ) = ExtractDate( $file );
   if( not defined $firstday ) {
-    error( "FOX: $file: Unable to extract date from file name" );
+    error( "FOX XML: $file: Unable to extract date from file name" );
     next;
   }
 
@@ -92,13 +94,13 @@ sub ImportXML
   eval { $doc = $xml->parse_file($file); };
 
   if( not defined( $doc ) ) {
-    error( "FOX: $file: Failed to parse xml" );
+    error( "FOX XML: $file: Failed to parse xml" );
     return;
   }
   my $wksheets = $doc->findnodes( "//ss:Worksheet" );
   
   if( $wksheets->size() == 0 ) {
-    error( "FOX: $file: No worksheets found" ) ;
+    error( "FOX XML: $file: No worksheets found" ) ;
     return;
   }
 
@@ -112,13 +114,13 @@ sub ImportXML
 
     # the name of the worksheet
     my $dayname = $wks->getAttribute('ss:Name');
-    progress("FOX: $channel_xmltvid: processing worksheet named '$dayname'");
+    progress("FOX XML: $channel_xmltvid: processing worksheet named '$dayname'");
 
     # the path should point exactly to one worksheet
     my $rows = $wks->findnodes( ".//ss:Row" );
   
     if( $rows->size() == 0 ) {
-      error( "FOX: $channel_xmltvid: No Rows found in worksheet '$dayname'" ) ;
+      error( "FOX XML: $channel_xmltvid: No Rows found in worksheet '$dayname'" ) ;
       return;
     }
 
@@ -168,13 +170,16 @@ sub ImportXML
         $dsh->StartDate( $date , "06:00" );
         $currdate = $date;
 
-        progress("FOX: $channel_xmltvid: Date is: $date");
+        progress("FOX XML: $channel_xmltvid: Date is: $date");
       }
 
       if( not defined( $starttime ) ) {
         error( "Invalid start-time '$date' '$starttime'. Skipping." );
         next;
       }
+
+      #$crotitle = decode( "iso-8859-2", $crotitle );
+      #$title = decode( "iso-8859-2", $title );
 
       progress( "FOX XML: $channel_xmltvid: $starttime - $title" );
 
@@ -224,26 +229,31 @@ sub ImportXLS
   my $date;
   my $currdate = "x";
 
-  progress( "FOX: $channel_xmltvid: Processing XLS $file" );
+  progress( "FOX XLS: $channel_xmltvid: Processing XLS $file" );
 
   my( $month, $firstday ) = ExtractDate( $file );
   if( not defined $firstday ) {
-    error( "FOX: $file: Unable to extract date from file name" );
+    error( "FOX XLS: $file: Unable to extract date from file name" );
     next;
   }
+
+#my @list = Encode->encodings();
+#foreach my $e (@list) {
+#print "$e\n";
+#}
 
   my( $oBook, $oWkS, $oWkC );
   $oBook = Spreadsheet::ParseExcel::Workbook->Parse( $file );
 
   if( not defined( $oBook ) ) {
-    error( "FOX: $file: Failed to parse xls" );
+    error( "FOX XLS: $file: Failed to parse xls" );
     return;
   }
 
   for(my $iSheet=0; $iSheet < $oBook->{SheetCount} ; $iSheet++) {
 
     $oWkS = $oBook->{Worksheet}[$iSheet];
-    progress("FOX: $channel_xmltvid: processing worksheet named '$oWkS->{Name}'");
+    progress("FOX XLS: $channel_xmltvid: processing worksheet named '$oWkS->{Name}'");
 
     # read the rows with data
     for(my $iR = $oWkS->{MinRow} ; defined $oWkS->{MaxRow} && $iR <= $oWkS->{MaxRow} ; $iR++) {
@@ -304,13 +314,22 @@ sub ImportXLS
         $dsh->StartDate( $date , "06:00" );
         $currdate = $date;
 
-        progress("FOX: $channel_xmltvid: Date is: $date");
+        progress("FOX XLS: $channel_xmltvid: Date is: $date");
       }
 
       if( not defined( $starttime ) ) {
         error( "Invalid start-time '$date' '$starttime'. Skipping." );
         next;
       }
+
+#print "CROTITLE: $crotitle\n";
+      #my $str = decode( "iso-8859-2", $crotitle );
+#print "CROTITLE: $str\n";
+      #$title = decode( "iso-8859-2", $title );
+
+#print "CROTITLE: $crotitle\n";
+#my $str = decode( "iso-8859-2", $crotitle );
+#print "CROTITLE: $str\n";
 
       progress( "FOX XLS: $channel_xmltvid: $starttime - $title" );
 

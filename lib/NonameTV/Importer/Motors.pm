@@ -108,26 +108,21 @@ sub ImportContentFile {
       my ( $subtitle, $description );
 
       # subtitle - column 3 ('Titre de l'ésode')
-      $oWkC = $oWkS->{Cells}[$iR][3];
-      if( $oWkC ){
-        $subtitle = $oWkC->Value if( $oWkC->Value );
-      }
+      $subtitle = $oWkS->{Cells}[$iR][3]->Value if $oWkS->{Cells}[$iR][3];
 
       # description - column 4 ('PRESSE UK')
-      $oWkC = $oWkS->{Cells}[$iR][$columns{'PRESSE UK'}];
-      if( $oWkC ){
-        $description = $oWkC->Value if( $oWkC->Value );
-      }
+      $description = $oWkS->{Cells}[$iR][$columns{'PRESSE UK'}]->Value if $oWkS->{Cells}[$iR][$columns{'PRESSE UK'}];
 
       progress("Motors: $xmltvid: $time - $title");
 
       my $ce = {
         channel_id => $channel_id,
         title => $title,
-        subtitle => $subtitle,
         start_time => $time,
-        description => $description,
       };
+
+      $ce->{subtitle} = $subtitle if $subtitle;
+      $ce->{description} = $description if $description;
 
       $dsh->AddProgramme( $ce );
     }

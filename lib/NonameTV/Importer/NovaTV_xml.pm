@@ -43,7 +43,16 @@ sub FetchDataFromSite
 
   my( $xmltvid, $year, $month, $day ) = ($batch_id =~ /^(.*)_(\d+)-(\d+)-(\d+)$/);
 
-  my $url = $self->{UrlRoot} . "/" . $year . $month . $day . ".xml";
+  my $url;
+
+  if( $xmltvid =~ /^nova.tv.gonix.net$/i ){
+    $url = "http://www.novatv.hr/xml/" . $year . $month . $day . ".xml";
+  } elsif( $xmltvid =~ /^novamini.tv.gonix.net$/i ){
+    $url = "http://www.mojamini.tv/xml/" . $year . $month . $day . ".xml";
+  } else {
+    $url = $self->{UrlRoot} . "/" . $year . $month . $day . ".xml";
+  }
+
   progress("NovaTV_xml: $xmltvid: Fetching data from $url");
 
   my( $content, $code ) = MyGet( $url );
@@ -82,7 +91,7 @@ sub ImportContent {
   foreach my $ntv ($ntvs->get_nodelist) {
 
     my $tvsource = $ntv->findvalue( './@source' );
-    if( $tvsource !~ /^NovaTV$/ ){
+    if( $tvsource !~ /^NovaTV$/ and $tvsource !~ /^MiniTV$/ ){
       error( "NovaTV_xml: $channel_xmltvid: Invalid tv source: $tvsource" );
       return;
     }

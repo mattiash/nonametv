@@ -36,6 +36,9 @@ sub new {
 
   defined( $self->{UrlRoot} ) or die "You must specify UrlRoot";
 
+  $self->{MinMonths} = 1 unless defined $self->{MinMonths};
+  $self->{MaxMonths} = 12 unless defined $self->{MaxMonths};
+
   my $conf = ReadConfig();
 
   $self->{FileStore} = $conf->{FileStore};
@@ -212,16 +215,11 @@ sub ParseTime
 
   if( $timeinfo =~ /^\d+:\d+:\d+$/ ){
     ( $hour, $min, $sec ) = ( $timeinfo =~ /^(\d+):(\d+):(\d+)$/ );
-  } elsif( $timeinfo =~ /^\d{2}:\d{2}\s+\S*$/ ){
-    ( $hour, $min, $ampm ) = ( $timeinfo =~ /^(\d{2}):(\d{2})\s+(.*)$/ );
+  } elsif( $timeinfo =~ /^\d+:\d+\s+\D*$/ ){
+    ( $hour, $min, $ampm ) = ( $timeinfo =~ /^(\d+):(\d+)\s+(.*)$/ );
   } else {
     return undef;
   }
-
-#print "$hour\n";
-#print "$min\n";
-#print "$sec\n";
-#print "------------------------------------ $ampm\n" if $ampm;
 
   my( $year, $month, $day ) = ( $date =~ /^(\d+)-(\d+)-(\d+)$/ );
 
@@ -253,6 +251,7 @@ sub UpdateFiles {
     my $dir = $data->{grabber_info};
     my $xmltvid = $data->{xmltvid};
 
+print @{$self->MaxMonths} . "\n";
     my $filename = "Mezzo_Schedule_" . $monthname . "_" . $year . ".xls";
 
     my $url = $self->{UrlRoot} . "/" . $data->{grabber_info} . "/" . $filename;
