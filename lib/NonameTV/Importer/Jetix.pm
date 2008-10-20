@@ -446,8 +446,10 @@ print ">$text<\n";
                           hour   => 0,
                           minute => 0,
                           second => 0,
-                          time_zone => 'Europe/Zagreb',
+                          time_zone => 'Europe/London',
                           );
+
+  #$dt1->set_time_zone( "UTC" );
 
   my $month2 = MonthNumber( $monthname2 , 'en' );
 
@@ -457,8 +459,11 @@ print ">$text<\n";
                           hour   => 0,
                           minute => 0,
                           second => 0,
-                          time_zone => 'Europe/Zagreb',
+                          time_zone => 'Europe/London',
                           );
+
+  #$dt2->set_time_zone( "UTC" );
+
   return ( $dt1, $dt2 );
 }
 
