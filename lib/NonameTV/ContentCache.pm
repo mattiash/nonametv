@@ -3,9 +3,11 @@ package NonameTV::ContentCache;
 use strict;
 
 use Digest::MD5 qw/md5_hex/;
-use Encode qw(encode_utf8);
+use Encode qw(encode_utf8 is_utf8);
 
 use LWP::UserAgent;
+
+use NonameTV::Log qw/w/;
 
 =pod
 
@@ -171,6 +173,9 @@ sub GetContent {
 
     # Treat undef as an empty string.
     $$cref = "" if not defined $$cref;
+    
+    w "Content is not a sequence of bytes."
+	if is_utf8( $$cref );
 
     # Calculate md5sum of content
     $currstate->{contentmd5} = $self->CalculateMD5( $cref );
