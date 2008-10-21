@@ -1,4 +1,4 @@
-package NonameTV::Importer::Tiji;
+package NonameTV::Importer::LuxeTV;
 
 use strict;
 use warnings;
@@ -32,7 +32,7 @@ sub new {
   my $self  = $class->SUPER::new( @_ );
   bless ($self, $class);
 
-  $self->{grabber_name} = "Tiji";
+  $self->{grabber_name} = "LuxeTV";
 
   my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore} );
   $self->{datastorehelper} = $dsh;
@@ -52,10 +52,16 @@ sub ImportContentFile {
   my $ds = $self->{datastore};
 
   return if( $file !~ /\.csv$/i );
-  progress( "Tiji: $xmltvid: Processing $file" );
+  if( $file =~ /FR\.csv$/i ){
+    progress( "LuxeTV: $xmltvid: Skipping $file" );
+    return;
+  }
+
+  progress( "LuxeTV: $xmltvid: Processing $file" );
 
   my $date;
   my $time;
+  my $duration;
   my $title;
   my $episode;
   my $currdate = "x";
@@ -63,21 +69,29 @@ sub ImportContentFile {
   open my $CSVFILE, "<", $file or die $!;
 
   my $csv = Text::CSV->new( {
-    sep_char => ';',
-    allow_whitespace => 1,
+    sep_char => "\t",
+    allow_whitespace => 0,
     blank_is_undef => 1,
     binary => 1,
+    verbatim => 1,
   } );
 
   # get the column names from the first line
   my @columns = $csv->column_names( $csv->getline( $CSVFILE ) );
+#foreach my $c (@columns) {
+#print "$c\n";
+#}
 
   # main loop
   while( my $row = $csv->getline_hr( $CSVFILE ) ){
 
-    if( $row->{'DATE'} ) {
+    if( $row->{'Date'} ) {
 
-      $date = ParseDate( $row->{'DATE'} );
+print "DATE1: $row->{'Date'}\n";
+      $date = ParseDate( $row->{'Date'} );
+print "DATE2: $date\n";
+next;
+      next if( ! $date );
 
       if( $date ne $currdate ){
 
@@ -92,28 +106,23 @@ sub ImportContentFile {
       }
     }
 
-    if( $row->{'HEURE'} ) {
-
-      $time = $row->{'HEURE'};
-      next if ( $time !~ /^\d\d\:\d\d$/ );
+    if( $row->{'Time'} ) {
+      $time = ParseTime( $row->{'Time'} );
+      next if( ! $time );
+print "TIME: $time\n";
     }
 
-    if( $row->{'TITRE ORIGINAL'} ) {
+    if( $row->{'Duration'} ) {
+      $duration = $row->{'Duration'};
+      next if ( $duration !~ /^\d\d\:\d\d\:\d\d\.\d\d$/ );
+    }
 
-      $title = $row->{'TITRE ORIGINAL'};
+    if( $row->{'Title'} ) {
+      $title = $row->{'Title'};
       next if ( ! $title );
     }
 
-#print "03: $row->{'SUR-TITRE'}\n";
-#print "04: $row->{'TITRE ORIGINAL'}\n";
-#print "05: $row->{'FORMAT'}\n";
-#print "06: $row->{'EPISODE'}\n";
-#print "07: $row->{'SOUS-TITRE / THEME'}\n";
-#print "08: $row->{'PRESENTATEUR'}\n";
-#print "09: $row->{'REDIFF'}\n";
-#print "10: $row->{'SYNOPSIS/CONCEPT'}\n";
-
-    progress( "Tiji: $xmltvid: $time - $title" );
+    progress( "LuxeTV: $xmltvid: $time - $title" );
 
     my $ce = {
       channel_id => $channel_id,
@@ -121,19 +130,9 @@ sub ImportContentFile {
       start_time => $time,
     };
 
-    if( $row->{'SOUS-TITRE / THEME'} ) {
-      #$ce->{subtitle} = $row->{'SOUS-TITRE / THEME'};
-    }
+    if( $row->{'Episode'} ) {
 
-    if( $row->{'FORMAT'} ) {
-      my $genre = norm($row->{'FORMAT'});
-      my($program_type, $category ) = $ds->LookupCat( "Tiji", $genre );
-      AddCategory( $ce, $program_type, $category );
-    }
-
-    if( $row->{'EPISODE'} ) {
-
-      my $ep_nr = int( $row->{'EPISODE'} );
+      my $ep_nr = int( $row->{'Episode'} );
       my $ep_se = 0;
       if( ($ep_nr > 0) and ($ep_se > 0) )
       {
@@ -147,12 +146,14 @@ sub ImportContentFile {
       $ce->{episode} = norm($episode);
     }
 
-    if( $row->{'PRESENTATEUR'} ){
-      $ce->{presenters} = norm($row->{'PRESENTATEUR'});
+    if( $row->{'Synopsis'} ){
+      $ce->{description} = norm($row->{'Synopsis'});
     }
 
-    if( $row->{'SYNOPSIS/CONCEPT'} ){
-      $ce->{description} = norm($row->{'SYNOPSIS/CONCEPT'});
+    if( $row->{'Genre'} ) {
+      my $genre = norm($row->{'Genre'});
+      my($program_type, $category ) = $ds->LookupCat( "LuxeTV", $genre );
+      AddCategory( $ce, $program_type, $category );
     }
 
     $dsh->AddProgramme( $ce );
@@ -167,13 +168,16 @@ sub ParseDate {
   my( $text ) = @_;
   my( $day , $month , $year );
 
+print "DATEINFO: $text\n";
   return undef if( ! $text );
 
-  if( $text =~ /^\d\d\/\d\d\/\d\d\d\d/ ){
-    ( $day , $month , $year ) = ( $text =~ /^(\d\d)\/(\d\d)\/(\d\d\d\d)/ );
+  if( $text =~ /^\d\d\/\d\d\/\d\d$/ ){
+    ( $day , $month , $year ) = ( $text =~ /^(\d\d)\/(\d\d)\/(\d\d)$/ );
   } else {
-    $day = undef;
+    return undef;
   }
+
+  $year += 2000 if $year lt 100;
 
   my $date = DateTime->new( year   => $year,
                             month  => $month,
@@ -186,6 +190,15 @@ sub ParseDate {
   );
 
   return $date->ymd("-");
+}
+
+sub ParseTime {
+  my( $text ) = @_;
+
+print "TIMEINFO: $text\n";
+  return undef if ( $text !~ /^\d\d\:\d\d\:\d\d\s+(AM|PM)$/ );
+
+  my( $hour, $min, $sec, $ampm ) = ( $text !~ /^(\d\d)\:(\d\d)\:(\d\d)\s+(\S+)$/ );
 }
 
 1;
