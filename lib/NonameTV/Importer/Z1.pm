@@ -1,4 +1,4 @@
-package NonameTV::Importer::GTVZadar;
+package NonameTV::Importer::Z1;
 
 use strict;
 use warnings;
@@ -35,7 +35,7 @@ sub new {
   my $self  = $class->SUPER::new( @_ );
   bless ($self, $class);
 
-  $self->{grabber_name} = "GTVZadar";
+  $self->{grabber_name} = "Z1";
 
   my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore} );
   $self->{datastorehelper} = $dsh;
@@ -57,13 +57,13 @@ sub ImportContentFile
   
   return if( $file !~ /\.doc$/i );
 
-  progress( "GTVZadar: $xmltvid: Processing $file" );
+  progress( "Z1: $xmltvid: Processing $file" );
   
   my $doc;
   $doc = Wordfile2Xml( $file );
 
   if( not defined( $doc ) ) {
-    error( "GTVZadar $xmltvid: $file: Failed to parse" );
+    error( "Z1 $xmltvid: $file: Failed to parse" );
     return;
   }
 
@@ -77,7 +77,7 @@ sub ImportContentFile
   my $ns = $doc->find( "//div" );
   
   if( $ns->size() == 0 ) {
-    error( "GTVZadar $xmltvid: $file: No divs found." ) ;
+    error( "Z1 $xmltvid: $file: No divs found." ) ;
     return;
   }
 
@@ -90,15 +90,13 @@ sub ImportContentFile
 
     my( $text ) = norm( $div->findvalue( '.' ) );
 
-#print ">$text<\n";
-
     if( isDate( $text ) ) { # the line with the date in format 'Friday 1st August 2008'
 
       $date = ParseDate( $text );
 
       if( $date ) {
 
-        progress("GTVZadar: $xmltvid: Date is $date");
+        progress("Z1: $xmltvid: Date is $date");
 
         if( $date ne $currdate ) {
 
@@ -119,9 +117,9 @@ sub ImportContentFile
 
     } elsif( isShow( $text ) ) {
 
-      my( $time, $title, $genre, $episode ) = ParseShow( $text );
+      my( $time, $title, $genre, $ep_no, $ep_se ) = ParseShow( $text );
 
-      progress("GTVZadar: $xmltvid: $time - $title");
+      progress("Z1: $xmltvid: $time - $title");
 
       my $ce = {
         channel_id => $chd->{id},
@@ -130,12 +128,14 @@ sub ImportContentFile
       };
 
       if( $genre ){
-        my($program_type, $category ) = $ds->LookupCat( 'GTVZadar', $genre );
+        my($program_type, $category ) = $ds->LookupCat( 'Z1', $genre );
         AddCategory( $ce, $program_type, $category );
       }
 
-      if( $episode ){
-        $ce->{episode} = sprintf( ". %d .", $episode-1 );
+      if( $ep_no and $ep_se ){
+        $ce->{episode} = sprintf( "%d . %d .", $ep_se-1, $ep_no-1 );
+      } elsif( $ep_no ){
+        $ce->{episode} = sprintf( ". %d .", $ep_no-1 );
       }
 
       $dsh->AddProgramme( $ce );
@@ -153,8 +153,8 @@ sub ImportContentFile
 sub isDate {
   my ( $text ) = @_;
 
-  # format 'PETAK: 11. srpnja 2008.god.'
-  if( $text =~ /^(ponedjeljak|utorak|srijeda|ČETVRTAK|petak|subota|nedjelja):\s*\d+\.\s*(sijecnja|veljace|ozujka|travnja|svibnja|lipnja|srpnja|kolovoza|rujna|listopada|studenoga|prosinca)\s*\d+\.\s*god\.$/i ){
+  # format 'ÈTVRTAK  23.10.2008.'
+  if( $text =~ /^(ponedjeljak|utorak|srijeda|ČETVRTAK|petak|subota|nedjelja)\s+\d+\.\s*\d+\.\s*\d+\.*$/i ){
     return 1;
   }
 
@@ -164,9 +164,9 @@ sub isDate {
 sub ParseDate {
   my( $text ) = @_;
 
-  my( $dayname, $day, $monthname, $year ) = ( $text =~ /^(\S+):\s*(\d+)\.\s*(\S+)\s*(\d+)\.\s*god\.$/ );
+  my( $dayname, $day, $month, $year ) = ( $text =~ /^(\S+)\s+(\d+)\.\s*(\d+)\.\s*(\d+)\.*$/ );
 
-  my $month = MonthNumber( $monthname , 'hr' );
+  $year += 2000 if $year lt 100;
 
   return sprintf( '%d-%02d-%02d', $year, $month, $day );
 }
@@ -174,7 +174,7 @@ sub ParseDate {
 sub isShow {
   my ( $text ) = @_;
 
-  # format '21.40 Journal, emisija o modi (18)'
+  # format '15.30 Zap skola,  crtana serija  ( 3/52)'
   if( $text =~ /^\d+\.\d+\s+\S+/i ){
     return 1;
   }
@@ -185,11 +185,11 @@ sub isShow {
 sub ParseShow {
   my( $text ) = @_;
 
-  my( $hour, $min, $title, $genre, $episode );
+  my( $hour, $min, $title, $genre, $ep_no, $ep_se );
 
-  if( $text =~ /\(\d+\)/ ){
-    ( $episode ) = ( $text =~ /\((\d+)\)/ );
-    $text =~ s/\(\d+\).*//;
+  if( $text =~ /\(\d+\/\d+\)/ ){
+    ( $ep_no, $ep_se ) = ( $text =~ /\((\d+)\/(\d+)\)/ );
+    $text =~ s/\(\d+\/\d+\).*//;
   }
 
   if( $text =~ /\,.*/ ){
@@ -199,7 +199,7 @@ sub ParseShow {
 
   ( $hour, $min, $title ) = ( $text =~ /^(\d+)\.(\d+)\s+(.*)$/ );
 
-  return( $hour . ":" . $min , $title , $genre , $episode );
+  return( $hour . ":" . $min , $title , $genre , $ep_no, $ep_se );
 }
 
 1;
