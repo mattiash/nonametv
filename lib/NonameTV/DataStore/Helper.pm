@@ -221,11 +221,18 @@ sub AddProgramme
                                      $ce->{start_time} );
   if( defined( $self->{lasttime} ) and ($start_time < $self->{lasttime}) )
   {
-    my $new_start_time = $start_time->clone();
+    my $new_start_time;
 
-    # We cannot use days => 1 here since it dies if the new date
-    # is invalid due to a DST change.
-    $new_start_time->add( hours => 24 );
+    # Have to wrap add days => 1 in an eval, since the resulting time
+    # may not exist (due to daylight savings).
+    eval {
+      $new_start_time = $start_time->clone()->add( days => 1 );
+    };
+
+    if( not defined $new_start_time ) {
+      w "Failed to add one day to start_time, adding 24h instead.";
+      $new_start_time = $start_time->clone()->add( hours => 24 );
+    }
 
     my $dur =  $new_start_time - $self->{lasttime};
     my( $days, $hours ) = $dur->in_units( 'days', 'hours' );
