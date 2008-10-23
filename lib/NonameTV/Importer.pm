@@ -217,7 +217,7 @@ sub LoadChannelsFromDb {
   my $self = shift;
 
   $self->{_ChannelData} = $self->{datastore}->FindGrabberChannels( 
-     $self->{grabber_name} );
+     $self->{ConfigName} );
 }
 
 sub defdef {
@@ -267,7 +267,7 @@ sub SyncChannelsToDb {
     push @{$self->{_ChannelData}}, $ce;
   }
 
-  my $db = $self->{datastore}->FindGrabberChannels( $self->{grabber_name} );
+  my $db = $self->{datastore}->FindGrabberChannels( $self->{ConfigName} );
   my $conf = $self->{_ChannelData};
 
   push @{$db}, { xmltvid => 'zzzz' };
@@ -325,7 +325,7 @@ sub UpdateChannel {
   my $data = {
     xmltvid => $cc->{xmltvid},
     display_name => $cc->{display_name},
-    grabber => $self->{grabber_name},
+    grabber => $self->{ConfigName},
     grabber_info => $cc->{grabber_info},
     sched_lang => $cc->{sched_lang},
     empty_ok => $cc->{empty_ok},
@@ -345,7 +345,7 @@ sub AddChannel {
   my $data = {
     xmltvid => $cc->{xmltvid},
     display_name => $cc->{display_name},
-    grabber => $self->{grabber_name},
+    grabber => $self->{ConfigName},
     grabber_info => $cc->{grabber_info},
     sched_lang => $cc->{sched_lang},
     empty_ok => $cc->{empty_ok},
@@ -359,7 +359,7 @@ sub AddChannel {
   $self->{datastore}->sa->Add( 'channels', $data );
   my $id = $self->{datastore}->sa->Lookup( 'channels', 
     { xmltvid => $cc->{xmltvid},
-      grabber => $self->{grabber_name} },
+      grabber => $self->{ConfigName} },
     "id" );
 
   $cc->{id} = $id;	 

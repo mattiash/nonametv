@@ -111,7 +111,7 @@ sub DoImportContentFile {
 
   my $ds = $self->{datastore};
 
-  StartLogSection( $self->{grabber_name} . " $file", 1 );
+  StartLogSection( $self->{ConfigName} . " $file", 1 );
 
   $ds->StartTransaction();
   
@@ -121,7 +121,7 @@ sub DoImportContentFile {
   # Import file
   my $dir = $self->{conf}->{FileStore} . "/" . $data->{xmltvid};
   eval { $self->ImportContentFile( "$dir/$file", $data ); };
-  my( $message, $highest ) = EndLogSection( $self->{grabber_name} . " $file" );
+  my( $message, $highest ) = EndLogSection( $self->{ConfigName} . " $file" );
   if( $@ ) {
     $message .= $@;
     $highest = 5;

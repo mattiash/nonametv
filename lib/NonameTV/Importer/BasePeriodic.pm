@@ -54,13 +54,8 @@ sub new {
       'clear'        => 0,
     };
 
-    # $self->{grabber_name} hasn't been set yet, so we'll build our
-    # own name from the class name.
-    my $name = ref( $self );
-    $name =~ s/.*:://;
-
     $self->{cc} = NonameTV::ContentCache->new( { 
-      basedir => $conf->{ContentCachePath} . $name,
+      basedir => $conf->{ContentCachePath} . $self->{ConfigName},
       credentials => $conf->{ContentCacheCredentials},
       callbackobject => $self,
       useragent => "Grabber from http://tv.swedb.se", 
@@ -139,7 +134,7 @@ sub ImportData {
 
   SetVerbosity( $p->{verbose}, $p->{quiet} );
 
-  StartLogSection( $self->{grabber_name}, 1 );
+  StartLogSection( $self->{ConfigName}, 1 );
 
   my $error1 = $self->InitiateDownload( $p );
   f $error1 if defined $error1;
@@ -149,7 +144,7 @@ sub ImportData {
 
   my $ds = $self->{datastore};
 
-  my $message1 = EndLogSection( $self->{grabber_name} );
+  my $message1 = EndLogSection( $self->{ConfigName} );
 
   foreach my $data (@{$self->ListChannels()} ) {
     StartLogSection( $data->{xmltvid}, 1 );

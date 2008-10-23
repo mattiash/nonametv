@@ -52,6 +52,8 @@ sub CreateImporter {
   }
 
   my $imp_data = $conf->{Importers}->{$name};
+  $imp_data->{ConfigName} = $name;
+
   my $imp_type = $imp_data->{Type};
 
   if( not defined $imp_type ) {
