@@ -30,7 +30,6 @@ sub new {
     my $self  = $class->SUPER::new( @_ );
     bless ($self, $class);
 
-    $self->{grabber_name} = "FTV";
 
     defined( $self->{UrlRoot} ) or die "You must specify UrlRoot";
 

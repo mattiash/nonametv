@@ -36,7 +36,6 @@ sub new {
     my $self  = $class->SUPER::new( @_ );
     bless ($self, $class);
 
-    $self->{grabber_name} = "Svt";
 
     defined( $self->{Username} ) or die "You must specify Username";
     defined( $self->{Password} ) or die "You must specify Password";

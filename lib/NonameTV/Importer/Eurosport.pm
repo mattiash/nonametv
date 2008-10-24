@@ -31,7 +31,6 @@ sub new {
   my $self  = $class->SUPER::new( @_ );
   bless ($self, $class);
 
-  $self->{grabber_name} = "Eurosport";
 
   defined( $self->{FtpRoot} ) or die "You must specify FtpRoot";
   defined( $self->{Filename} ) or die "You must specify Filename";

@@ -28,7 +28,6 @@ sub new {
   my $self  = $class->SUPER::new( @_ );
   bless ($self, $class);
 
-  $self->{grabber_name} = "Discovery_xml";
 
   return $self;
 }

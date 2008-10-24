@@ -32,7 +32,6 @@ sub new {
   my $self  = $class->SUPER::new( @_ );
   bless ($self, $class);
 
-  $self->{grabber_name} = "BubbleHits";
 
   my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore}, "Europe/London" );
   $self->{datastorehelper} = $dsh;

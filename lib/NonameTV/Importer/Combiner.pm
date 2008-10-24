@@ -276,7 +276,6 @@ sub new {
       'short-grab'   => 0,
     };
 
-    $self->{grabber_name} = "Combiner";
 
     return $self;
 }
