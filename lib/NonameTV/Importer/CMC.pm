@@ -164,9 +164,9 @@ sub ImportContentFile {
 
         # if the bottom border is visible -> this is title
         # else this is description
-        my $topCol = $oWkC->{Format}->{BdrColor}[3];
-#print "BOTTOM $topCol\n";
-        if( $topCol ){
+        my $botCol = $oWkC->{Format}->{BdrColor}[3];
+#print "BOTTOM $botCol\n";
+        if( $botCol ){
           $nexttarget = N_TITLE;
         }
 
