@@ -18,6 +18,7 @@ use Encode;
 use NonameTV::Log qw/d p w f StartLogSection EndLogSection/;
 
 use NonameTV::Config qw/ReadConfig/;
+use NonameTV::Factory qw/CreateFileStore/;
 
 use NonameTV::Importer;
 
@@ -39,8 +40,7 @@ sub new {
 
     my $conf = ReadConfig();
     
-    $self->{filestore} = NonameTV::FileStore->new( 
-       { Path => $conf->{FileStore} } );
+    $self->{filestore} = CreateFileStore( $self->{ConfigName} );
 
     return $self;
 }

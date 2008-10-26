@@ -5,9 +5,9 @@ use strict;
 use FindBin;
 use lib "$FindBin::Bin/../lib";
 
-use NonameTV::FileStore;
+use NonameTV::Factory qw/CreateFileStore/;
 
-my $fs = NonameTV::FileStore->new( { Path => "/tmp/fs" } );
+my $fs = CreateFileStore( "Viasat" );
 
 my $content = "Hello";
 
