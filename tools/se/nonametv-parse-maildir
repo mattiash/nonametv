@@ -20,6 +20,7 @@ use Encode qw/decode/;
 use NonameTV;
 use NonameTV::DataStore;
 use NonameTV::Config qw/ReadConfig/;
+use NonameTV::Factory qw/CreateFileStore/;
 
 my $opt = { manual => 0,
             test => 0,
@@ -34,9 +35,8 @@ if( not $res ) {
   print << 'EOHELP';
 nonametv-process-maildir [--manual] [--test] [--verbose]
 
-Extract files from mails in a maildir and store them in one directory per
-channel for later import by Importers derived from 
-NonameTV::Importer:BaseFile.
+Extract files from mails in a maildir and store them using 
+NonameTV::FileStore.
 
   --manual  Ask the user which Importer to use if the information
             cannot be derived from the message. 
@@ -51,7 +51,6 @@ EOHELP
 my $conf = ReadConfig();
 
 my $ds = NonameTV::DataStore->new( $conf->{DataStore} );
-my $filestore = $conf->{FileStore};
 
 my $root = "/home/mattias/Maildir/.Projects";
 my @folders = qw(xmltv-data
@@ -127,21 +126,7 @@ sub process_parts
       print "$name ($size bytes): ";
       $channel = <STDIN>;
       $channel =~ tr/\n\r //d;
-      return 0 if $channel eq "";
-
-      if( $channel eq "save" )
-      {
-        # a major security hole if you accept any path!
-        my $filename = "/tmp/" . $name;
-        
-        open(FH, "> $filename");
-        $part->decoded->print(\*FH);
-        close(FH);
-
-        print "Wrote $filename\n";
-        return 1;
-      }
-        
+      $channel = undef if $channel eq "";        
     }
 
     if( not defined $channel ) {
@@ -153,50 +138,10 @@ sub process_parts
 
     die "Unknown channel $channel" if not defined $chd;
 
-    my $dir = "$filestore/$channel";
+    my $fs = GetFileStore( $chd->{grabber} );
 
-    if( not -d $dir ) {
-      print "\nNo such directory $dir\n";
-      return 0;
-    }
-
-#    print "  $importer $name $type " . $part->size . "\n";
-    
-    # a major security hole if you accept any path!
-    my $filename = "$tmpdir/" . $name;
-  
-    open(FH, "> $filename");
-    $part->decoded->print(\*FH);
-    close(FH);
-
-    my $md5 = md5sum( $filename );
-    my $oldmd5 = $ds->sa->Lookup( 'files', { channelid => $chd->{id},
-                                         filename => $name }, 'md5sum' );
-
-    if( defined( $oldmd5 ) and not -f "$dir/name" ) {
-      verbose( "Restoring $dir/$name" );
-      sleep( 1 );
-      copy( $filename, "$dir/$name" );
-    }
-
-    # Check if the file exists even though there was no record in the db.
-    # This is the case if the importer has not been run since the file
-    # was placed there.
-    if( not defined( $oldmd5 ) and -f "$dir/$name" ) {
-      $oldmd5 = md5sum( "$dir/$name" );
-    }
-
-    if( (not defined $oldmd5) or ($md5 ne $oldmd5) ) {
-      $ds->sa->Delete( 'files', { channelid => $chd->{id},
-                              filename => $name } );
-      move( $filename, "$dir/$name" );
-      sleep(1); # File-times have a one-second resolution...
-      verbose( "  $name $channel" ); 
-    }
-    else {
-      verbose( "  $name $channel (duplicate)" );
-      unlink( $filename );
-    }
+    my $content = $part->decoded->string;
+    $fs->AddFile( $channel, $name, \$content );
   }
 
   return $opt->{test} ? 0 : 1;
@@ -269,6 +214,18 @@ sub guess_channel
   }
 
   return undef;
+}
+
+my $filestores = {};
+
+sub GetFileStore {
+  my( $importer ) = @_;
+
+  if( not defined $filestores->{$importer} ) {
+    $filestores->{$importer} = CreateFileStore( $importer );
+  }
+
+  return $filestores->{$importer}
 }
 
 sub md5sum {
