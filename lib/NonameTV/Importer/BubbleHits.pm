@@ -34,7 +34,7 @@ sub new {
 
   $self->{grabber_name} = "BubbleHits";
 
-  my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore} );
+  my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore}, "Europe/London" );
   $self->{datastorehelper} = $dsh;
 
   return $self;
@@ -113,11 +113,13 @@ sub ImportContentFile {
       $oWkC = $oWkS->{Cells}[$iR][1];
       next if( ! $oWkC );
       my $time = $oWkC->Value if( $oWkC->Value );
+      next if( ! $time );
 
       # title - column 2
       $oWkC = $oWkS->{Cells}[$iR][2];
       next if( ! $oWkC );
       my $title = $oWkC->Value if( $oWkC->Value );
+      next if( ! $title );
 
       # episode - column 3
       $oWkC = $oWkS->{Cells}[$iR][3];
@@ -147,14 +149,12 @@ sub ImportContentFile {
       $oWkC = $oWkS->{Cells}[$iR][9];
       my $freeorenc = $oWkC->Value if( $oWkC->Value );
 
-      my $starttime = create_dt( $date , $time );
-
-      progress("BubbleHits: $xmltvid: $starttime - $title");
+      progress("BubbleHits: $xmltvid: $time - $title");
 
       my $ce = {
         channel_id => $channel_id,
-        start_time => $starttime->hour . ":" . $starttime->minute,
-        title => norm($title),
+        start_time => $time,
+        title => $title,
       };
 
       $ce->{description} = $synopsis if $synopsis;
@@ -197,27 +197,6 @@ sub ParseDate
 
   my $date = sprintf( "%04d-%02d-%02d", $year, $month, $day );
   return $date;
-}
-
-sub create_dt
-{
-  my ( $date, $time ) = @_;
-
-  my( $year, $month, $day) = ( $date =~ /^(\d+)-(\d+)-(\d+)$/ );
-  my( $hour, $minute ) = ( $time =~ /^(\d+):(\d+)$/ );
-
-  my $dt = DateTime->new( year   => $year,
-                          month  => $month,
-                          day    => $day,
-                          hour   => $hour,
-                          minute => $minute,
-                          second => 0,
-                          time_zone => 'Europe/London',
-                          );
-
-  $dt->set_time_zone( 'Europe/Zagreb' );
-
-  return $dt;
 }
 
 1;

@@ -17,7 +17,7 @@ use POSIX qw/strftime/;
 use DateTime;
 use Spreadsheet::ParseExcel;
 
-use NonameTV qw/MyGet norm AddCategory/;
+use NonameTV qw/MyGet norm AddCategory MonthName/;
 use NonameTV::DataStore::Helper;
 use NonameTV::Log qw/progress error/;
 use NonameTV::Config qw/ReadConfig/;
@@ -239,7 +239,6 @@ sub UpdateFiles {
   my( $self ) = @_;
 
   # get current month name
-  my $monthname = DateTime->today->month_name;
   my $year = DateTime->today->strftime( '%g' );
 
   # the url to fetch data from
@@ -248,24 +247,30 @@ sub UpdateFiles {
   # GrabberInfo = <empty>
 
   foreach my $data ( @{$self->ListChannels()} ) {
-    my $dir = $data->{grabber_info};
+
     my $xmltvid = $data->{xmltvid};
 
-print @{$self->MaxMonths} . "\n";
-    my $filename = "Mezzo_Schedule_" . $monthname . "_" . $year . ".xls";
+    my $today = DateTime->today;
 
-    my $url = $self->{UrlRoot} . "/" . $data->{grabber_info} . "/" . $filename;
-    progress("Mezzo: Fetching xls file from $url");
+    # do it for MaxMonths in advance
+    for(my $month=0; $month <= $self->{MaxMonths} ; $month++) {
 
-    my( $content, $code ) = MyGet( $url );
+      my $dt = $today->clone->add( months => $month );
 
-    my $filepath = $self->{FileStore} . '/' . $xmltvid . '/' . $filename;
-    open (FILE,">$filepath");
-    print FILE $content;
-    close (FILE);
+      my $filename = "Mezzo_Schedule_" . $dt->month_name . "_" . $dt->strftime( '%g' ) . ".xls";
 
-    progress("Mezzo: Content saved to $filepath");
+      my $url = $self->{UrlRoot} . "/" . $filename;
+      progress("Mezzo: Fetching xls file from $url");
+
+      ftp_get( $url, $self->{FileStore} . '/' .  $xmltvid . '/' . $filename );
+    }
   }
+}
+
+sub ftp_get {
+  my( $url, $file ) = @_;
+
+  qx[curl -s -S -z $file -o $file $url];
 }
 
 1;

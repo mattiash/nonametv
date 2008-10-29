@@ -19,7 +19,7 @@ use utf8;
 use POSIX;
 use DateTime;
 use XML::LibXML;
-#use Text::Capitalize qw/capitalize_title/;
+use Encode;
 
 use NonameTV qw/MyGet Wordfile2Xml Htmlfile2Xml norm AddCategory/;
 use NonameTV::DataStore::Helper;
@@ -122,6 +122,8 @@ sub ImportContentFile
     } elsif( isShow( $text ) ) {
 
       my( $time, $title, $genre ) = ParseShow( $text );
+
+      #$title = decode( "iso-8859-2", $title );
 
       my $ce = {
         channel_id => $chd->{id},

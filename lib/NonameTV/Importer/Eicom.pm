@@ -36,7 +36,7 @@ sub new {
 
   $self->{grabber_name} = "Eicom";
 
-  my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore} );
+  my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore}, "Europe/London" );
   $self->{datastorehelper} = $dsh;
 
   return $self;

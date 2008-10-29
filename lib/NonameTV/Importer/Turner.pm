@@ -55,9 +55,9 @@ sub ImportContentFile
   my $xmltvid = $chd->{xmltvid};
   my $dsh = $self->{datastorehelper};
   my $ds = $self->{datastore};
-  
+
   if( $file =~ /\.doc$/i ){
-    $self->ImportDOC( $file, $channel_id, $xmltvid );
+    #$self->ImportDOC( $file, $channel_id, $xmltvid );
   } elsif( $file =~ /\.xls$/i ){
     $self->ImportXLS( $file, $channel_id, $xmltvid );
   }
@@ -80,7 +80,7 @@ sub ImportDOC
   $doc = Wordfile2Xml( $file );
 
   if( not defined( $doc ) ) {
-    error( "Turner $xmltvid: $file: Failed to parse" );
+    error( "Turner DOC: $xmltvid: $file: Failed to parse" );
     return;
   }
 
@@ -94,7 +94,7 @@ sub ImportDOC
   my $ns = $doc->find( "//div" );
   
   if( $ns->size() == 0 ) {
-    error( "Turner $xmltvid: $file: No divs found." ) ;
+    error( "Turner DOC: $xmltvid: $file: No divs found." ) ;
     return;
   }
 
@@ -115,20 +115,21 @@ sub ImportDOC
 
       if( $date ) {
 
-        progress("Turner DOC: $xmltvid: Date is $date");
-
         if( $date ne $currdate ) {
 
           if( $currdate ne "x" ){
             # save last day if we have it in memory
             FlushDayData( $xmltvid, $dsh , @ces );
             $dsh->EndBatch( 1 );
+            @ces = ();
           }
 
           my $batch_id = "${xmltvid}_" . $date;
           $dsh->StartBatch( $batch_id, $channel_id );
           $dsh->StartDate( $date , "00:00" ); 
           $currdate = $date;
+
+          progress("Turner DOC: $xmltvid: Date is $date");
         }
       }
 
