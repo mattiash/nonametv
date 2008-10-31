@@ -17,7 +17,7 @@ use POSIX qw/strftime/;
 use DateTime;
 use Spreadsheet::ParseExcel;
 
-use NonameTV qw/MyGet norm AddCategory MonthName/;
+use NonameTV qw/MyGet norm AddCategory/;
 use NonameTV::DataStore::Helper;
 use NonameTV::Log qw/progress error/;
 use NonameTV::Config qw/ReadConfig/;
@@ -237,6 +237,7 @@ sub ParseTime
 
 sub UpdateFiles {
   my( $self ) = @_;
+return;
 
   # get current month name
   my $year = DateTime->today->strftime( '%g' );

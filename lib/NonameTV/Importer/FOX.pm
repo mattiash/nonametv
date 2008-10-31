@@ -185,7 +185,7 @@ sub ImportXML
 
       my $ce = {
         channel_id => $channel_id,
-        title => $crotitle,
+        title => $crotitle || $title,
         subtitle => $title,
         start_time => $starttime->hms(':'),
       };
@@ -335,7 +335,7 @@ sub ImportXLS
 
       my $ce = {
         channel_id => $channel_id,
-        title => $crotitle,
+        title => $crotitle || $title,
         subtitle => $title,
         start_time => $starttime->hms(':'),
       };
