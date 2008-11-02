@@ -85,7 +85,7 @@ sub AddFile #( $xmltvid, $filename, $cref )
     $self->AddFileMeta( $xmltvid, $filename, $newmd5 );
   }
   else {
-    print "Duplicate file skipped.\n";
+#    print "Duplicate file skipped.\n";
   }
 }
 
@@ -182,18 +182,17 @@ sub LoadFileList {
   my $fl = $self->GetFile( $xmltvid, "00files" );
 
   if( not defined $fl ) {
-    $self->{_fl}->{$xmltvid} = [];
-    $self->{_flmodified}->{$xmltvid} = 0;
+    $self->RecreateIndex( $xmltvid );
+    return;
   }
-  else {
-    foreach my $line (split( "\n", $fl)) {
-      my( $filename, $md5sum, $ts ) = split( "\t", $line );
-      push @d, [ $filename, $md5sum, $ts ];
-    }
-    
-    $self->{_fl}->{$xmltvid} = \@d;
-    $self->{_flmodified}->{$xmltvid} = 0;
+
+  foreach my $line (split( "\n", $fl)) {
+    my( $filename, $md5sum, $ts ) = split( "\t", $line );
+    push @d, [ $filename, $md5sum, $ts ];
   }
+
+  $self->{_fl}->{$xmltvid} = \@d;
+  $self->{_flmodified}->{$xmltvid} = 0;
 }
 
 =begin nd
@@ -229,16 +228,23 @@ sub RecreateIndex #( $xmltvid )
   $self->{_flmodified}->{$xmltvid} = 1;
 }
 
+sub WriteFileMeta {
+  my $self = shift;
+  my( $xmltvid ) = @_;
+
+  my $fullname = $self->{Path} . "/$xmltvid/00files";
+  open( OUT, "> $fullname" ) or die "Failed to write to $fullname";
+  foreach my $e (@{$self->{_fl}->{$xmltvid}}) {
+    print OUT join( "\t", @{$e} ) . "\n";
+  }
+  close( OUT );
+}
+
 sub DESTROY {
   my $self = shift;
 
-  foreach my $xmltvid (keys %{$self->{_fl}} ) {
-    my $fullname = $self->{Path} . "/$xmltvid/00files";
-    open( OUT, "> $fullname" ) or die "Failed to write to $fullname";
-    foreach my $e (@{$self->{_fl}->{$xmltvid}}) {
-      print OUT join( "\t", @{$e} ) . "\n";
-    }
-    close( OUT );
+  foreach my $xmltvid (keys %{$self->{_flmodified}} ) {
+    $self->WriteFileMeta( $xmltvid );
   }
 }
 
