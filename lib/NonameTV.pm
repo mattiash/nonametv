@@ -187,7 +187,7 @@ sub Wordfile2Xml
   my $html = qx/$wvhtml "$filename" -/;
   if( $? )
   {
-    print "$wvhtml $filename - failed: $?\n";
+    w "$wvhtml $filename - failed: $?";
     return undef;
   }
   
