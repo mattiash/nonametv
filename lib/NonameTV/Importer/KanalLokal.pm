@@ -17,7 +17,7 @@ use utf8;
 use DateTime;
 use XML::LibXML;
 
-use NonameTV qw/MyGet Wordfile2Xml Htmlfile2Xml norm/;
+use NonameTV qw/norm/;
 use NonameTV::DataStore::Helper;
 use NonameTV::Log qw/progress error/;
 
