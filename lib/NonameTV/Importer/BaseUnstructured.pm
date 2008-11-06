@@ -124,6 +124,8 @@ sub DoImportContent {
 
   my $cref = $self->{filestore}->GetFile( $data->{xmltvid}, $filename );
 
+  p "Processing";
+
   eval { $self->ImportContent( $filename, $cref, $data ); };
   my( $message, $highest ) = EndLogSection( $self->{ConfigName} . 
 					    " $filename" );
@@ -193,7 +195,7 @@ sub ImportContent {
 
   my( $filename, $cref, $chd ) = @_;
 
-  die "You must override ImportContentFile";
+  die "You must override ImportContent";
 }
 
 sub md5sum {
