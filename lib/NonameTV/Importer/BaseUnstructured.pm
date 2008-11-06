@@ -15,6 +15,7 @@ use DateTime;
 use POSIX qw/floor/;
 use Encode;
 
+use NonameTV qw/CompareArrays/;
 use NonameTV::Log qw/d p w f StartLogSection EndLogSection/;
 
 use NonameTV::Config qw/ReadConfig/;
@@ -71,30 +72,30 @@ sub ImportData {
       @processfiles = $fs->ListFiles( $data->{xmltvid} );
     }
     else {
-      my @dbfiles = $ds->sa->LookupMany( "files", 
+      my $dbfiles = $ds->sa->LookupMany( "files", 
 					 { channelid => $data->{id} } );
-      my @old = map { [ $_->{filename}, $_->{md5sum} ] } @dbfiles;
+      my @old = map { [ $_->{filename}, $_->{md5sum} ] } @{$dbfiles};
 
       my @new = $fs->ListFiles( $data->{xmltvid} );
 
       CompareArrays( \@new, \@old, {
-	added => sub { push @processfiles, $_ },
+	added => sub { push @processfiles, $_[0] },
 	deleted => sub {
 	  $ds->sa->Delete( "files", { channelid => $data->{id},
 				      filename => $_[0] } );
 	},
 	equal => sub { push( @processfiles, $_[0] ) 
-			   if( $_[0]->[1] eq $_[1]->[1] );
+			   if( $_[0]->[1] ne $_[1]->[1] );
 		     },
 	cmp => sub { $_[0]->[0] cmp $_[1]->[0] },
 	max => [ "zzzzzzzz" ],
       } );
-      
+
       # Process the oldest (lowest timestamp) files first.
-      @processfiles = sort { $a->[2] <=> $b->[2] };
+      @processfiles = sort { $a->[2] <=> $b->[2] } @processfiles;
     }
 
-    foreach my $f (@processfiles) {
+    foreach my $file (@processfiles) {
       $ds->sa->Delete( "files", { channelid => $data->{id},
                                   filename => $file->[0] } );
       
@@ -103,28 +104,28 @@ sub ImportData {
                                'md5sum' => $file->[1],
                     } );
 
-      $self->DoImportContentFile( $file->[0], $data );
+      $self->DoImportContent( $file->[0], $data );
     }
   }
 }
 
-sub DoImportContentFile {
+sub DoImportContent {
   my $self = shift;
   my( $filename, $data ) = @_;
 
   my $ds = $self->{datastore};
 
-  StartLogSection( $self->{grabber_name} . " $filename", 1 );
+  StartLogSection( $self->{ConfigName} . " $filename", 1 );
 
   $ds->StartTransaction();
   
   $self->{earliestdate} = "2100-01-01";
   $self->{latestdate} = "1970-01-01";
 
-  my $cref = $self->{filestore}->Get( $data->{xmltvid}, $filename );
+  my $cref = $self->{filestore}->GetFile( $data->{xmltvid}, $filename );
 
-  eval { $self->ImportContent( $file, $cref, $data ); };
-  my( $message, $highest ) = EndLogSection( $self->{grabber_name} . 
+  eval { $self->ImportContent( $filename, $cref, $data ); };
+  my( $message, $highest ) = EndLogSection( $self->{ConfigName} . 
 					    " $filename" );
   if( $@ ) {
     $message .= $@;
@@ -137,7 +138,7 @@ sub DoImportContentFile {
 
     $ds->sa->Update( "files", 
                      { channelid => $data->{id},
-                       filename => $file, },
+                       filename => $filename, },
                      { successful => 0,
                        message => $message, } );
     
@@ -147,7 +148,7 @@ sub DoImportContentFile {
   
     $ds->sa->Update( "files", 
                      { channelid => $data->{id},
-                       filename => $file, },
+                       filename => $filename, },
                      { successful => 1,
                        message => $message,
                        earliestdate => $self->{earliestdate},
@@ -187,10 +188,10 @@ sub RemoveMissing {
   }
 }
   
-sub ImportContentFile {
+sub ImportContent {
   my $self = shift;
 
-  my( $filename, $chd ) = @_;
+  my( $filename, $cref, $chd ) = @_;
 
   die "You must override ImportContentFile";
 }
