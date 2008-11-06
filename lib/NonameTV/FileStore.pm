@@ -244,7 +244,8 @@ sub DESTROY {
   my $self = shift;
 
   foreach my $xmltvid (keys %{$self->{_flmodified}} ) {
-    $self->WriteFileMeta( $xmltvid );
+    $self->WriteFileMeta( $xmltvid ) 
+        if $self->{_flmodified}->{$xmltvid};
   }
 }
 
