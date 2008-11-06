@@ -710,7 +710,7 @@ CompareArrays calls the following callback functions:
   $cb->{deleted}($eold) - Called for all entries that are present in
                         $old but not in $new.
 
-  $cb->{equal}($ea, $eb) - Called for all entries that are present in
+  $cb->{equal}($enew, $eold) - Called for all entries that are present in
                            both $new and $old.
 
 Additionally, $cb->{max} shall contain an entry that is always
