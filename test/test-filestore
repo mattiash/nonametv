@@ -24,3 +24,6 @@ $fs->RecreateIndex( "p1.sr.se" );
 foreach my $file (@files) {
   print join( ", ", @{$file} ) . "\n";
 }
+
+my $cref = $fs->GetFile( "p1.sr.se", "test" );
+print "Hello: $$cref\n";
