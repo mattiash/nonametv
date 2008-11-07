@@ -54,14 +54,14 @@ sub ImportContent {
 
   if( not defined( $doc ) ) {
     f "Not well-formed xml";
-    return;
+    return 0;
   }
   
   my $ns = $doc->find( "//Event" );
   
   if( $ns->size() == 0 ) {
     f "No Events found";
-    return;
+    return 0;
   }
 
   my $batch_id;
@@ -115,7 +115,7 @@ sub ImportContent {
 
   $ds->EndBatch( 1 );
     
-  return;
+  return 1;
 }
 
 sub ParseDate {
