@@ -189,8 +189,25 @@ sub RemoveMissing {
     }
   }
 }
-  
-sub ImportContent {
+
+=begin nd
+
+Method: ImportContent
+
+The ImportContent method must be overridden in an importer. It does
+the actual job of importing data from a batch into the database.
+
+The call to ImportContent is wrapped inside a StartLogSection with the
+ConfigName and filename. ImportContent must call StartBatch itself,
+since the base class cannot know which batch(es) this file contains.
+
+Returns: 1 on success, 0 if the import failed so badly that the
+  database hasn't been updated with data from the file.
+
+=cut
+
+sub ImportContent #( $filename, $cref, $chd )
+{
   my $self = shift;
 
   my( $filename, $cref, $chd ) = @_;
