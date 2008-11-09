@@ -644,6 +644,10 @@ sub MonthNumber {
     @months_1 = qw/jan feb mar apr maj jun jul aug sep okt nov dec/;
     @months_2 = qw/januar februar mart april maj jun juli august septembar oktobar novembar decembar/;
     @months_3 = qw/januara februara marta aprila maja juna jula augusta septembra oktobra novembra decembra/;
+  } elsif( $lang =~ /^it$/ ){
+    @months_1 = qw/gen feb mar apr mag giu lug ago set ott nov dic/;
+    @months_2 = qw/gennaio febbraio marzo aprile maggio giugno luglio agosto settembre ottobre novembre dicembre/;
+    @months_3 = qw/1 2 3 4 5 6 7 8 9 10 11 12/;
   }
 
   my %monthnames = ();

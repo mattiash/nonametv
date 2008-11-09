@@ -54,12 +54,10 @@ sub ImportContentFile {
   my $dsh = $self->{datastorehelper};
   my $ds = $self->{datastore};
 
-  if( $file =~ /\.xml$/i ){
-    $self->ImportXML( $file, $channel_id, $xmltvid );
-  } elsif( $file =~ /\.xls$/i ){
+  if( $file =~ /\.xls$/i ){
     $self->ImportXLS( $file, $channel_id, $xmltvid );
   } elsif( $file =~ /\.doc$/i ){
-    $self->ImportDOC( $file, $channel_id, $xmltvid );
+    #$self->ImportDOC( $file, $channel_id, $xmltvid );
   }
 
   return;
@@ -94,9 +92,26 @@ sub ImportXLS
 
 
       # get the names of the columns from the 1st row
+      # the columns that we use are
+      # Date
+      # Film start hour
+      # Polish Title
+      # Episode number
+      # Season
       if( not %columns ){
         for(my $iC = $oWkS->{MinCol} ; defined $oWkS->{MaxCol} && $iC <= $oWkS->{MaxCol} ; $iC++) {
+
           $columns{norm($oWkS->{Cells}[$iR][$iC]->Value)} = $iC;
+
+          # alternate column name for 'Date'
+          $columns{'Date'} = $iC if( $oWkS->{Cells}[$iR][$iC]->Value =~ /Tx Date/ );
+
+          # alternate column name for 'Film start hour'
+          $columns{'Film start hour'} = $iC if( $oWkS->{Cells}[$iR][$iC]->Value =~ /Billed Start/ );
+
+          # alternate column name for 'Polish title'
+          $columns{'Polish Title'} = $iC if( $oWkS->{Cells}[$iR][$iC]->Value =~ /Poljski titl/ );
+          $columns{'Polish Title'} = $iC if( $oWkS->{Cells}[$iR][$iC]->Value =~ /Title/ );
         }
         next;
       }
@@ -303,6 +318,10 @@ sub isDate {
   # format 'FRIDAY 1 AUGUST 2008 - ZONE REALITY EMEA 1'
   if( $text =~ /^(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\s+\d+\s+\S+\s+\d+\s+- ZONE REALITY EMEA 1$/i ){
     return 1;
+  } elsif( $text =~ /^\d+-\d+-\d+$/ ){
+    return 1;
+  } elsif( $text =~ /^\d+\/\d+\/\d+$/ ){
+    return 1;
   }
 
   return 0;
@@ -311,14 +330,19 @@ sub isDate {
 sub ParseDate {
   my( $text ) = @_;
 
+  $text =~ s/^\s+//;
+
   my( $dayname, $day, $monthname, $year );
   my $month;
 
-  if( $text =~ /^\S+\s+\d+\s+\S+\s+\d+/ ) {
+  if( $text =~ /^\S+\s+\d+\s+\S+\s+\d+/ ) { # format 'FRIDAY 1 AUGUST 2008 - ZONE REALITY EMEA 1'
     ( $dayname, $day, $monthname, $year ) = ( $text =~ /^(\S+)\s+(\d+)\s+(\S+)\s+(\d+)/ );
     $month = MonthNumber( $monthname, 'en' );
   } elsif( $text =~ /^\d+-\d+-\d+$/ ) { # format '10-1-08'
     ( $month, $day, $year ) = ( $text =~ /^(\d+)-(\d+)-(\d+)$/ );
+    $year += 2000 if $year lt 100;
+  } elsif( $text =~ /^\d+\/\d+\/\d+$/ ) { # format '01/11/2008'
+    ( $day, $month, $year ) = ( $text =~ /^(\d+)\/(\d+)\/(\d+)$/ );
     $year += 2000 if $year lt 100;
   }
 

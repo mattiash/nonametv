@@ -52,10 +52,6 @@ sub ImportContentFile {
   my $dsh = $self->{datastorehelper};
   my $ds = $self->{datastore};
 
-  my( $dayname , $dateinfo );
-  my( $when, $newtime );
-  my( $title );
-  my( $day, $month , $year );
   my( $oBook, $oWkS, $oWkC );
 
   # Only process .xls files.
@@ -83,27 +79,22 @@ sub ImportContentFile {
 
       # DAYNAME is in the 4th row
       $oWkC = $oWkS->{Cells}[3][$iC];
-      if( $oWkC ){
-        $dayname = $oWkC->Value;
-      }
+      next if( ! $oWkC );
+      my $dayname = $oWkC->Value;
       next if ( ! $dayname );
 
       # DATE is in the 5th row
       $oWkC = $oWkS->{Cells}[4][$iC];
-      if( $oWkC ){
-        $dateinfo = $oWkC->Value;
-      }
+      next if( ! $oWkC );
+      my $dateinfo = $oWkC->Value;
       next if ( ! $dateinfo );
-      next if( $dateinfo !~ /^\d+-\d+-\d+$/ );
+      next if( $dateinfo !~ /^\d+-\d+-\d+$/ and $dateinfo !~ /^\d+\/\d+\/\d+$/ );
 
-      ( $day , $month , $year ) = ParseDate( $dateinfo );
-      my $date = sprintf( "%04d-%02d-%02d" , $year, $month, $day );
+      my $date = ParseDate( $dateinfo );
 
       progress("VH1_xls: $xmltvid: Date is: $date");
 
       if( $date ne $currdate ){
-
-        progress("Bnet: Date is $date");
 
         if( $currdate ne "x" ) {
           $dsh->EndBatch( 1 );
@@ -111,7 +102,7 @@ sub ImportContentFile {
 
         my $batch_id = $xmltvid . "_" . $date;
         $dsh->StartBatch( $batch_id , $channel_id );
-        $dsh->StartDate( $date , "05:00" );
+        $dsh->StartDate( $date , "06:00" );
         $currdate = $date;
       }
 
@@ -120,24 +111,21 @@ sub ImportContentFile {
 
         # Time Slot
         $oWkC = $oWkS->{Cells}[$iR][0];
-        if( $oWkC ){
-          $when = $oWkC->Value;
-        }
-        # next if when is empty
-        next if ( ! $when );
-        next if( $when !~ /\d\d\d\d/ );
+        next if( ! $oWkC );
+        my $timeinfo = $oWkC->Value;
+        next if ( ! $timeinfo );
+        next if( $timeinfo !~ /\d\d\d\d/ );
+        my $time = ParseTime( $timeinfo );
 
         # Title
         $oWkC = $oWkS->{Cells}[$iR][$iC];
-        if( $oWkC ){
-          $title = $oWkC->Value;
-        }
-        # next if title is empty as it spreads across more cells
+        next if( ! $oWkC );
+        my $title = $oWkC->Value;
         next if ( ! $title );
         next if( $title !~ /\S+/ );
 
         # from a valid cell with the 'title'
-        # the following cells up to the next row that has valid 'when'
+        # the following cells up to the next row that has valid 'time'
         # the cells might contain subtitle
         my $subtitle = undef;
         for( my $r = $iR + 1 ; defined $oWkS->{MaxRow} && $r <= $oWkS->{MaxRow} ; $r++ ){
@@ -152,28 +140,20 @@ sub ImportContentFile {
           }
         }
 
-        # create the time
-        $newtime = create_dt( $day , $month , $year , $when );
-
-        progress("VH1_xls: $xmltvid: $newtime - $title");
+        progress("VH1_xls: $xmltvid: $time - $title");
 
         my $ce = {
           channel_id   => $channel_id,
-          start_time   => $newtime->hms(":"),
+          start_time   => $time,
           title        => $title,
         };
 
-        if( defined $subtitle ){
-          $ce->{subtitle} = $subtitle;
-        }
+        $ce->{subtitle} = $subtitle if $subtitle;
 
         $dsh->AddProgramme( $ce );
 
       } # next row (next show)
 
-      $dateinfo = undef;
-      $when = undef;
-      $title = undef;
     } # next column (next day)
 
   } # next worksheet
@@ -183,36 +163,32 @@ sub ImportContentFile {
   return;
 }
 
+sub ParseTime
+{
+  my ( $tinfo ) = @_;
+
+  my( $h, $m ) = ( $tinfo =~ /^(\d{2})(\d{2})$/ );
+
+  return sprintf( "%02d:%02d", $h, $m );
+}
+
 sub ParseDate
 {
   my ( $dinfo ) = @_;
 
-  my( $m, $d, $y ) = ( $dinfo =~ /(\d+)-(\d+)-(\d+)/ );
+  my( $m, $d, $y );
 
-  $y += 2000 if $y < 2000;
+  if( $dinfo =~ /^\d+-\d+-\d+$/ ){
+    ( $m, $d, $y ) = ( $dinfo =~ /^(\d+)-(\d+)-(\d+)$/ );
+  } elsif( $dinfo =~ /^\d+\/\d+\/\d+$/ ){
+    ( $d, $m, $y ) = ( $dinfo =~ /^(\d+)\/(\d+)\/(\d+)$/ );
+  } else {
+    return undef;
+  }
 
-  return( $d , $m , $y );
-}
-  
-sub create_dt
-{
-  my ( $d , $m , $y , $tinfo ) = @_;
+  $y += 2000 if $y < 100;
 
-  my( $hr, $mn ) = ( $tinfo =~ /(\d{2})(\d{2})/ );
-
-  my $dt = DateTime->new( year   => $y,
-                           month  => $m,
-                           day    => $d,
-                           hour   => $hr,
-                           minute => $mn,
-                           second => 0,
-                           time_zone => 'Europe/Zagreb',
-                           );
-
-  # times are in CET timezone in original XLS file
-  #$dt->set_time_zone( "UTC" );
-
-  return( $dt );
+  return sprintf( "%04d-%02d-%02d" , $y, $m, $d );
 }
   
 1;

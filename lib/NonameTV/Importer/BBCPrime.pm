@@ -208,14 +208,26 @@ sub create_dt {
 sub UpdateFiles {
   my( $self ) = @_;
 
+  my $today = my $nowmonth = DateTime->today;
+
   foreach my $data ( @{$self->ListChannels()} ) { 
-    my $filename = $data->{grabber_info};
+
     my $xmltvid = $data->{xmltvid};
 
-    my $url = $self->{UrlRoot} . '/' . $data->{grabber_info};
-    progress("BBCPrime: Fetching data from $url");
-
+    # first download the default file
+    my $filename = 'Prime%20Europe%20' . $today->month_name . '%20' . $today->year . '.XLS';
+    my $url = $self->{UrlRoot} . '/' . $filename;
+    progress("BBCPrime: Fetching data from default $url");
     http_get( $url, $self->{FileStore} . '/' . $xmltvid . '/' . $filename );
+
+    # then download updated file
+    # which url must be stored in grabber_info
+    if( $data->{grabber_info} ){
+      $filename = $data->{grabber_info};
+      $url = $self->{UrlRoot} . '/' . $data->{grabber_info};
+      progress("BBCPrime: Fetching data from manual $url");
+      http_get( $url, $self->{FileStore} . '/' . $xmltvid . '/' . $filename );
+    }
   }  
 }
 

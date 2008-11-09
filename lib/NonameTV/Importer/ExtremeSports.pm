@@ -63,7 +63,7 @@ sub ImportContentFile {
   for(my $iSheet=0; $iSheet < $oBook->{SheetCount} ; $iSheet++) {
 
     my $oWkS = $oBook->{Worksheet}[$iSheet];
-    if( $oWkS->{Name} !~ /Extreme PE Eng/ ){
+    if( $oWkS->{Name} !~ /Extreme PE Eng/i and $oWkS->{Name} !~ /Extreme_ENG/i ){
       error( "ExtremeSports: $chd->{xmltvid}: Skipping worksheet: $oWkS->{Name}" );
       next;
     }

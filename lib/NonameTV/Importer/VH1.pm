@@ -52,7 +52,6 @@ sub ImportContentFile
   my $xmltvid=$chd->{xmltvid};
   my $channel_id = $chd->{id};
   my $dsh = $self->{datastorehelper};
-
   
   my $doc;
   if( $file =~ /\.html$/ ) {

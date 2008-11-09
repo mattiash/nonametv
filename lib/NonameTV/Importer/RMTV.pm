@@ -1,4 +1,4 @@
-package NonameTV::Importer::RealMadrid;
+package NonameTV::Importer::RMTV;
 
 use strict;
 use warnings;
@@ -33,7 +33,7 @@ sub new {
   my $self  = $class->SUPER::new( @_ );
   bless ($self, $class);
 
-  $self->{grabber_name} = "RealMadrid";
+  $self->{grabber_name} = "RMTV";
 
   my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore} );
   $self->{datastorehelper} = $dsh;
@@ -53,7 +53,7 @@ sub ImportContentFile {
   my $ds = $self->{datastore};
 
   if( $file =~ /\.xlsx$/i ){
-    $self->ImportXLS( $file, $channel_id, $xmltvid );
+    $self->ImportXLSX( $file, $channel_id, $xmltvid );
   } elsif( $file =~ /\.xls$/i ){
     $self->ImportXLS( $file, $channel_id, $xmltvid );
   }
@@ -61,7 +61,7 @@ sub ImportContentFile {
   return;
 }
 
-sub ImportXLSx
+sub ImportXLSX
 {
   my $self = shift;
   my( $file, $channel_id, $xmltvid ) = @_;
@@ -69,8 +69,8 @@ sub ImportXLSx
   my $dsh = $self->{datastorehelper};
   my $ds = $self->{datastore};
 
-  #return if( $file !~ /\.xls$/i );
-  progress( "RealMadrid XLSx: $xmltvid: Processing $file" );
+  return if( $file !~ /\.xlsx$/i );
+  progress( "RMTV XLSx: $xmltvid: Processing $file" );
 
   my %columns = ();
   my $date;
@@ -80,7 +80,7 @@ sub ImportXLSx
 
   foreach my $sheet (@{$excel->{Worksheet}}){
 
-    progress( "RealMadrid XLSx: $xmltvid: Processing worksheet: $sheet->{Name}" );
+    progress( "RMTV XLSx: $xmltvid: Processing worksheet: $sheet->{Name}" );
 
     $sheet->{MaxRow} ||= $sheet->{MinRow};
 
@@ -90,11 +90,11 @@ sub ImportXLSx
 
       foreach my $col ($sheet->{MinCol} .. $sheet->{MaxCol}){
         my $cell = $sheet->{Cells}[$row][$col];
-if( $cell ){
-print $row . " - " . $col . " - " . $cell->{Val} . "\n";
-} else {
-print $row . " - " . $col . "\n";
-}
+#if( $cell ){
+#print $row . " - " . $col . " - " . $cell->{Val} . "\n";
+#} else {
+#print $row . " - " . $col . "\n";
+#}
       }
 
       # get the date
@@ -115,7 +115,7 @@ print $row . " - " . $col . "\n";
 #            $dsh->StartDate( $date , "00:00" );
 #            $currdate = $date;
 
-#            progress("RealMadrid XLS: Date is $date");
+#            progress("RMTV XLS: Date is $date");
 
 #            # after each row with the date
 #            # comes the one with column names
@@ -143,7 +143,7 @@ sub ImportXLS
 return;
 
   return if( $file !~ /\.xls$/i );
-  progress( "RealMadrid XLS: $xmltvid: Processing $file" );
+  progress( "RMTV XLS: $xmltvid: Processing $file" );
 
   my %columns = ();
   my $date;
@@ -155,7 +155,7 @@ return;
   for(my $iSheet=0; $iSheet < $oBook->{SheetCount} ; $iSheet++) {
 
     my $oWkS = $oBook->{Worksheet}[$iSheet];
-    progress( "RealMadrid XLS: $xmltvid: Processing worksheet: $oWkS->{Name}" );
+    progress( "RMTV XLS: $xmltvid: Processing worksheet: $oWkS->{Name}" );
 
     # browse through rows
     for(my $iR = $oWkS->{MinRow} ; defined $oWkS->{MaxRow} && $iR <= $oWkS->{MaxRow} ; $iR++) {
@@ -175,7 +175,7 @@ return;
             $dsh->StartDate( $date , "00:00" );
             $currdate = $date;
 
-            progress("RealMadrid XLS: Date is $date");
+            progress("RMTV XLS: Date is $date");
 
             # after each row with the date
             # comes the one with column names
@@ -228,7 +228,7 @@ return;
       $oWkC = $oWkS->{Cells}[$iR][$columns{'RMTV REF'}];
       my $ref = $oWkC->Value if( $oWkC->Value );
 
-      progress("RealMadrid XLS: $xmltvid: $time - $title");
+      progress("RMTV XLS: $xmltvid: $time - $title");
 
       my $ce = {
         channel_id => $channel_id,

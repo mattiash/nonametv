@@ -79,10 +79,12 @@ sub ImportContent
 
       # schedule_date (column 0)
       $oWkC = $oWkS->{Cells}[$iR][0];
+      next if( ! $oWkC );
       my $schedule_date = $oWkC->Value;
 
       # start_time (column 1)
       $oWkC = $oWkS->{Cells}[$iR][1];
+      next if( ! $oWkC );
       my $start_time = $oWkC->Value;
 
       if( $start_time ){
@@ -181,7 +183,8 @@ sub FetchDataFromSite
   #my $url = $self->{UrlRoot} . "/d20/GRID-EPG_July_2008_HotBird-Yamal1.xls";
   #my $url = $self->{UrlRoot} . "/d20/GRID-EPG-AUGUST2008HotBird-Yamal.xls";
   #my $url = $self->{UrlRoot} . "/d21/Grid_EPG_September_2008_HotBird-ABS1-UK.xls";
-  my $url = $self->{UrlRoot} . "/d21/Grid_EPG_October_2008_HotBird.xls";
+  #my $url = $self->{UrlRoot} . "/d21/Grid_EPG_October_2008_HotBird.xls";
+  my $url = $self->{UrlRoot} . "/d22/November_2008_HotBird3t.xls";
 
 
   progress("Fetching xls file from $url");
