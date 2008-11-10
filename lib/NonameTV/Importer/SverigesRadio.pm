@@ -34,7 +34,6 @@ sub new {
   my $self  = $class->SUPER::new( @_ );
   bless ($self, $class);
 
-  $self->{grabber_name} = "SverigesRadio";
 
   push @{$self->{OptionSpec}}, "list-channels";
   $self->{OptionDefaults}->{'list-channels'} = 0;

@@ -34,7 +34,9 @@ BEGIN {
                       norm AddCategory
                       ParseDescCatSwe FixProgrammeData
 		      ParseXml ParseXmltv
-                      MonthNumber/;
+                      MonthNumber
+                      CompareArrays
+                     /;
 }
 our @EXPORT_OK;
 
@@ -185,7 +187,7 @@ sub Wordfile2Xml
   my $html = qx/$wvhtml "$filename" -/;
   if( $? )
   {
-    print "$wvhtml $filename - failed: $?\n";
+    w "$wvhtml $filename - failed: $?";
     return undef;
   }
   
@@ -667,6 +669,85 @@ sub MonthNumber {
   my $month = $monthnames{lc $monthname};
 
   return $month;
+}
+
+=begin nd
+
+Function: CompareArrays
+
+Compare two arrays (new and old) and call functions to reflect added,
+deleted and unchanged entries.
+
+Parameters:
+
+  $new - A reference to the new array
+  $old - A reference to the old array
+  $cb - A hashref with callback functions
+
+CompareArrays calls the following callback functions:
+
+  $cb->{cmp}( $enew, $eold ) - Compare an entry from $new with an
+                           entry from $old.  Shall return -1 if $ea is
+                           less than $eb, 0 if they are equal and 1
+                           otherwise.
+
+  $cb->{added}($enew) - Called for all entries that are present in
+                      $new but not in $old.
+
+  $cb->{deleted}($eold) - Called for all entries that are present in
+                        $old but not in $new.
+
+  $cb->{equal}($ea, $eb) - Called for all entries that are present in
+                           both $new and $old.
+
+Additionally, $cb->{max} shall contain an entry that is always
+regarded as greater than any possible entry in $new and $old.
+
+Returns:
+
+  nothing
+
+=cut
+
+sub CompareArrays #( $new, $old, $cb )
+{
+  my( $new, $old, $cb ) = @_;
+
+  my @a = sort { $cb->{cmp}( $a, $b ) } @{$new};
+  my @b = sort { $cb->{cmp}( $a, $b ) } @{$old};
+  
+  push @a, $cb->{max};
+  push @b, $cb->{max};
+
+  my $ia = 0;
+  my $ib = 0;
+
+  while( 1 ) {
+    my $da = $a[$ia];
+    my $db = $b[$ib];
+
+    # If both arrays have reached the end, we are done.
+    if( ($cb->{cmp}($da, $cb->{max}) == 0) and 
+        ($cb->{cmp}($db, $cb->{max}) == 0 ) ) {
+      last;
+    }
+
+    my $cmp = $cb->{cmp}($da, $db);
+
+    if( $cmp == 0 ) { 
+      $cb->{equal}($da, $db);
+      $ia++;
+      $ib++;
+    }
+    elsif( $cmp < 0 ) {
+      $cb->{added}( $da );
+      $ia++;
+    }
+    else {
+      $cb->{deleted}($db);
+      $ib++;
+    }
+  }
 }
   
 1;

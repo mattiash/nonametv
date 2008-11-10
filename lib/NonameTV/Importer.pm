@@ -7,6 +7,8 @@ use IO::Scalar;
 
 use Data::Dumper;
 
+use NonameTV qw/CompareArrays/;
+
 =head1 NAME
 
 NonameTV::Importer
@@ -270,52 +272,28 @@ sub SyncChannelsToDb {
   my $db = $self->{datastore}->FindGrabberChannels( $self->{ConfigName} );
   my $conf = $self->{_ChannelData};
 
-  push @{$db}, { xmltvid => 'zzzz' };
-  push @{$conf}, { xmltvid => 'zzzz' };
-
-  my $idb = 0;
-  my $ic = 0;
-
-  while( 1 ) {
-    my $cdb = $db->[$idb];
-    my $cc = $conf->[$ic];
-
-    if( ($cc->{xmltvid}) eq "zzzz" and ($cdb->{xmltvid} eq "zzzz") ) {
-      last;
-    }
-
-
-    if( $cc->{xmltvid} eq $cdb->{xmltvid} ) {
+  CompareArrays( $conf, $db, {
+    cmp => sub { $_[0]->{xmltvid} cmp $_[1]->{xmltvid} },
+    added => sub {       
+      print STDERR "Adding channel info for $_[0]->{xmltvid}\n";
+      $self->AddChannel( $_[0] );
+    },
+    deleted => sub {
+      print STDERR "Deleting channel info for $_[0]->{xmltvid}\n";
+      $self->{datastore}->ClearChannel( $_[0]->{id} );
+      $self->{datastore}->sa->Delete( "channels", { id => $_[0]->{id} } );
+    },
+    equal => sub {
       # The channel id only exists in the database.
-      $cc->{id} = $cdb->{id};
+      $_[0]->{id} = $_[1]->{id};
 
-      if( not isequal( $cc, $cdb )  ) {
-	print STDERR "Updating channel info for $cc->{xmltvid}\n";
-	$self->UpdateChannel( $cc );
+      if( not isequal( $_[0], $_[1] ) ) {
+	print STDERR "Updating channel info for $_[0]->{xmltvid}\n";
+	$self->UpdateChannel( $_[0] );
       }
-
-      $idb++;
-      $ic++;
-    }
-    elsif( $cc->{xmltvid} lt $cdb->{xmltvid} ) {
-      # This channel is missing from the database.
-      print STDERR "Adding channel info for $cc->{xmltvid}\n";
-      $self->AddChannel( $cc );
-      $ic++;
-    }
-    else {
-      # This channel is missing from the configuration.
-      print STDERR "Deleting channel info for $cdb->{xmltvid}\n";
-      $self->{datastore}->ClearChannel( $cdb->{id} );
-      $self->{datastore}->sa->Delete( "channels", { id => $cdb->{id} } );
-      $idb++;
-    }
-  }
-
-  # Delete dummy channel.
-  pop @{$conf};
-
-#  print Dumper $self->{_ChannelData};
+    },
+    max => { xmltvid => "zzzzzzz" },
+                 } );
 }
 
 sub UpdateChannel {
@@ -379,7 +357,7 @@ our %OptionDefaults = (
  
 =head1 COPYRIGHT
 
-Copyright (C) 2004 Mattias Holmlund.
+Copyright (C) 2004-2008 Mattias Holmlund.
 
 =cut
 

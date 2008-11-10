@@ -24,7 +24,7 @@ BEGIN {
     @EXPORT      = qw( );
     %EXPORT_TAGS = ( );     # eg: TAG => [ qw!name1 name2! ],
     @EXPORT_OK   = qw/ CreateDataStore CreateDataStoreDummy
-                       CreateImporter CreateExporter
+                       CreateImporter CreateExporter CreateFileStore
                        InitHttpCache
                      /;
 }
@@ -93,6 +93,44 @@ sub CreateExporter {
                   NonameTV::Exporter::${exp_type}->new( \$exp_data, \$ds );"
                       or die $@;
   return $exp;
+}
+
+=item CreateFileStore( $importername )
+
+Create a NonameTV::FileStore object that matches the configuration
+for an importer. 
+
+Returns the newly created filestore or dies if creation fails.
+
+=cut
+
+sub CreateFileStore {
+  my( $importername ) = @_;
+
+  require NonameTV::FileStore;
+
+  my $conf = ReadConfig();
+  
+  if( not exists( $conf->{Importers}->{$importername} ) ) {
+    print STDERR "No such importer $importername\n";
+    exit 1;
+  }
+
+  my $path;
+
+  if( exists( $conf->{Importers}->{$importername}->{FileStore} ) ) {
+    $path = $conf->{Importers}->{$importername}->{FileStore};
+  }
+  elsif( exists( $conf->{FileStore} ) ) {
+    $path = $conf->{FileStore};
+  }
+  else {
+    print STDERR "No FileStore found in configuration for " .
+        "importer $importername.";
+    exit 1;
+  }
+
+  return NonameTV::FileStore->new( { Path => $path } );
 }
 
 =item CreateDataStore

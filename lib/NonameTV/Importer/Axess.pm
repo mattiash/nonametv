@@ -28,7 +28,6 @@ sub new {
     my $self  = $class->SUPER::new( @_ );
     bless ($self, $class);
 
-    $self->{grabber_name} = 'Axess';
 
     defined( $self->{UrlRoot} ) or die "You must specify UrlRoot";
     defined( $self->{LoginUrl} ) or die "You must specify LoginUrl";

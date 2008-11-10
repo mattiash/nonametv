@@ -33,7 +33,10 @@ sub new {
   my $self  = $class->SUPER::new( @_ );
   bless ($self, $class);
 
+<<<<<<< HEAD:lib/NonameTV/Importer/RMTV.pm
   $self->{grabber_name} = "RMTV";
+=======
+>>>>>>> 0b1bcb0a48e2ceb16f479586eae23a5e96fafd98:lib/NonameTV/Importer/RealMadrid.pm
 
   my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore} );
   $self->{datastorehelper} = $dsh;

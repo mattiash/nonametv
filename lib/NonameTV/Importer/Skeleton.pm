@@ -25,7 +25,6 @@ sub new {
     my $self  = $class->SUPER::new( @_ );
     bless ($self, $class);
 
-    $self->{grabber_name} = 'Skeleton';
 
     defined( $self->{UrlRoot} ) or die "You must specify UrlRoot";
 

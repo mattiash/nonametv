@@ -17,7 +17,7 @@ use utf8;
 use DateTime;
 use XML::LibXML;
 
-use NonameTV qw/MyGet Wordfile2Xml Htmlfile2Xml norm/;
+use NonameTV qw/norm/;
 use NonameTV::DataStore::Helper;
 use NonameTV::Log qw/progress error/;
 
@@ -31,7 +31,6 @@ sub new {
   my $self  = $class->SUPER::new( @_ );
   bless ($self, $class);
 
-  $self->{grabber_name} = "KanalLokal";
 
   $self->{datastore}->{SILENCE_DUPLICATE_SKIP} = 1;
 
