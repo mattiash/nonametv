@@ -15,6 +15,7 @@ Features:
 
 use DateTime;
 use XML::LibXML;
+use Encode qw/encode decode/;
 
 use NonameTV qw/MyGet norm AddCategory/;
 use NonameTV::Log qw/progress error/;
@@ -82,7 +83,12 @@ sub ImportContent
     #
     # title, subtitle
     #
-    my $title = $sc->getElementsByTagName('title');
+    my $title;
+#    eval{ $title = decode( "utf-8", $sc->getElementsByTagName('title') ); };
+#    if( $@ ne "" ){
+#      error( "Failed to decode title $@" );
+#    }
+    $title = $sc->getElementsByTagName('title');
     my $org_title = $sc->getElementsByTagName('sub-title');
     my $subtitle = $sc->getElementsByTagName('sub-title');
     

@@ -15,8 +15,7 @@ Features:
 use utf8;
 
 use DateTime;
-use Encode;
-use Encode::Guess;
+use Encode qw/encode decode/;
 use XML::LibXML;
 use Spreadsheet::ParseExcel;
 use Archive::Zip;
@@ -58,7 +57,7 @@ sub ImportContentFile {
   if( $file =~ /\.xml$/i ){
     $self->ImportXML( $file, $channel_id, $channel_xmltvid );
   } elsif( $file =~ /\.xls$/i ){
-    $self->ImportXLS( $file, $channel_id, $channel_xmltvid );
+    #$self->ImportXLS( $file, $channel_id, $channel_xmltvid );
   }
 
   return;
@@ -177,7 +176,7 @@ sub ImportXML
         next;
       }
 
-      #$crotitle = decode( "iso-8859-2", $crotitle );
+      eval{ $crotitle = decode( "iso-8859-2", $crotitle ); };
       #$title = decode( "iso-8859-2", $title );
 
       progress( "FOX XML: $channel_xmltvid: $starttime - $title" );

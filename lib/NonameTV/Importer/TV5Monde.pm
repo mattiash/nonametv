@@ -15,8 +15,7 @@ Features:
 use utf8;
 
 use DateTime;
-use Encode;
-use Encode::Guess;
+use Encode qw/encode decode/;
 use Spreadsheet::ParseExcel;
 use Archive::Zip;
 use Data::Dumper;
@@ -37,7 +36,7 @@ sub new {
   bless ($self, $class);
 
 
-  my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore} );
+  my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore}, "Europe/Paris" );
   $self->{datastorehelper} = $dsh;
 
   return $self;
@@ -128,15 +127,34 @@ sub ImportXLS
         $oWkC = $oWkS->{Cells}[$iR][1];
         next if( ! $oWkC );
         next if( ! $oWkC->Value );
-        my $title = $oWkC->Value;
+
+        my $showinfo;
+        # don't die on wrong encoding
+        eval{ $showinfo = decode( "iso-8859-1", $oWkC->Value ); };
+        if( $@ ne "" ){
+          error( "Failed to decode $@" );
+        }
+
+        my( $title, $subtitle, $genre, $episode ) = ParseShow( $showinfo );
 
         progress( "TV5Monde: $channel_xmltvid: $time - $title" );
 
         my $ce = {
           channel_id => $channel_id,
-          title => $title,
+          title => norm($title),
           start_time => $time,
         };
+
+        $ce->{subtitle} = norm($subtitle) if $subtitle;
+
+        if( $genre ){
+          my($program_type, $category ) = $ds->LookupCat( "TV5Monde", norm($genre) );
+          AddCategory( $ce, $program_type, $category );
+        }
+
+        if( $episode ){
+          $ce->{episode} = sprintf( ". %d .", norm($episode)-1 );
+        }
 
         $dsh->AddProgramme( $ce );
       }
@@ -187,6 +205,39 @@ sub isTime
   }
 
   return 0;
+}
+
+sub ParseShow {
+  my( $showinfo ) = @_;
+
+  my( $title, $subtitle, $genre, $episode );
+
+  my @lines = split( /\n/, $showinfo);
+  my $numlines = scalar(@lines);
+
+  # extract genre
+  if( $lines[0] =~ /\// ){
+    ( $title, $genre ) = ( $lines[0] =~ /^(.*)\/(.*)$/ );
+  } else {
+    $title = $lines[0];
+  }
+
+  # the episode and subtitle might be in the 2nd line
+  if( $numlines eq 2 ){
+
+    # extract episode
+    if( $lines[1] =~ /^Episode\s+\d+/ ){
+      ( $episode ) = ( $lines[1] =~ /^Episode\s+(\d+)/ );
+    }
+
+    # extract subtitle
+#    if( $lines[1] =~ /:/ ){
+#      ( $subtitle ) = ( $lines[1] =~ /:(.*)$/ );
+#    }
+
+  }
+
+  return( $title, $subtitle, $genre, $episode );
 }
 
 1;

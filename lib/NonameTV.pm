@@ -632,28 +632,33 @@ Convert month name to month number
 sub MonthNumber {
   my( $monthname , $lang ) = @_;
 
-  my( @months_1, @months_2, @months_3 );
+  my( @months_1, @months_2, @months_3, @months_4 );
 
   if( $lang =~ /^en$/ ){
     @months_1 = qw/jan feb mar apr may jun jul aug sep oct nov dec/;
     @months_2 = qw/janu febr marc apr may june july augu sept octo nov dec/;
     @months_3 = qw/january february march april may june july august september october november december/;
+    @months_4 = qw/1 2 3 4 5 6 7 8 9 10 11 12/;
   } elsif( $lang =~ /^hr$/ ){
     @months_1 = qw/sij vel ozu tra svi lip srp kol ruj lis stu pro/;
     @months_2 = qw/sijecanj veljaca ozujak travanj svibanj lipanj srpanj kolovoz rujan listopad studeni prosinac/;
     @months_3 = qw/sijecnja veljace ozujka travnja svibnja lipnja srpnja kolovoza rujna listopada studenoga prosinca/;
+    @months_4 = qw/sijecnja veljace ozujka travnja svibnja lipnja srpnja kolovoza rujna listopada studenog prosinca/;
   } elsif( $lang =~ /^sr$/ ){
     @months_1 = qw/jan feb mar apr maj jun jul aug sep okt nov dec/;
     @months_2 = qw/januar februar mart april maj jun juli august septembar oktobar novembar decembar/;
     @months_3 = qw/januara februara marta aprila maja juna jula augusta septembra oktobra novembra decembra/;
+    @months_4 = qw/1 2 3 4 5 6 7 8 9 10 11 12/;
   } elsif( $lang =~ /^it$/ ){
     @months_1 = qw/gen feb mar apr mag giu lug ago set ott nov dic/;
     @months_2 = qw/gennaio febbraio marzo aprile maggio giugno luglio agosto settembre ottobre novembre dicembre/;
     @months_3 = qw/1 2 3 4 5 6 7 8 9 10 11 12/;
+    @months_4 = qw/1 2 3 4 5 6 7 8 9 10 11 12/;
   } elsif( $lang =~ /^fr$/ ){
     @months_1 = qw/gen feb mar apr mag giu lug ago set ott nov dic/;
     @months_2 = qw/gennaio febbraio marzo aprile maggio giugno luglio agosto settembre ottobre novembre décembre/;
     @months_3 = qw/1 2 3 4 5 6 7 8 9 10 11 12/;
+    @months_4 = qw/1 2 3 4 5 6 7 8 9 10 11 12/;
   }
 
   my %monthnames = ();
@@ -668,6 +673,10 @@ sub MonthNumber {
 
   for( my $i = 0; $i < scalar(@months_3); $i++ ){
     $monthnames{$months_3[$i]} = $i+1;
+  }
+
+  for( my $i = 0; $i < scalar(@months_4); $i++ ){
+    $monthnames{$months_4[$i]} = $i+1;
   }
 
   my $month = $monthnames{lc $monthname};
