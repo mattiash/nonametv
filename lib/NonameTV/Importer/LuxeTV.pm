@@ -33,7 +33,7 @@ sub new {
   bless ($self, $class);
 
 
-  my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore} );
+  my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore}, "Europe/London" );
   $self->{datastorehelper} = $dsh;
 
   return $self;
@@ -59,10 +59,6 @@ sub ImportContentFile {
   progress( "LuxeTV: $xmltvid: Processing $file" );
 
   my $date;
-  my $time;
-  my $duration;
-  my $title;
-  my $episode;
   my $currdate = "x";
 
   open my $CSVFILE, "<", $file or die $!;
@@ -86,10 +82,7 @@ sub ImportContentFile {
 
     if( $row->{'Date'} ) {
 
-print "DATE1: $row->{'Date'}\n";
       $date = ParseDate( $row->{'Date'} );
-print "DATE2: $date\n";
-next;
       next if( ! $date );
 
       if( $date ne $currdate ){
@@ -102,24 +95,27 @@ next;
         $dsh->StartBatch( $batch_id , $channel_id );
         $dsh->StartDate( $date , "04:00" );
         $currdate = $date;
+        progress( "LuxeTV: $xmltvid: Date is $date" );
       }
     }
 
+    my $time;
     if( $row->{'Time'} ) {
       $time = ParseTime( $row->{'Time'} );
-      next if( ! $time );
-print "TIME: $time\n";
     }
+    next if( ! $time );
 
+    my $duration;
     if( $row->{'Duration'} ) {
       $duration = $row->{'Duration'};
-      next if ( $duration !~ /^\d\d\:\d\d\:\d\d\.\d\d$/ );
     }
+    next if ( $duration !~ /^\d\d\:\d\d\:\d\d\.\d\d$/ );
 
+    my $title;
     if( $row->{'Title'} ) {
       $title = $row->{'Title'};
-      next if ( ! $title );
     }
+    next if ( ! $title );
 
     progress( "LuxeTV: $xmltvid: $time - $title" );
 
@@ -129,29 +125,38 @@ print "TIME: $time\n";
       start_time => $time,
     };
 
+    my $episode;
     if( $row->{'Episode'} ) {
 
-      my $ep_nr = int( $row->{'Episode'} );
-      my $ep_se = 0;
-      if( ($ep_nr > 0) and ($ep_se > 0) )
-      {
-        $episode = sprintf( "%d . %d .", $ep_se-1, $ep_nr-1 );
-      }
-      elsif( $ep_nr > 0 )
-      {
-        $episode = sprintf( ". %d .", $ep_nr-1 );
-      }
+      my $epinfo = $row->{'Episode'};
 
-      $ce->{episode} = norm($episode);
+      if( $epinfo =~ /^Episode\s+\d+/ ){
+
+        my $ep_nr;
+        ( $ep_nr ) = ( $epinfo =~ /^Episode\s+(\d+)/ );
+
+        my $part_no;
+        if( $epinfo =~ /\s+part\s+\d+/i ){
+          ( $part_no ) = ( $epinfo =~ /\s+part\s+(\d+)/ );
+        }
+
+        if( $part_no ){
+          $ce->{episode} = sprintf( ". %d . %d", $ep_nr-1, $part_no-1 );
+        } else {
+          $ce->{episode} = sprintf( ". %d .", $ep_nr-1 );
+        }
+
+      } else {
+        $ce->{subtitle} = $epinfo;
+      }
     }
 
     if( $row->{'Synopsis'} ){
-      $ce->{description} = norm($row->{'Synopsis'});
+      $ce->{description} = $row->{'Synopsis'};
     }
 
     if( $row->{'Genre'} ) {
-      my $genre = norm($row->{'Genre'});
-      my($program_type, $category ) = $ds->LookupCat( "LuxeTV", $genre );
+      my($program_type, $category ) = $ds->LookupCat( "LuxeTV", norm($row->{'Genre'}) );
       AddCategory( $ce, $program_type, $category );
     }
 
@@ -167,7 +172,6 @@ sub ParseDate {
   my( $text ) = @_;
   my( $day , $month , $year );
 
-print "DATEINFO: $text\n";
   return undef if( ! $text );
 
   if( $text =~ /^\d\d\/\d\d\/\d\d$/ ){
@@ -192,12 +196,16 @@ print "DATEINFO: $text\n";
 }
 
 sub ParseTime {
-  my( $text ) = @_;
+  my( $tinfo ) = @_;
 
-print "TIMEINFO: $text\n";
-  return undef if ( $text !~ /^\d\d\:\d\d\:\d\d\s+(AM|PM)$/ );
+  return undef if ( $tinfo !~ /^\d\d\:\d\d\:\d\d\s+(AM|PM)$/ );
 
-  my( $hour, $min, $sec, $ampm ) = ( $text !~ /^(\d\d)\:(\d\d)\:(\d\d)\s+(\S+)$/ );
+  my( $hour, $min, $sec, $ampm ) = ( $tinfo =~ /^(\d\d)\:(\d\d)\:(\d\d)\s+(\S+)$/ );
+
+  $hour += 12 if( $ampm eq "PM" );
+  $hour = 0 if( $hour eq 24 );
+
+  return sprintf( "%02d:%02d", $hour, $min );
 }
 
 1;

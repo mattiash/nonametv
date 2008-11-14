@@ -92,7 +92,7 @@ sub ImportXLS
   for(my $iSheet=0; $iSheet < $oBook->{SheetCount} ; $iSheet++) {
 
     $oWkS = $oBook->{Worksheet}[$iSheet];
-    progress("FOX: $channel_xmltvid: processing worksheet named '$oWkS->{Name}'");
+    progress("Mezzo: $channel_xmltvid: processing worksheet named '$oWkS->{Name}'");
 
     # read the rows with data
     for(my $iR = $oWkS->{MinRow} ; defined $oWkS->{MaxRow} && $iR <= $oWkS->{MaxRow} ; $iR++) {
@@ -134,7 +134,7 @@ sub ImportXLS
         $dsh->StartDate( $date , "00:00" );
         $currdate = $date;
 
-        progress("FOX: $channel_xmltvid: Date is: $date");
+        progress("Mezzo: $channel_xmltvid: Date is: $date");
       }
 
       

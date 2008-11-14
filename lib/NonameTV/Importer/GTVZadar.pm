@@ -19,7 +19,7 @@ use utf8;
 use POSIX;
 use DateTime;
 use XML::LibXML;
-#use Text::Capitalize qw/capitalize_title/;
+use Encode qw/decode/;
 
 use NonameTV qw/MyGet Wordfile2Xml Htmlfile2Xml norm AddCategory MonthNumber/;
 use NonameTV::DataStore::Helper;
@@ -119,6 +119,7 @@ sub ImportContentFile
     } elsif( isShow( $text ) ) {
 
       my( $time, $title, $genre, $episode ) = ParseShow( $text );
+      #$title = decode( "iso-8859-2" , $title );
 
       progress("GTVZadar: $xmltvid: $time - $title");
 
@@ -153,6 +154,10 @@ sub isDate {
   my ( $text ) = @_;
 
   # format 'PETAK: 11. srpnja 2008.god.'
+  if( $text =~ /^(ponedjeljak|utorak|srijeda|ČETVRTAK|petak|subota|nedjelja):\s*\d+\.\s*(sijecnja|veljace|ozujka|travnja|svibnja|lipnja|srpnja|kolovoza|rujna|listopada|studenog|prosinca)\s*\d+\.\s*god\.$/i ){
+    return 1;
+  }
+
   if( $text =~ /^(ponedjeljak|utorak|srijeda|ČETVRTAK|petak|subota|nedjelja):\s*\d+\.\s*(sijecnja|veljace|ozujka|travnja|svibnja|lipnja|srpnja|kolovoza|rujna|listopada|studenoga|prosinca)\s*\d+\.\s*god\.$/i ){
     return 1;
   }

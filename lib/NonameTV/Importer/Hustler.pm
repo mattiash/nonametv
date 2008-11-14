@@ -52,6 +52,8 @@ sub ImportContentFile {
   my $dsh = $self->{datastorehelper};
   my $ds = $self->{datastore};
 
+#return if( $file !~ /Blue Hustler listings - November 2008 in CET\.xls/ );
+
   # Only process .xls files.
   return if( $file !~ /\.xls$/i );
   progress( "Hustler: $xmltvid: Processing $file" );
@@ -145,7 +147,7 @@ sub ImportContentFile {
 
           my $batch_id = $xmltvid . "_" . $date;
           $dsh->StartBatch( $batch_id , $channel_id );
-          $dsh->StartDate( $date , "23:00" );
+          $dsh->StartDate( $date , "05:00" );
           $currdate = $date;
         }
 
@@ -155,7 +157,7 @@ sub ImportContentFile {
       # time - column $coltime
       $oWkC = $oWkS->{Cells}[$iR][$coltime];
       next if( ! $oWkC );
-      my $time = $oWkC->Value if( $oWkC->Value );
+      my $time = ParseTime( $oWkC->Value ) if( $oWkC->Value );
       next if( ! $time );
 
       # title - column $coltitle
@@ -279,8 +281,18 @@ sub ParseDate
 
   my $month = MonthNumber( $monthname , "en" );
 
-  my $date = sprintf( "%04d-%02d-%02d", $year, $month, $day );
-  return $date;
+  return sprintf( "%04d-%02d-%02d", $year, $month, $day );
+}
+
+sub ParseTime
+{
+  my ( $tinfo ) = @_;
+
+  my( $hour, $minute ) = ( $tinfo =~ /^(\d+)\:(\d+)$/ );
+
+  $hour = 0 if( $hour eq 24 );
+
+  return sprintf( "%02d:%02d", $hour, $minute );
 }
 
 1;
