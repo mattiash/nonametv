@@ -14,6 +14,7 @@ processed in the order that they appear.
 use DateTime;
 use POSIX qw/floor/;
 use Encode;
+use File::Util;
 
 use NonameTV::Log qw/progress error StartLogSection EndLogSection/;
 
@@ -72,6 +73,11 @@ sub ImportData {
     my @files = split( "\n", $filelist );
     
     foreach my $file (@files) {
+
+      # ignore directories
+      my( $ftype ) = join(', ', File::Util->file_type($dir . "/" . $file) );
+      next if( $ftype =~ /DIRECTORY/ );
+
       # Ignore emacs backup-files.
       next if $file =~ /~$/;
       my $md5 = md5sum( "$dir/$file" );

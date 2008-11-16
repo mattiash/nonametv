@@ -1,11 +1,13 @@
-package NonameTV::Importer::NASN;
+package NonameTV::Importer::RAI;
 
 use strict;
 use warnings;
 
 =pod
 
-Import data from NASN's website.
+Import data from RAI's website.
+
+Channels: RAI UNO, RAI DUE, RAI TRE
 
 Features:
 
@@ -15,6 +17,7 @@ use utf8;
 
 use DateTime;
 use XML::LibXML;
+use Encode qw/decode encode/;
 
 use NonameTV qw/MyGet Html2Xml FindParagraphs norm/;
 use NonameTV::DataStore::Helper;
@@ -30,8 +33,9 @@ sub new {
   my $self  = $class->SUPER::new( @_ );
   bless ($self, $class);
 
+  defined( $self->{UrlRoot} ) or die "You must specify UrlRoot";
 
-  my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore}, "Europe/London" );
+  my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore}, "Europe/Rome" );
   $self->{datastorehelper} = $dsh;
 
   return $self;
@@ -41,6 +45,8 @@ sub Object2Url {
   my $self = shift;
   my( $objectname, $chd ) = @_;
 
+  # the url is in format 'http://www.rai.it/dl/portal/guidatv/14-11-2008.html'
+
   my( $year, $month, $day ) = ( $objectname =~ /_(\d+)-(\d+)-(\d+)$/ );
   my $dt = DateTime->new( 
                           year  => $year,
@@ -48,10 +54,7 @@ sub Object2Url {
                           day   => $day 
                           );
 
-  my $today = DateTime->today( time_zone=>'local' );
-  my $day_diff = $dt->subtract_datetime( $today )->delta_days;
-
-  my $url = sprintf( "%s%d", $self->{UrlRoot}, $day_diff );
+  my $url = sprintf( "%s%02d-%02d-%04d.html", $self->{UrlRoot}, $dt->day, $dt->month, $dt->year );
 
   return( $url, undef );
 }
@@ -66,10 +69,21 @@ sub FilterContent {
     return (undef, "Html2Xml failed" );
   } 
 
-  my $paragraphs = FindParagraphs( $doc, 
-      "//div[\@class='div_contentfull']//table//table//table//." );
+  if( not $chd->{grabber_info} ){
+    error( "You must specify grabber_info for $chd->{xmltvid}" );
+    return( undef, undef );
+  }
+
+  my $paragraphs = FindParagraphs( $doc, "//div[\@class='Main clearfix']//div[\@class='$chd->{grabber_info}']//." );
 
   my $str = join( "\n", @{$paragraphs} );
+
+  # all is in one string -> split it at each time
+  $str =~ s/\s(\d{2}):(\d{2})/\n$1:$2 /g;
+  $str =~ s/(MATTINA)/\n$1/g;
+  $str =~ s/(POMERIGGIO)/\n$1/g;
+  $str =~ s/(SERA)/\n$1/g;
+  $str =~ s/(NOTTE)/\n$1/g;
   
   return( \$str, undef );
 }
@@ -103,55 +117,55 @@ sub ImportContent {
     return 0;
   }
 
+  progress( "RAI: $chd->{xmltvid}: Date is $date\n" );
   $dsh->StartDate( $date, "06:00" ); 
 
-  my $ce = undef;
-
   foreach my $text (@paragraphs) {
+
+#print ">$text<\n";
+
     # It should be possible to ignore these strings with a better
     # FilterContent, because they look slightly different in the html.
-    next if $text =~/^All times in (BST)|(GMT)/i;
-    next if $text =~/^Subtitling now available on programs produced by ESPN Networks/i;
+    next if $text =~/^MATTINA$/i;
+    next if $text =~/^POMERIGGIO$/i;
+    next if $text =~/^SERA$/i;
+    next if $text =~/^NOTTE$/i;
 
-    if( $text =~ /^\d+.\d\d\s*[ap]m$/ ) {
-      $dsh->AddProgramme( $ce ) if( defined( $ce ) );
+    if( $text =~ /^\d{2}:\d{2}\s+.*/ ) {
 
-      $ce = { start_time => ParseTime( $text ) };
-    }
-    elsif( not defined( $ce ) ) {
-      error("batch_id: Expected time, found '$text'" );
-      return 0;
-    }
-    elsif( not defined( $ce->{title} ) ) {
-      $ce->{title} = $text;
-    }
-    elsif( not defined( $ce->{description} ) ) {
-      $ce->{description} = $text;
-    }
-    else {
-      error( "$batch_id: Unexpected text: '$text'" );
-      return 0;
+      my( $time, $title ) = ParseShow( $text );
+
+      progress( "RAI: $chd->{xmltvid}: $time - $title" );
+
+      my $ce = {
+        channel_id => $channel_id,
+        title => $title,
+        start_time => $time,
+      };
+
+      $dsh->AddProgramme( $ce );
+
+    } else {
+      #error( "$batch_id: Unexpected text: '$text'" );
     }
   }
   
-  $dsh->AddProgramme( $ce ) if( defined( $ce ) );
-
   return 1;
 }
 
-sub ParseTime {
+sub ParseShow
+{
   my( $text ) = @_;
 
-  my( $hour, $minute, $m ) = ($text =~ /^(\d+)\.(\d{2})([ap]m)$/);
+  my( $time, $title ) = ( $text =~ /^(\d{2}:\d{2})\s+(.*)$/ );
 
-  if( ($m eq "am") and ($hour == 12) ) {
-    $hour = 0;
-  }
-  elsif( ($m eq "pm") and ($hour != 12) ) {
-    $hour += 12;
+  # don't die on wrong encoding
+  eval{ $title = decode( "iso-8859-1", $title ); };
+  if( $@ ne "" ){
+    error( "Failed to decode $@" );
   }
 
-  return "$hour:$minute";
+  return( $time, $title );
 }
 
 1;
