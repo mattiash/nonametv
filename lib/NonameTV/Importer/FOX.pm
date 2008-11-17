@@ -1,7 +1,7 @@
 package NonameTV::Importer::FOX;
 
-#use strict;
-#use warnings;
+use strict;
+use warnings;
 
 =pod
 
@@ -36,7 +36,6 @@ sub new {
   my $self  = $class->SUPER::new( @_ );
   bless ($self, $class);
 
-
   my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore} );
   $self->{datastorehelper} = $dsh;
 
@@ -57,7 +56,7 @@ sub ImportContentFile {
   if( $file =~ /\.xml$/i ){
     $self->ImportXML( $file, $channel_id, $channel_xmltvid );
   } elsif( $file =~ /\.xls$/i ){
-    #$self->ImportXLS( $file, $channel_id, $channel_xmltvid );
+    $self->ImportXLS( $file, $channel_id, $channel_xmltvid );
   }
 
   return;

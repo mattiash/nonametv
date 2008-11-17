@@ -33,10 +33,7 @@ sub new {
   my $self  = $class->SUPER::new( @_ );
   bless ($self, $class);
 
-<<<<<<< HEAD:lib/NonameTV/Importer/RMTV.pm
   $self->{grabber_name} = "RMTV";
-=======
->>>>>>> 0b1bcb0a48e2ceb16f479586eae23a5e96fafd98:lib/NonameTV/Importer/RealMadrid.pm
 
   my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore} );
   $self->{datastorehelper} = $dsh;
@@ -85,20 +82,36 @@ sub ImportXLSX
 
     progress( "RMTV XLSx: $xmltvid: Processing worksheet: $sheet->{Name}" );
 
-    $sheet->{MaxRow} ||= $sheet->{MinRow};
+print "MINROW: $sheet->{MinRow}\n";
+print "MAXROW: $sheet->{MaxRow}\n";
+print "MINCOL: $sheet->{MinCol}\n";
+print "MAXCOL: $sheet->{MaxCol}\n";
 
     foreach my $row ($sheet->{MinRow} .. $sheet->{MaxRow}){
+print "ROW: $row\n";
 
-      $sheet->{MaxCol} ||= $sheet->{MinCol};
+      # try if the date is in the first column
+      my $cell = $sheet->{Cells}[$row][3];
+      if( $cell ){
 
-      foreach my $col ($sheet->{MinCol} .. $sheet->{MaxCol}){
-        my $cell = $sheet->{Cells}[$row][$col];
-#if( $cell ){
-#print $row . " - " . $col . " - " . $cell->{Val} . "\n";
-#} else {
-#print $row . " - " . $col . "\n";
-#}
+print "$cell->{Val}\n" if $cell->{Val};
+
       }
+
+        #if( isDate( $cell->{Val} ) ){
+#print "DATUUUUUUUUUUUUUUUUUUUUUUUUUU\n";
+        #}
+
+#exit if ( $row gt 10 );
+
+      #foreach my $col ($sheet->{MinCol} .. $sheet->{MaxCol}){
+#print "COL: $col\n";
+
+        #my $cell = $sheet->{Cells}[$row][$col];
+        #next if( ! $cell );
+#print $row . " - " . $col . " - " . $cell->{Val} . "\n";
+
+      #}
 
       # get the date
       # from column 0
@@ -254,7 +267,7 @@ return;
 sub isDate {
   my( $text ) = @_;
 
-print "TXT: $text\n";
+print ">$text<\n";
   return 0 if( ! $text );
 
   # the format is 'Saturday, 7 June 2008'

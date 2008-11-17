@@ -76,7 +76,10 @@ sub ImportData {
 
       # ignore directories
       my( $ftype ) = join(', ', File::Util->file_type($dir . "/" . $file) );
-      next if( $ftype =~ /DIRECTORY/ );
+      if( $ftype =~ /DIRECTORY/ ){
+        progress("Skipping directory $file");
+        next;
+      }
 
       # Ignore emacs backup-files.
       next if $file =~ /~$/;

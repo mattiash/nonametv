@@ -38,7 +38,8 @@ use base 'NonameTV::Importer::BaseFile';
 my $BATCH_LOG_LEVEL = 4;
 
 my $command_re = "ÄNDRA|RADERA|TILL|INFOGA|EJ ÄNDRAD|" . 
-    "CHANGE|DELETE|TO|INSERT|UNCHANGED";
+    "CHANGE|DELETE|TO|INSERT|UNCHANGED" .
+    "PROMIJENI|BRISI|U|UMETNI|NEPROMIJENJENO";
 
 my $time_re = '\d\d[\.:]\d\d';
 
@@ -64,9 +65,12 @@ sub ImportContentFile
   my $self = shift;
   my( $file, $chd ) = @_;
 
+#return if( $chd->{xmltvid} !~ /ngcro\.tv\.gonix\.net/ );
+#return if( $chd->{xmltvid} !~ /discsci\.tv\.gonix\.net/ );
+
   defined( $chd->{sched_lang} ) or die "You must specify the language used for this channel (sched_lang)";
   if( $chd->{sched_lang} !~ /^en$/ and $chd->{sched_lang} !~ /^se$/ and $chd->{sched_lang} !~ /^hr$/ ){
-    error( "GlobalListings: $chd->{xmltvid} Invalid language '$chd->{sched_lang}'" );
+    error( "GlobalListings: $chd->{xmltvid} Unsupported language '$chd->{sched_lang}'" );
     return;
   }
   my $schedlang = $chd->{sched_lang};
@@ -163,7 +167,7 @@ sub ImportFull
       if( not defined $date ) {
 	error( "GlobalListings: $channel_xmltvid: $filename Invalid date $text" );
       }
-
+      progress("GlobalListings: $channel_xmltvid: Date is: $date");
     }
     elsif( $text =~ /^\d\d\.\d\d\s+\S+/ )
     {
@@ -207,7 +211,7 @@ sub ImportFull
       }
       else
       {
-	error( "State ST_START, found: $text" );
+	error( "GlobalListings: $channel_xmltvid: State ST_START, found: $text" );
       }
     }
     elsif( $state == ST_FHEAD )
@@ -229,7 +233,7 @@ sub ImportFull
       else
       {
 	extract_extra_info( $ce );
-        #progress("GlobalListings: $channel_xmltvid: $start - $title");
+        progress("GlobalListings: $channel_xmltvid: $start - $title");
 	$dsh->AddProgramme( $ce );
 	$ce = {};
 	$state = ST_FDATE;
@@ -311,6 +315,8 @@ sub ImportAmendments
     my( $text ) = norm( $div->findvalue( './/text()' ) );
     next if $text eq "";
 
+#print ">$text<\n";
+
     my( $time, $command, $title );
 
     if( ($text =~ /^sida \d+ av \d+$/i) or
@@ -322,15 +328,15 @@ sub ImportAmendments
     {
       next;
     }
-    elsif( $text =~ /^SLUT|END$/ )
+    elsif( $text =~ /^SLUT|END|KRAJ$/ )
     {
       last;
     }
-    elsif( $text =~ /^(måndag|tisdag|onsdag|torsdag|fredag|lördag|söndag|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\s*\d+\s*\D+\s*\d+$/i  )
+    elsif( isDate( $text, $lang ) )
     {
       if( $state != ST_HEAD )
       {
-        $self->process_command( $channel_id, $e )
+        $self->process_command( $channel_id, $channel_xmltvid, $e )
           if( defined( $e ) );
         $e = undef;
         $dsu->EndBatchUpdate( 1 )
@@ -349,6 +355,7 @@ sub ImportAmendments
       
       $self->AddDate( $date ) if $self->{process_batch};
       $self->start_date( $date );
+      progress("GlobalListings: $channel_xmltvid: Date is: $date");
     }
     elsif( ($command, $title) = 
            ($text =~ /^($command_re)\s
@@ -361,11 +368,12 @@ sub ImportAmendments
         die( "GlobalListings: $channel_xmltvid: $filename Wrong state for $text" );
       }
 
-      $self->process_command( $channel_id, $e )
+      $self->process_command( $channel_id, $channel_xmltvid, $e )
         if defined $e;
 
       $e = $self->parse_command( $prevtime, $command, $title );
     }
+# the next regexp is not ok for Croatian yet
     elsif( ($time, $command, $title) = 
            ($text =~ /^($time_re)\s
                        ($command_re)\s+
@@ -378,7 +386,7 @@ sub ImportAmendments
         die( "GlobalListings: $channel_xmltvid: $filename Wrong state for $text" );
       }
 
-      $self->process_command( $channel_id, $e )
+      $self->process_command( $channel_id, $channel_xmltvid, $e )
         if defined $e;
 
       $e = $self->parse_command( $time, $command, $title );
@@ -391,7 +399,7 @@ sub ImportAmendments
       if( defined( $e ) )
       {
         $e->{desc} .= $text;
-        $self->process_command( $channel_id, $e );
+        $self->process_command( $channel_id, $channel_xmltvid, $e );
         $e = undef;
       }
       else
@@ -404,7 +412,7 @@ sub ImportAmendments
       # Plain text in header. Ignore.
     }
   }
-  $self->process_command( $channel_id, $e )
+  $self->process_command( $channel_id, $channel_xmltvid, $e )
     if( defined( $e ) );
 
   $dsu->EndBatchUpdate( 1 )
@@ -416,7 +424,7 @@ sub parse_command
   my $self = shift;
   my( $time, $command, $title ) = @_;
 
-#  print "PC: $time - $command - $title\n";
+#print "parse_command: $time - $command - $title\n";
   my $e;
 
   $e->{time} = $time;
@@ -432,13 +440,20 @@ sub parse_command
     # This is a document with changes in English.
     # The titles won't match.
     $e->{command} = "DELETEBLIND";
-  }    
-  elsif( $command eq "TILL" or $command eq "INFOGA" 
-         or $command eq "TO" or $command eq "INSERT" )
+  }
+  elsif( $command eq "PROMIJENI" or $command eq "BRISI" )
+  {
+    # This is a document with changes in Croatian.
+    # The titles won't match.
+    $e->{command} = "DELETEBLIND";
+  }
+  elsif( $command eq "TILL" or $command eq "INFOGA"    # Swedish
+         or $command eq "TO" or $command eq "INSERT"   # English
+         or $command eq "U" or $command eq "UMETNI" )  # Croatian
   {
     $e->{command} = "INSERT";
   }
-  elsif( $command eq "EJ ÄNDRAD" or $command eq "UNCHANGED")
+  elsif( $command eq "EJ ÄNDRAD" or $command eq "UNCHANGED" or $command eq "NEPROMIJENJENO" )
   {
     $e->{command} = "IGNORE";
   }
@@ -453,9 +468,9 @@ sub parse_command
 sub process_command
 {
   my $self = shift;
-  my( $channel_id, $e ) = @_;
+  my( $channel_id, $channel_xmltvid, $e ) = @_;
 
-#  print "DO: $e->{command} $e->{time} $e->{title}\n";
+  progress( "GlobalListings: $channel_xmltvid: $e->{command}: $e->{time} - $e->{title}" );
 
   return unless $self->{process_batch};
 
@@ -527,6 +542,8 @@ sub extract_extra_info
 sub isDate {
   my ( $text, $lang ) = @_;
 
+#print "isDate: $lang >$text<\n";
+
   #
   # English formats
   #
@@ -550,8 +567,8 @@ sub isDate {
   # Croatian formats
   #
 
-  # format 'utorak 1(.) srpnja 2008(.)'
-  if( $text =~ /^(ponedjeljak|utorak|srijeda|èvrtak|petak|subota|nedjelja)\s*\d+\.*\s*\D+\,*\s*\d+\.*$/i ){
+  # format 'utorak(,) 1(.) srpnja 2008(.)'
+  if( $text =~ /^(ponedjeljak|utorak|srijeda|èvrtak|petak|subota|nedjelja)\,*\s*\d+\.*\s*\D+\,*\s*\d+\.*$/i ){
     return 1;
   }
 
@@ -585,7 +602,7 @@ sub ParseDate
   } elsif( $lang =~ /^hr$/ ){
 
       # try 'utorak 1. srpnja 2008.'
-      if( $text =~ /^(ponedjeljak|utorak|srijeda|èvrtak|petak|subota|nedjelja)\s*\d+\.*\s*\D+\,*\s*\d+\.*$/i ){
+      if( $text =~ /^(ponedjeljak|utorak|srijeda|èvrtak|petak|subota|nedjelja)\,*\s*\d+\.*\s*\D+\,*\s*\d+\.*$/i ){
         ( $weekday, $day, $monthname, $year ) = ( $text =~ /^(\S+?)\s*(\d+)\.*\s*(\S+?)\,*\s*(\d+)\.*$/ );
       }
 
