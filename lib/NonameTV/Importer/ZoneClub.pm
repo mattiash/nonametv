@@ -1,4 +1,4 @@
-package NonameTV::Importer::ZoneRomantica;
+package NonameTV::Importer::ZoneClub;
 
 use strict;
 use warnings;
@@ -52,7 +52,7 @@ sub ImportContentFile {
 
   # Only process .xls files.
   return if( $file !~ /\.xls$/i );
-  progress( "ZoneRomantica: $xmltvid: Processing $file" );
+  progress( "ZoneClub: $xmltvid: Processing $file" );
 
   my %columns = ();
   my $date;
@@ -65,7 +65,11 @@ sub ImportContentFile {
 
     my $oWkS = $oBook->{Worksheet}[$iSheet];
 
-    progress( "ZoneRomantica: $chd->{xmltvid}: Processing worksheet: $oWkS->{Name}" );
+    if( $oWkS->{Name} !~ /^English$/i ){
+      progress( "ZoneClub: $chd->{xmltvid}: Skipping worksheet: $oWkS->{Name}" );
+      next;
+    }
+    progress( "ZoneClub: $chd->{xmltvid}: Processing worksheet: $oWkS->{Name}" );
 
     # browse through rows
     # schedules are starting after that
@@ -85,8 +89,8 @@ sub ImportContentFile {
 
       my $oWkC;
 
-      # date - column 'Tx Date'
-      $oWkC = $oWkS->{Cells}[$iR][$columns{'Tx Date'}];
+      # date - column 'date'
+      $oWkC = $oWkS->{Cells}[$iR][$columns{'schedule_date'}];
       next if( ! $oWkC );
 
       $date = ParseDate( $oWkC->Value );
@@ -94,7 +98,7 @@ sub ImportContentFile {
 
       if( $date ne $currdate ){
 
-        progress("ZoneRomantica: Date is $date");
+        progress("ZoneClub: Date is $date");
 
         if( $currdate ne "x" ) {
           $dsh->EndBatch( 1 );
@@ -102,36 +106,41 @@ sub ImportContentFile {
 
         my $batch_id = $xmltvid . "_" . $date;
         $dsh->StartBatch( $batch_id , $channel_id );
-        $dsh->StartDate( $date , "06:00" );
+        $dsh->StartDate( $date , "00:00" );
         $currdate = $date;
       }
 
-      # time - column 'Billed Start'
-      $oWkC = $oWkS->{Cells}[$iR][$columns{'Billed Start'}];
+      # time - column 'start_time'
+      $oWkC = $oWkS->{Cells}[$iR][$columns{'start_time'}];
       next if( ! $oWkC );
       my $time = $oWkC->Value if( $oWkC->Value );
 
-      # slot - column 'Slot'
-      $oWkC = $oWkS->{Cells}[$iR][$columns{'Slot'}];
+      # duration - column 'duration'
+      $oWkC = $oWkS->{Cells}[$iR][$columns{'duration'}];
       next if( ! $oWkC );
-      my $slot = $oWkC->Value if( $oWkC->Value );
+      my $duration = $oWkC->Value if( $oWkC->Value );
 
-      # title - column 'Title'
-      $oWkC = $oWkS->{Cells}[$iR][$columns{'Title'}];
+      # title - column 'event_title'
+      $oWkC = $oWkS->{Cells}[$iR][$columns{'event_title'}];
       next if( ! $oWkC );
       my $title = $oWkC->Value if( $oWkC->Value );
 
-      # episode_title - column 'Episode Title'
-      $oWkC = $oWkS->{Cells}[$iR][$columns{'Episode Title'}];
+      # rating - column 'Rating'
+      $oWkC = $oWkS->{Cells}[$iR][$columns{'Rating'}];
       next if( ! $oWkC );
-      my $episode_title = $oWkC->Value if( $oWkC->Value );
+      my $rating = $oWkC->Value if( $oWkC->Value );
 
-      # episode_number - column 'Episode number'
-      $oWkC = $oWkS->{Cells}[$iR][$columns{'Episode number'}];
+      # episode_number - column 'ep Number'
+      $oWkC = $oWkS->{Cells}[$iR][$columns{'ep Number'}];
       next if( ! $oWkC );
       my $episode_number = $oWkC->Value if( $oWkC->Value );
 
-      progress("ZoneRomantica: $xmltvid: $time - $title");
+      # description - column 'event_short_description'
+      $oWkC = $oWkS->{Cells}[$iR][$columns{'event_short_description'}];
+      next if( ! $oWkC );
+      my $description = $oWkC->Value if( $oWkC->Value );
+
+      progress("ZoneClub: $xmltvid: $time - $title");
 
       my $ce = {
         channel_id => $channel_id,
@@ -139,10 +148,10 @@ sub ImportContentFile {
         title => norm($title),
       };
 
-      $ce->{subtitle} = $episode_title if $episode_title;
-      $ce->{subtitle} .= " ($slot)" if $slot;
+      $ce->{subtitle} = "Duration: $duration" if $duration;
+      $ce->{description} = $description if $description;
 
-      if( $episode_number > 0 )
+      if( $episode_number )
       {
         $ce->{episode} = sprintf( ". %d .", $episode_number-1 );
       }
@@ -163,14 +172,15 @@ sub ParseDate
 {
   my ( $dinfo ) = @_;
 
-  my( $day, $month, $year ) = ( $dinfo =~ /(\d+)\/(\d+)\/(\d+)/ );
+#print ">$dinfo<\n";
+
+  my( $month, $day, $year ) = ( $dinfo =~ /(\d+)-(\d+)-(\d+)/ );
 
   return undef if( ! $year );
 
   $year += 2000 if $year < 100;
 
-  my $date = sprintf( "%04d-%02d-%02d", $year, $month, $day );
-  return $date;
+  return sprintf( "%04d-%02d-%02d", $year, $month, $day );
 }
 
 1;

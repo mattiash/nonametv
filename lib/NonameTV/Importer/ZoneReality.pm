@@ -7,7 +7,7 @@ use warnings;
 
 Channels: ZoneReality
 
-Import data from Word-files delivered via e-mail.  Each day
+Import data from XLS or DOC files delivered via e-mail.  Each day
 is handled as a separate batch.
 
 Features:
