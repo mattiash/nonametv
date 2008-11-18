@@ -77,7 +77,7 @@ sub ImportData {
       # ignore directories
       my( $ftype ) = join(', ', File::Util->file_type($dir . "/" . $file) );
       if( $ftype =~ /DIRECTORY/ ){
-        progress("Skipping directory $file");
+        #progress("Skipping directory $file");
         next;
       }
 

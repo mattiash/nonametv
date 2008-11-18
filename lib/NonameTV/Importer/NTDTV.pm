@@ -147,6 +147,10 @@ sub ImportGridXLS
 
     } # next column
 
+    # sort shows by the start time
+    @shows = SortShows( @shows );
+
+    # spread shows
     if( $spreadweeks ){
       @shows = SpreadWeeks( $spreadweeks, @shows );
     }
@@ -156,6 +160,34 @@ sub ImportGridXLS
   } # next worksheet
 
   return;
+}
+
+sub bytime {
+
+  my $at = $$a{start_time};
+
+  my( $h1, $m1 ) = ( $at =~ /^(\d+)\:(\d+)$/ );
+  my $t1 = int( sprintf( "%02d%02d", $h1, $m1 ) );
+
+  my $bt = $$b{start_time};
+
+  my( $h2, $m2 ) = ( $bt =~ /^(\d+)\:(\d+)$/ );
+  my $t2 = int( sprintf( "%02d%02d", $h2, $m2 ) );
+
+  $t1 <=> $t2;
+}
+
+sub SortShows {
+  my ( @shows ) = @_;
+
+  my @sorted;
+
+  for( my $d = 0; $d < 7; $d++ ){
+    my @tmpshows = sort bytime @{$shows[$d]};
+    @{$shows[$d]} = @tmpshows;
+  }
+
+  return @shows;
 }
 
 sub SpreadWeeks {
@@ -202,7 +234,7 @@ sub FlushData {
 
     foreach my $s ( @{$dayshows} ) {
 
-      #progress( "Jetix GridXLS: $xmltvid: $s->{start_time} - $s->{title}" );
+      progress( "Jetix GridXLS: $xmltvid: $s->{start_time} - $s->{title}" );
 
       my $ce = {
         channel_id => $channel_id,
