@@ -63,12 +63,12 @@ sub ImportGridXLS
 
   # Only process .xls files.
   return if( $file !~ /\.xls$/i );
-  progress( "Jetix GridXLS: $xmltvid: Processing $file" );
+  progress( "NTDTV: $xmltvid: Processing $file" );
 
   # the month should be extracted from the filename
   my( $dtstart, $firstdate, $lastdate ) = ParsePeriod( $file );
   if( not $dtstart ){
-    error("Jetix GridXLS: $xmltvid: Unable to determine period for which the data are");
+    error("NTDTV: $xmltvid: Unable to determine period for which the data are");
     return;
   }
 
@@ -85,9 +85,9 @@ sub ImportGridXLS
   for(my $iSheet=0; $iSheet < $oBook->{SheetCount} ; $iSheet++) {
 
     my $oWkS = $oBook->{Worksheet}[$iSheet];
-    progress( "Jetix GridXLS: $xmltvid: Processing worksheet: $oWkS->{Name}" );
+    progress( "NTDTV: $xmltvid: Processing worksheet: $oWkS->{Name}" );
 
-    progress( "Jetix GridXLS: $xmltvid: Importing data for period from " . $firstdate->ymd("-") . " to " . $lastdate->ymd("-") );
+    progress( "NTDTV: $xmltvid: Importing data for period from " . $firstdate->ymd("-") . " to " . $lastdate->ymd("-") );
 
     # The DateTime::Duration sometimes returns wrong number
     # of weeks for the period given. Therefore we will
@@ -97,7 +97,7 @@ sub ImportGridXLS
     #my $spreadweeks = $period->weeks;
     my $spreadweeks = 6;
 
-    progress( "Jetix GridXLS: $xmltvid: Schedules scheme will spread accross $spreadweeks weeks" );
+    progress( "NTDTV: $xmltvid: Schedules scheme will spread accross $spreadweeks weeks" );
 
     my $dayno = 0;
 
@@ -213,12 +213,12 @@ sub FlushData {
   foreach my $dayshows ( @shows ) {
 
     if( $date < $firstdate or $date > $lastdate ){
-      progress( "Jetix GridXLS: $xmltvid: Date " . $date->ymd("-") . " is outside of the month " . $firstdate->month_name . " -> skipping" );
+      progress( "NTDTV: $xmltvid: Date " . $date->ymd("-") . " is outside of the month " . $firstdate->month_name . " -> skipping" );
       $date->add( days => 1 );
       next;
     }
 
-    progress( "Jetix GridXLS: $xmltvid: Date is " . $date->ymd("-") );
+    progress( "NTDTV: $xmltvid: Date is " . $date->ymd("-") );
 
     if( $date ne $currdate ) {
 
@@ -234,7 +234,7 @@ sub FlushData {
 
     foreach my $s ( @{$dayshows} ) {
 
-      progress( "Jetix GridXLS: $xmltvid: $s->{start_time} - $s->{title}" );
+      progress( "NTDTV: $xmltvid: $s->{start_time} - $s->{title}" );
 
       my $ce = {
         channel_id => $channel_id,
