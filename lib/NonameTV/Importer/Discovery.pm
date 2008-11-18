@@ -575,7 +575,7 @@ sub create_dt
 
   if( not defined $res )
   {
-    print $self->{batch_id} . ": " . $dt->ymd('-') . " $hour:$minute: $@" ;
+    w $dt->ymd('-') . " $hour:$minute: $@" ;
     $hour++;
     w "Adjusting to $hour:$minute";
     $dt->set( hour   => $hour,
