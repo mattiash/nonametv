@@ -30,13 +30,12 @@ then
   h=
 fi
 
-tools/se/nonametv-update-mark > $NROOT/xmltv_staging/last_updated
+tools/se/nonametv-process-mail
 
 $d tools/se/nonametv-import-allhttp $Q
 $h tools/se/nonametv-import-allhttp $Q --short-grab
-$d perl -I lib tools/nonametv-import Eurosport $Q
 $d perl -I lib tools/nonametv-import Discovery_xml $Q
-tools/se/nonametv-import-allmail
+tools/se/nonametv-import-allmail $Q
 
 $d perl -I lib/ tools/nonametv-export Xmltv --remove-old
 $d perl -I lib/ tools/nonametv-export Json --remove-old
