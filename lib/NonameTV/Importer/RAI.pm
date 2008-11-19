@@ -23,7 +23,7 @@ use NonameTV qw/MyGet Html2Xml FindParagraphs norm/;
 use NonameTV::DataStore::Helper;
 use NonameTV::Log qw/progress error/;
 
-use NonameTV::Importer::BaseWeekly;
+use NonameTV::Importer::BaseDaily;
 
 use base 'NonameTV::Importer::BaseDaily';
 

@@ -30,7 +30,6 @@ sub new {
     my $self  = $class->SUPER::new( @_ );
     bless ($self, $class);
 
-
     defined( $self->{UrlRoot} ) or die "You must specify UrlRoot";
 
     return $self;
