@@ -56,6 +56,7 @@ sub ImportData {
   my $fs = $self->{filestore};
 
   foreach my $data (@{$self->ListChannels()}) {
+    StartLogSection( $data->{xmltvid}, 0 );
     p "Checking files";
     
     if( $p->{'rescan'} ) {
@@ -106,6 +107,8 @@ sub ImportData {
 
       $self->DoImportContent( $file->[0], $data );
     }
+    
+    EndLogSection( $data->{xmltvid} );
   }
 }
 
@@ -115,7 +118,7 @@ sub DoImportContent {
 
   my $ds = $self->{datastore};
 
-  StartLogSection( $self->{ConfigName} . " $filename", 1 );
+  StartLogSection( $data->{xmltvid} . " $filename", 1 );
 
   $ds->StartTransaction();
   
@@ -127,7 +130,7 @@ sub DoImportContent {
   p "Processing";
 
   eval { $self->ImportContent( $filename, $cref, $data ); };
-  my( $message, $highest ) = EndLogSection( $self->{ConfigName} . 
+  my( $message, $highest ) = EndLogSection( $data->{xmltvid} . 
 					    " $filename" );
   if( $@ ) {
     $message .= $@;
