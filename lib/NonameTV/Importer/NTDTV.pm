@@ -150,7 +150,7 @@ sub ImportGridXLS
     # sort shows by the start time
     @shows = SortShows( @shows );
 
-    # spread shows
+    # spread shows accross weeks
     if( $spreadweeks ){
       @shows = SpreadWeeks( $spreadweeks, @shows );
     }
@@ -172,7 +172,7 @@ sub bytime {
   my $bt = $$b{start_time};
 
   my( $h2, $m2 ) = ( $bt =~ /^(\d+)\:(\d+)$/ );
-  my $t2 = int( sprintf( "%02d%02d", $h2, $m2 ) );
+ dayno my $t2 = int( sprintf( "%02d%02d", $h2, $m2 ) );
 
   $t1 <=> $t2;
 }
