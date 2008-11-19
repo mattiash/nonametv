@@ -32,7 +32,7 @@ use POSIX qw/floor/;
 
 use NonameTV qw/Word2Xml Html2Xml ParseXml norm AddCategory ParseDescCatSwe/;
 use NonameTV::DataStore::Helper;
-use NonameTV::Log qw/progress error/;
+use NonameTV::Log qw/p w f/;
 
 BEGIN {
     use Exporter   ();
@@ -71,7 +71,7 @@ sub ParseData
 
   if( not defined( $doc ) )
   {
-    error( "$ctag: Failed to parse" );
+    f "Failed to parse";
     return 0;
   }
   
@@ -80,7 +80,7 @@ sub ParseData
   
   if( $ns->size() == 0 )
   {
-    error( "$ctag: No programme entries found" );
+    f "No programme entries found";
     return 0;
   }
   
@@ -123,7 +123,7 @@ sub ParseData
 			      vecka\s+\d+,\s+
 			      (.*)$/x ) ) {
       if( $channel ne $chd->{display_name} ) {
-	error( "$ctag: Wrong channel found ($channel)" );
+	f "Wrong channel found ($channel)";
 	$dsh->EndBatch( 1 ) if defined( $batch_id );
 	return 0;
       }
@@ -188,7 +188,7 @@ sub ParseData
       }
       else
       {
-	error( "$ctag: Expected date, found: $text" );
+	w "Expected date, found: $text";
       }
     }
     elsif( $state == ST_FDATE )
@@ -221,7 +221,7 @@ sub ParseData
       }
       else
       {
-	error( "$ctag: Expected time, found: $text" );
+	w "Expected time, found: $text";
       }
     }
     elsif( $state == ST_FTIME )
@@ -233,7 +233,7 @@ sub ParseData
       }
       else
       {
-	error( "$ctag: Expected title, found: $text" );
+	w "Expected title, found: $text";
       }
     }
   }
@@ -288,7 +288,6 @@ sub extract_extra_info
   }
   else
   {
-#    info( "$ctag: No category found for $ce->{title}" );
   }
 
   #

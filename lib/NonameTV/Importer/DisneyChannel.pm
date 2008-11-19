@@ -16,17 +16,19 @@ use utf8;
 
 use DateTime;
 use XML::LibXML;
-use Archive::Zip;
+use Archive::Zip qw/:ERROR_CODES/;
 use Data::Dumper;
 use File::Temp qw/tempfile/;
+use File::Slurp qw/write_file/;
+use IO::Scalar;
 
 use NonameTV qw/norm/;
 use NonameTV::DataStore::Helper;
-use NonameTV::Log qw/progress error/;
+use NonameTV::Log qw/d p w f/;
 
-use NonameTV::Importer::BaseFile;
+use NonameTV::Importer::BaseUnstructured;
 
-use base 'NonameTV::Importer::BaseFile';
+use base 'NonameTV::Importer::BaseUnstructured';
 
 sub new {
   my $proto = shift;
@@ -38,28 +40,28 @@ sub new {
   return $self;
 }
 
-sub ImportContentFile {
+sub ImportContent {
   my $self = shift;
-  my( $file, $chd ) = @_;
+  my( $filename, $cref, $chd ) = @_;
 
-  progress( "DisneyChannel: Processing $file" );
-  
   $self->{fileerror} = 0;
 
   my $xmltvid=$chd->{xmltvid};
   my $channel_id = $chd->{id};
   my $ds = $self->{datastore};
 
-  my $datafile;
+  my $data;
 
-  if( $file =~ /\.xml$/i ) {
-    $datafile = $file;
+  if( $filename =~ /\.xml$/i ) {
+    $data = $$cref;
   }
-  elsif( $file =~ /\.zip$/i ) {
-    my $zip = Archive::Zip->new( $file );
-    if( not defined $zip ) {
-      error( "DisneyChannel $file: Failed to read zip." );
-      return;
+  elsif( $filename =~ /\.zip$/i ) {
+    my( $fh, $tempname )  = tempfile();
+    write_file( $fh, $cref );
+    my $zip = Archive::Zip->new();
+    if( $zip->read( $tempname ) != AZ_OK ) {
+      f "Failed to read zip.";
+      return 0;
     }
 
     my @swedish_files;
@@ -72,31 +74,29 @@ sub ImportContentFile {
     
     my $numfiles = scalar( @swedish_files );
     if( $numfiles != 1 ) {
-      error( "DisneyChannel $file: Found $numfiles matching files, expected 1." );
-      return;
+      f "Found $numfiles matching files, expected 1.";
+      return 0;
     }
 
-    progress( "Using file $swedish_files[0]" );
+    d "Using file $swedish_files[0]";
 
-    (undef, $datafile) = tempfile();
-    
-    $zip->extractMember( $swedish_files[0], $datafile );
+    $data = $zip->contents( $swedish_files[0] );
   }
 
   my $doc;
   my $xml = XML::LibXML->new;
-  eval { $doc = $xml->parse_file($datafile); };
+  eval { $doc = $xml->parse_string($data); };
 
   if( not defined( $doc ) ) {
-    error( "DisneyChannel $file: Failed to parse xml" );
-    return;
+    f "Not well-formed xml";
+    return 0;
   }
 
   my $ns = $doc->find( "//ss:Row" );
   
   if( $ns->size() == 0 ) {
-    error( "DisneyChannel $file: No Rows found." ) ;
-    return;
+    f "No Rows found";
+    return 0;
   }
 
   my $batch_id;
@@ -128,14 +128,14 @@ sub ImportContentFile {
 
     my( $year, $month, $day ) = ParseDate( $orgdate );
     if( not defined $day ) {
-      error( "DisneyChannel $file: Invalid date $orgdate" );
+      w "Invalid date $orgdate";
       next;
     }
     my $date = sprintf( "%4d-%02d-%02d", $year, $month, $day );
 
     my( $hour, $minute ) = ParseTime( $orgstarttime );
     if( not defined $minute ) {
-      error( "DisneyChannel $file: Invalid time $orgstarttime" );
+      w "Invalid time $orgstarttime";
       next;
     }
     my $starttime = sprintf( "%02d:%02d", $hour, $minute );
@@ -153,7 +153,7 @@ sub ImportContentFile {
     my $start_dt = $self->to_utc( $date, $starttime );
 
     if( not defined( $start_dt ) ) {
-      error( "Invalid start-time '$date' '$starttime'. Skipping." );
+      w "Invalid start-time '$date' '$starttime'. Skipping.";
       next;
     }
 
@@ -169,7 +169,7 @@ sub ImportContentFile {
 
   $ds->EndBatch( 1 );
     
-  return;
+  return 1;
 }
 
 sub ParseDate {

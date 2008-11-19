@@ -19,11 +19,11 @@ use XML::LibXML;
 
 use NonameTV qw/norm/;
 use NonameTV::DataStore::Helper;
-use NonameTV::Log qw/progress error/;
+use NonameTV::Log qw/w f/;
 
-use NonameTV::Importer::BaseFile;
+use NonameTV::Importer::BaseUnstructured;
 
-use base 'NonameTV::Importer::BaseFile';
+use base 'NonameTV::Importer::BaseUnstructured';
 
 sub new {
   my $proto = shift;
@@ -37,12 +37,10 @@ sub new {
   return $self;
 }
 
-sub ImportContentFile {
+sub ImportContent {
   my $self = shift;
-  my( $file, $chd ) = @_;
+  my( $filename, $cref, $chd ) = @_;
 
-  progress( "KanalLokal: Processing $file" );
-  
   $self->{fileerror} = 0;
 
   my $xmltvid=$chd->{xmltvid};
@@ -52,18 +50,18 @@ sub ImportContentFile {
 
   my $doc;
   my $xml = XML::LibXML->new;
-  eval { $doc = $xml->parse_file($file); };
+  eval { $doc = $xml->parse_string($$cref); };
 
   if( not defined( $doc ) ) {
-    error( "KanalLokal $file: Failed to parse" );
-    return;
+    f "Not well-formed xml";
+    return 0;
   }
   
   my $ns = $doc->find( "//Event" );
   
   if( $ns->size() == 0 ) {
-    error( "KanalLokal $file: No Events found." ) ;
-    return;
+    f "No Events found";
+    return 0;
   }
 
   my $batch_id;
@@ -91,12 +89,12 @@ sub ImportContentFile {
     my $end_dt = $self->to_utc( $date, $endtime );
 
     if( not defined( $start_dt ) ) {
-      error( "Invalid start-time '$date' '$starttime'. Skipping." );
+      w "Invalid start-time '$date' '$starttime'. Skipping.";
       next;
     }
 
     if( not defined( $end_dt ) ) {
-      error( "Invalid end-time '$date' '$endtime'. Skipping." );
+      w "Invalid end-time '$date' '$endtime'. Skipping.";
       next;
     }
 
@@ -117,7 +115,7 @@ sub ImportContentFile {
 
   $ds->EndBatch( 1 );
     
-  return;
+  return 1;
 }
 
 sub ParseDate {

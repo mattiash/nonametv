@@ -10,13 +10,13 @@ use XML::LibXML;
 use File::Slurp;
 
 use NonameTV::DataStore::Helper;
-use NonameTV::Log qw/progress error/;
+use NonameTV::Log qw/p w f/;
 
 use NonameTV::Importer::Kanal5_util qw/ParseData/;
 
-use NonameTV::Importer::BaseFile;
+use NonameTV::Importer::BaseUnstructured;
 
-use base 'NonameTV::Importer::BaseFile';
+use base 'NonameTV::Importer::BaseUnstructured';
 
 sub new {
   my $proto = shift;
@@ -31,13 +31,11 @@ sub new {
   return $self;
 }
 
-sub ImportContentFile
+sub ImportContent
 {
   my $self = shift;
-  my( $filename, $chd ) = @_;
+  my( $filename, $cref, $chd ) = @_;
 
-  progress( "Kanal5_mail: Processing $filename" );
-  
   $self->{fileerror} = 0;
 
   my $dsh = $self->{datastorehelper};
@@ -45,9 +43,7 @@ sub ImportContentFile
   # We have no category information for data delivered via e-mail.
   my $cat = {};
 
-  my $data = read_file( $filename );
-
-  return ParseData( $filename, \$data, $chd, $cat, $dsh, 1 );
+  return ParseData( $filename, $cref, $chd, $cat, $dsh, 1 );
 }
 
 1;

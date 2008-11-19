@@ -5,8 +5,7 @@ use warnings;
 
 =pod
 
-Import data from xml-files that we download via FTP. Use BaseFile as
-ancestor to avoid redownloading and reprocessing the files each time.
+Import data from xml-files that we download via FTP.
 
 =cut
 
@@ -15,15 +14,15 @@ use utf8;
 use DateTime;
 use XML::LibXML;
 
-use NonameTV qw/MyGet norm/;
+use NonameTV qw/ParseXml norm/;
 use NonameTV::DataStore::Helper;
-use NonameTV::Log qw/progress error/;
+use NonameTV::Log qw/f/;
 
 use NonameTV::Config qw/ReadConfig/;
 
-use NonameTV::Importer::BaseFile;
+use NonameTV::Importer::BaseOne;
 
-use base 'NonameTV::Importer::BaseFile';
+use base 'NonameTV::Importer::BaseOne';
 
 sub new {
   my $proto = shift;
@@ -37,49 +36,59 @@ sub new {
   
   my $conf = ReadConfig();
 
-  $self->{FileStore} = $conf->{FileStore};
-
   return $self;
 }
 
-sub ImportContentFile
-{
+sub Object2Url {
   my $self = shift;
-  my( $file, $chd ) = @_;
+  my( $objectname, $chd ) = @_;
 
-  progress( "Eurosport: Processing $file" );
-  
-  $self->{fileerror} = 0;
+  # Note: HTTP::Cache::Transparent caches the file and only downloads
+  # it if it has changed. This works since LWP interprets the 
+  # if-modified-since header and handles it locally.
+
+  my $dir = $chd->{grabber_info};
+  my $url = $self->{FtpRoot} . $dir . '/' . $self->{Filename};
+
+  return( $url, undef );
+}
+
+sub ContentExtension {
+  return 'xml';
+}
+
+sub FilteredExtension {
+  return 'xml';
+}
+
+sub ImportContent {
+  my $self = shift;
+  my( $batch_id, $cref, $chd ) = @_;
 
   my $xmltvid=$chd->{xmltvid};
 
   my $channel_id = $chd->{id};
   my $ds = $self->{datastore};
 
-  my $xml = XML::LibXML->new;
-  my $doc;
-  eval { $doc = $xml->parse_file($file); };
+  my $doc = ParseXml( $cref );
   
   if( not defined( $doc ) ) {
-    error( "Eurosport $file: Failed to parse" );
-    return;
+    f "Failed to parse";
+    return 0;
   }
   
   # Find all paragraphs.
   my $ns = $doc->find( "//BroadcastDate_GMT" );
   
   if( $ns->size() == 0 ) {
-    error( "Eurosport $file: No BroadcastDates found." ) ;
-    return;
+    f "No BroadcastDates found";
+    return 0;
   }
 
   foreach my $sched_date ($ns->get_nodelist) {
     my( $date ) = norm( $sched_date->findvalue( '@Day' ) );
     my $dt = create_dt( $date );
 
-    my $batch_id = $xmltvid . "_" . $dt->ymd('-');
-    $ds->StartBatch( $batch_id );
-    
     my $ns2 = $sched_date->find('Emission');
     foreach my $emission ($ns2->get_nodelist) {
       my $start_time = $emission->findvalue( 'StartTimeGMT' );
@@ -106,31 +115,9 @@ sub ImportContentFile
       $ds->AddProgramme( $ce );
       
     }
-    $ds->EndBatch( 1 );
   }
 
-  return;
-}
-
-sub UpdateFiles {
-  my( $self ) = @_;
-
-  foreach my $data ( @{$self->ListChannels()} ) { 
-    my $dir = $data->{grabber_info};
-    my $xmltvid = $data->{xmltvid};
-
-    my $url = $self->{FtpRoot} . $dir . '/' . $self->{Filename};
-
-    ftp_get( $url,
-             $self->{FileStore} . '/' . 
-             $xmltvid . '/' . $self->{Filename} );
-  }  
-}
-
-sub ftp_get {
-  my( $url, $file ) = @_;
-
-  qx[curl -s -S -z $file -o $file $url];
+  return 1;
 }
 
 sub create_dt {

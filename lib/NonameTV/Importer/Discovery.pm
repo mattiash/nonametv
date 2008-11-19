@@ -21,21 +21,13 @@ use utf8;
 use DateTime;
 use XML::LibXML;
 
-use NonameTV qw/MyGet File2Xml norm/;
+use NonameTV qw/Content2Xml norm/;
 use NonameTV::DataStore::Helper;
 use NonameTV::DataStore::Updater;
-use NonameTV::Log qw/progress error/;
+use NonameTV::Log qw/w f/;
 
-use NonameTV::Importer::BaseFile;
-use base 'NonameTV::Importer::BaseFile';
-
-# The lowest log-level to store in the batch entry.
-# DEBUG = 1
-# INFO = 2
-# PROGRESS = 3
-# ERROR = 4
-# FATAL = 5
-my $BATCH_LOG_LEVEL = 4;
+use NonameTV::Importer::BaseUnstructured;
+use base 'NonameTV::Importer::BaseUnstructured';
 
 my $command_re = "ÄNDRA|RADERA|TILL|INFOGA|EJ ÄNDRAD|" . 
     "CHANGE|DELETE|TO|INSERT|UNCHANGED";
@@ -59,43 +51,39 @@ sub new
   return $self;
 }
 
-sub ImportContentFile
-{
+sub ImportContent {
   my $self = shift;
-  my( $file, $chd ) = @_;
+  my( $filename, $cref, $chd ) = @_;
 
-  if( $file =~ /\bhigh/i )
-  {
-    error( "Discovery: Skipping highlights file $file" );
-    return;
+  if( $filename =~ /\bhigh/i ) {
+    f "Skipping highlights file";
+    return 0;
   }
 
   my $channel_id = $chd->{id};
   my $channel_xmltvid = $chd->{xmltvid};
 
-  my $doc = File2Xml( $file );
+  my $doc = Content2Xml( $cref );
 
-  if( not defined( $doc ) )
-  {
-    error( "Discovery: Failed to parse $file" );
-    return;
+  if( not defined( $doc ) ) {
+    f "Failed to parse";
+    return 0;
   }
 
-  if( $file =~ /amend/i ) {
-    $self->ImportAmendments( $file, $doc, 
-                             $channel_xmltvid, $channel_id );
+  if( $filename =~ /amend/i ) {
+    return $self->ImportAmendments( $filename, $doc, 
+                                    $channel_xmltvid, $channel_id );
   }
   else {
-    $self->ImportFull( $file, $doc, 
-                       $channel_xmltvid, $channel_id );
+    return $self->ImportFull( $filename, $doc, 
+                              $channel_xmltvid, $channel_id );
   }
 }
 
 # Import files that contain full programming details,
 # usually for an entire month.
 # $doc is an XML::LibXML::Document object.
-sub ImportFull
-{
+sub ImportFull {
   my $self = shift;
   my( $filename, $doc, $channel_xmltvid, $channel_id ) = @_;
   
@@ -104,14 +92,11 @@ sub ImportFull
   # Find all div-entries.
   my $ns = $doc->find( "//div" );
   
-  if( $ns->size() == 0 )
-  {
-    error( "Discovery: No programme entries found in $filename" );
+  if( $ns->size() == 0 ) {
+    f "No programme entries found";
     return;
   }
   
-  progress( "Discovery: Processing $filename" );
-
   # States
   use constant {
     ST_START  => 0,
@@ -138,8 +123,7 @@ sub ImportFull
   
   my $ce = {};
   
-  foreach my $div ($ns->get_nodelist)
-  {
+  foreach my $div ($ns->get_nodelist) {
     # Ignore English titles in National Geographic.
     next if $div->findvalue( '@name' ) =~ /title in english/i;
 
@@ -155,7 +139,7 @@ sub ImportFull
       $type = T_DATE;
       $date = parse_date( $text );
       if( not defined $date ) {
-	error( "Discovery: $filename Invalid date $text" );
+	w "Invalid date $text";
       }
 
     }
@@ -197,7 +181,7 @@ sub ImportFull
       }
       else
       {
-	error( "State ST_START, found: $text" );
+        w "State ST_START, found: $text";
       }
     }
     elsif( $state == ST_FHEAD )
@@ -248,18 +232,20 @@ sub ImportFull
       }
       else
       {
-	error( "Discovery: $filename State ST_FDATE, found: $text" );
+	w "State ST_FDATE, found: $text";
       }
     }
     elsif( $state == ST_EPILOG )
     {
       if( ($type != T_TEXT) and ($type != T_DATE) )
       {
-	error( "Discovery: $filename State ST_EPILOG, found: $text" );
+	w "State ST_EPILOG, found: $text";
       }
     }
   }
   $dsh->EndBatch( 1 );
+
+  return 1;
 }
 
 #
@@ -275,15 +261,13 @@ sub ImportAmendments
 
   my $loghandle;
 
-  progress( "Discovery: Processing $filename" );
-
   # Find all div-entries.
   my $ns = $doc->find( "//div" );
   
   if( $ns->size() == 0 )
   {
-    error( "Discovery: $filename: No programme entries found." );
-    return;
+    f "No programme entries found.";
+    return 0;
   }
 
   use constant {
@@ -328,7 +312,7 @@ sub ImportAmendments
 
       $date = parse_date( $text );
       if( not defined $date ) {
-	error( "Discovery: $filename Invalid date $text" );
+	w "Invalid date $text";
       }
 
       $state = ST_FOUND_DATE;
@@ -347,7 +331,8 @@ sub ImportAmendments
     {
       if( $state != ST_FOUND_DATE )
       {
-        die "Discovery: $filename Wrong state for $text";
+        f "Wrong state for $text";
+        return 0;
       }
 
       $self->process_command( $channel_id, $e )
@@ -364,7 +349,8 @@ sub ImportAmendments
     {
       if( $state != ST_FOUND_DATE )
       {
-        die "Discovery: $filename Wrong state for $text";
+        f "Wrong state for $text";
+        return 0;
       }
 
       $self->process_command( $channel_id, $e )
@@ -385,7 +371,7 @@ sub ImportAmendments
       }
       else
       {
-        error( "Discovery: $filename Ignored text: $text" );
+        w "Ignored text: $text";
       }
     }
     else
@@ -398,6 +384,8 @@ sub ImportAmendments
 
   $dsu->EndBatchUpdate( 1 )
     if( $self->{process_batch} ); 
+
+  return 1;
 }
 
 sub parse_command
@@ -433,7 +421,7 @@ sub parse_command
   }
   else
   {
-    error( "Unknown command $command with time $time" );
+    w "Unknown command $command with time $time";
   }
 
   return $e;
@@ -490,7 +478,7 @@ sub process_command
   {}
   else
   {
-    die "Discovery: Unknown command $e->{command}";
+    w "Unknown command $e->{command}";
   }
 }
 
@@ -568,7 +556,7 @@ sub create_dt
   
   my( $hour, $minute ) = split( /[:\.]/, $time );
 
-  error( $self->{batch_id} . ": Unknown starttime $time" )
+  w "Unknown starttime $time"
     if( not defined( $minute ) );
 
   # The schedule date doesn't wrap at midnight. This is what
@@ -587,9 +575,9 @@ sub create_dt
 
   if( not defined $res )
   {
-    print $self->{batch_id} . ": " . $dt->ymd('-') . " $hour:$minute: $@" ;
+    w $dt->ymd('-') . " $hour:$minute: $@" ;
     $hour++;
-    error( "Adjusting to $hour:$minute" );
+    w "Adjusting to $hour:$minute";
     $dt->set( hour   => $hour,
               minute => $minute,
               );

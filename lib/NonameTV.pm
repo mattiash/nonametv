@@ -29,7 +29,7 @@ BEGIN {
                       Html2Xml Htmlfile2Xml
                       Wordfile2HtmlTree Htmlfile2HtmlTree
                       Word2Xml Wordfile2Xml 
-		      File2Xml
+		      File2Xml Content2Xml
 		      FindParagraphs
                       norm AddCategory
                       ParseDescCatSwe FixProgrammeData
@@ -210,6 +210,23 @@ sub File2Xml {
   else
   {
     $doc = Word2Xml( $data );
+  }
+
+  return $doc;
+}
+
+sub Content2Xml {
+  my( $cref ) = @_;
+
+  my $doc;
+  if( $$cref =~ /^\<\!DOCTYPE HTML/ )
+  {
+    # This is an override that has already been run through wvHtml
+    $doc = Html2Xml( $$cref );
+  }
+  else
+  {
+    $doc = Word2Xml( $$cref );
   }
 
   return $doc;
@@ -710,7 +727,7 @@ CompareArrays calls the following callback functions:
   $cb->{deleted}($eold) - Called for all entries that are present in
                         $old but not in $new.
 
-  $cb->{equal}($ea, $eb) - Called for all entries that are present in
+  $cb->{equal}($enew, $eold) - Called for all entries that are present in
                            both $new and $old.
 
 Additionally, $cb->{max} shall contain an entry that is always

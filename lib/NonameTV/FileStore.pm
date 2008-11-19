@@ -123,7 +123,8 @@ sub ListFiles #( $xmltvid )
 
 Method: GetFile
 
-Returns a reference to the contents of the specified file.
+Returns a reference to the contents of the specified file or undef
+if the file does not exist.
 
 =cut
 
@@ -133,12 +134,16 @@ sub GetFile {
 
   my $fullname = $self->{Path} . "/$xmltvid/$filename";
 
+  my $result;
+
   if( $self->PathIsLocal() ) {
-    return read_file( $fullname, err_mode => 'quiet' );
+    $result = read_file( $fullname, err_mode => 'quiet' );
   }
   else {
-    return get( $fullname );
+    $result = get( $fullname );
   }
+
+  return defined( $result ) ? \$result : undef;
 }
 
 sub GetFileMeta {
@@ -186,7 +191,7 @@ sub LoadFileList {
     return;
   }
 
-  foreach my $line (split( "\n", $fl)) {
+  foreach my $line (split( "\n", $$fl)) {
     my( $filename, $md5sum, $ts ) = split( "\t", $line );
     push @d, [ $filename, $md5sum, $ts ];
   }
@@ -244,7 +249,8 @@ sub DESTROY {
   my $self = shift;
 
   foreach my $xmltvid (keys %{$self->{_flmodified}} ) {
-    $self->WriteFileMeta( $xmltvid );
+    $self->WriteFileMeta( $xmltvid ) 
+        if $self->{_flmodified}->{$xmltvid};
   }
 }
 

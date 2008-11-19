@@ -14,7 +14,6 @@ processed in the order that they appear.
 use DateTime;
 use POSIX qw/floor/;
 use Encode;
-use File::Util;
 
 use NonameTV::Log qw/progress error StartLogSection EndLogSection/;
 
@@ -75,11 +74,7 @@ sub ImportData {
     foreach my $file (@files) {
 
       # ignore directories
-      my( $ftype ) = join(', ', File::Util->file_type($dir . "/" . $file) );
-      if( $ftype =~ /DIRECTORY/ ){
-        #progress("Skipping directory $file");
-        next;
-      }
+      next if -d "$dir/$file";
 
       # Ignore emacs backup-files.
       next if $file =~ /~$/;
