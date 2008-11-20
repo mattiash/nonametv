@@ -94,7 +94,7 @@ sub ImportFull {
   
   if( $ns->size() == 0 ) {
     f "No programme entries found";
-    return;
+    return 0;
   }
   
   # States
