@@ -83,7 +83,7 @@ sub ImportData {
 	added => sub { push @processfiles, $_[0] },
 	deleted => sub {
 	  $ds->sa->Delete( "files", { channelid => $data->{id},
-				      filename => $_[0] } );
+				      "binary filename" => $_[0]->[0] } );
 	},
 	equal => sub { push( @processfiles, $_[0] ) 
 			   if( $_[0]->[1] ne $_[1]->[1] );
@@ -97,8 +97,11 @@ sub ImportData {
     }
 
     foreach my $file (@processfiles) {
+      # Mysql string comparisons are case-insensitive. 
+      # By forcing one string to binary, the comparison is done
+      # case-sensitive instead.
       $ds->sa->Delete( "files", { channelid => $data->{id},
-                                  filename => $file->[0] } );
+                                  "binary filename" => $file->[0] } );
       
       $ds->sa->Add( "files", { channelid => $data->{id},
                                filename => $file->[0],
@@ -143,7 +146,7 @@ sub DoImportContent {
 
     $ds->sa->Update( "files", 
                      { channelid => $data->{id},
-                       filename => $filename, },
+                       "binary filename" => $filename, },
                      { successful => 0,
                        message => $message, } );
     
@@ -153,7 +156,7 @@ sub DoImportContent {
   
     $ds->sa->Update( "files", 
                      { channelid => $data->{id},
-                       filename => $filename, },
+                       "binary filename" => $filename, },
                      { successful => 1,
                        message => $message,
                        earliestdate => $self->{earliestdate},
