@@ -201,7 +201,8 @@ sub guess_channel
   }
 
   if( $dir =~ /NationalGeographic/ and $filename =~ /\.doc$/i ) {
-    return "ngcsverige.com";
+    return "hd.ngcsverige.com" if $filename =~ /^ngswehd\b/i;
+    return "ngcsverige.com" if $filename =~ /^ngswe\b/i;
   }
 
   if( $dir =~ /KanalLokal/ and $filename =~ /\.xml$/i ) {
