@@ -172,7 +172,7 @@ sub bytime {
   my $bt = $$b{start_time};
 
   my( $h2, $m2 ) = ( $bt =~ /^(\d+)\:(\d+)$/ );
- dayno my $t2 = int( sprintf( "%02d%02d", $h2, $m2 ) );
+  my $t2 = int( sprintf( "%02d%02d", $h2, $m2 ) );
 
   $t1 <=> $t2;
 }
