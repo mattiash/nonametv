@@ -72,9 +72,15 @@ sub FilterContent {
     return (undef, "ParseXml failed" );
   } 
 
+  my $xp = XML::LibXML::XPathContext->new($doc);
+  
+  # Create namespace
+  # http://perl-xml.sourceforge.net/faq/#namespaces_xpath
+  $xp->registerNs(tt => 'http://www.ttspektra.se' );
+  
   # Remove all OtherBroadcast since they change
   # each time the data for today is downloaded.
-  my $ns = $doc->find( "//OtherBroadcast" );
+  my $ns = $xp->find( "//tt:OtherBroadcast" );
 
   foreach my $n ($ns->get_nodelist) {
     $n->unbindNode();
