@@ -69,10 +69,15 @@ sub ImportContent {
 
   progress( "NovaTV_xml: $channel_xmltvid: Processing XML" );
 
+  # clean some characters from xml that can not be parsed
+  my $xmldata = $$cref;
+  $xmldata =~ s/ & / and /;
+
+  # parse XML
   my $doc;
   my $xml = XML::LibXML->new;
 
-  eval { $doc = $xml->parse_string($$cref); };
+  eval { $doc = $xml->parse_string($xmldata); };
   if( $@ ne "" ) {
     error( "NovaTV_xml: $batch_id: Failed to parse $@" );
     return 0;
@@ -81,7 +86,7 @@ sub ImportContent {
   # find the master node - tv
   my $ntvs = $doc->findnodes( "//tv" );
   if( $ntvs->size() == 0 ) {
-    error( "NovaTV_xml: $channel_xmltvid: $$cref: No tv nodes found" ) ;
+    error( "NovaTV_xml: $channel_xmltvid: $xmldata: No tv nodes found" ) ;
     return;
   }
   progress( "NovaTV_xml: $channel_xmltvid: found " . $ntvs->size() . " tv nodes" );
