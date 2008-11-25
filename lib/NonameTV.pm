@@ -27,7 +27,6 @@ BEGIN {
     %EXPORT_TAGS = ( );     # eg: TAG => [ qw!name1 name2! ],
     @EXPORT_OK   = qw/MyGet expand_entities 
                       Html2Xml Htmlfile2Xml
-                      Wordfile2HtmlTree Htmlfile2HtmlTree
                       Word2Xml Wordfile2Xml 
 		      File2Xml Content2Xml
 		      FindParagraphs
@@ -315,36 +314,6 @@ sub norm
   $str =~ tr/\n\r\t /    /s;
   
   return $str;
-}
-
-# Generate HTML file in tempdir and run Htmlfile2HtmlTree
-sub Wordfile2HtmlTree
-{
-  my ($filename) = @_;
-
-  my $dir= tempdir( CLEANUP => 1 );
-  (my $htmlfile= "$filename.html") =~ s|.*/([^/]+)$|$1|;
-  if(system "$wvhtml --targetdir=\"$dir\" \"$filename\" \"$htmlfile\"") {
-      print "$wvhtml --targetdir=\"$dir\" \"$filename\" \"$htmlfile\" failed: $?\n";
-      return undef;
-  }
-  return &Htmlfile2HtmlTree("$dir/$htmlfile");
-}
-
-# Generate HTML::Tree from html file
-sub Htmlfile2HtmlTree
-{
-    my ($filename)= @_;
-    my $fh;
-    if( not open($fh, "<:utf8", "$filename") ) {
-      w "Failed to read from $filename";
-      return undef;
-    }
-
-    my $tree = HTML::TreeBuilder->new();
-    $tree->parse_file($fh); 
-
-    return $tree;
 }
 
 =item AddCategory
