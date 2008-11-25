@@ -174,7 +174,7 @@ sub ImportContent
       $ce->{production_date} = "$1-01-01";
     }
 
-    $ds->AddProgramme( $ce );
+    $dsh->AddProgramme( $ce );
   }
   
   # Success
