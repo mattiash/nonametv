@@ -3,9 +3,11 @@
 NROOT=/var/local/nonametv
 PROOT=/home/mattias/development/nonametv
 
-rm $NROOT/xmltv_compare/*
+rm -rf $NROOT/xmltv_compare
+mkdir $NROOT/xmltv_compare
 cd $NROOT/xmltv_compare
 $PROOT/tools/nonametv-xmltv-compare $NROOT/xmltv_staging $NROOT/xmltv_old
 
-rm $NROOT/xmltv_old/*
-cp -a $NROOT/xmltv_staging/* $NROOT/xmltv_old/
+rm -rf $NROOT/xmltv_old
+mkdir $NROOT/xmltv_old
+rsync -a $NROOT/xmltv_staging/ $NROOT/xmltv_old
