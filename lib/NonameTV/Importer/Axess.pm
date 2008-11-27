@@ -16,7 +16,6 @@ use NonameTV::Log qw/progress error/;
 use NonameTV qw/ParseXml norm/;
 
 use DateTime;
-use Encode;
 
 use NonameTV::Importer::BaseDaily;
 
@@ -86,7 +85,7 @@ sub FilterContent {
     $n->unbindNode();
   }
 
-  my $str = encode( "utf-8", $doc->toString( 1 ) );
+  my $str = $doc->toString( 1 );
 
   return( \$str, undef );
 }
