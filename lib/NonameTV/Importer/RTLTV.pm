@@ -6,8 +6,7 @@ use warnings;
 =pod
 
 Importer for data from RTLTV. 
-One file for 7-day period downloaded from their site.
-The downloaded file is in xml-format.
+The downloaded files is in xml-format.
 
 Features:
 
@@ -17,22 +16,54 @@ use DateTime;
 use XML::LibXML;
 
 use NonameTV qw/MyGet norm AddCategory/;
+use NonameTV::DataStore::Helper;
 use NonameTV::Log qw/progress error/;
 
-use NonameTV::Importer::BaseOne;
+use NonameTV::Importer::BaseDaily;
 
-use base 'NonameTV::Importer::BaseOne';
+use base 'NonameTV::Importer::BaseDaily';
 
 sub new {
-    my $proto = shift;
-    my $class = ref($proto) || $proto;
-    my $self  = $class->SUPER::new( @_ );
-    bless ($self, $class);
+  my $proto = shift;
+  my $class = ref($proto) || $proto;
+  my $self  = $class->SUPER::new( @_ );
+  bless ($self, $class);
 
+  defined( $self->{UrlRoot} ) or die "You must specify UrlRoot";
 
-    defined( $self->{UrlRoot} ) or die "You must specify UrlRoot";
+  my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore}, "Europe/Zagreb" );
+  $self->{datastorehelper} = $dsh;
 
-    return $self;
+  return $self;
+}
+
+sub Object2Url {
+  my $self = shift;
+  my( $objectname, $chd ) = @_;
+
+  my $today = DateTime->today();
+
+  # the url is in format 'http://www.rtl.hr/raspored/xmltv/0'
+  # where '0' at the end is for today, 1 for tomorrow, etc.
+
+  my( $year, $month, $day ) = ( $objectname =~ /_(\d+)-(\d+)-(\d+)$/ );
+  my $dt = DateTime->new(
+                          year  => $year,
+                          month => $month,
+                          day   => $day,
+                          time_zone   => 'Europe/Zagreb',
+  );
+
+  my $daydiff = $dt->day - $today->day;
+
+  if( $daydiff lt 0 ){
+    progress( "RTLTV: $objectname: Skipping date in the past " . $dt->ymd() );
+    return( undef, undef );
+  }
+
+  my $url = $self->{UrlRoot} . "/" . $daydiff;
+
+  return( $url, undef );
 }
 
 sub ImportContent
@@ -42,11 +73,20 @@ sub ImportContent
   my( $batch_id, $cref, $chd ) = @_;
 
   my $ds = $self->{datastore};
+  my $dsh = $self->{datastorehelper};
+
   $ds->{SILENCE_END_START_OVERLAP}=1;
+
+  my( $date ) = ($batch_id =~ /_(.*)$/);
+
+  # clean some characters from xml that can not be parsed
+  my $xmldata = $$cref;
+  #$xmldata =~ s/&bdquo;//;
+  #$xmldata =~ s/&nbsp;//;
 
   my $xml = XML::LibXML->new;
   my $doc;
-  eval { $doc = $xml->parse_string($$cref); };
+  eval { $doc = $xml->parse_string($xmldata); };
   if( $@ ne "" )
   {
     error( "$batch_id: Failed to parse $@" );
@@ -55,8 +95,10 @@ sub ImportContent
   
   # Find all "programme"-entries.
   my $ns = $doc->find( "//programme" );
-  
-  my( $description , $episode , $production_year , $duration , $directors , $actors );
+
+  # Start date
+  $dsh->StartDate( $date , "05:00" );
+  progress("RTLTV: $chd->{xmltvid}: Date is: $date");
 
   foreach my $sc ($ns->get_nodelist)
   {
@@ -64,217 +106,50 @@ sub ImportContent
     #
     # start time
     #
-    my $start = $self->create_dt( $sc->findvalue( './@start' ) );
+    my $start = $sc->findvalue( './@start' );
     if( not defined $start )
     {
       error( "$batch_id: Invalid starttime '" . $sc->findvalue( './@start' ) . "'. Skipping." );
       next;
     }
+    my $time;
+    ( $date, $time ) = ParseDateTime( $start );
+    next if not $time;
 
-    #
-    # end time
-    #
-    my $end = $self->create_dt( $sc->findvalue( './@stop' ) );
-    if( not defined $end )
-    {
-      error( "$batch_id: Invalid endtime '" . $sc->findvalue( './@stop' ) . "'. Skipping." );
-      next;
-    }
-    
-    #
-    # title, subtitle
-    #
-    my $title = $sc->getElementsByTagName('title');
-    #my $org_title = $sc->getElementsByTagName('sub-title');
-    #my $subtitle = $sc->getElementsByTagName('sub-title');
-    
-    #
-    # description
-    #
-    my $desc  = $sc->getElementsByTagName('desc');
-    
-    #
-    # genre
-    #
+    my $title = $sc->getElementsByTagName( 'title' );
     my $genre = $sc->getElementsByTagName( 'category' );
-
-    #
-    # url
-    #
+    my $description = $sc->getElementsByTagName( 'desc' );
     my $url = $sc->getElementsByTagName( 'url' );
 
-    #
-    # episode number
-    #
-    #my $ep_nr = int( $sc->getElementsByTagName( 'episode-num' ) );
-    #my $ep_se = 0;
-    #my $episode = undef;
-    #if( ($ep_nr > 0) and ($ep_se > 0) )
-    #{
-      #$episode = sprintf( "%d . %d .", $ep_se-1, $ep_nr-1 );
-    #}
-    #elsif( $ep_nr > 0 )
-    #{
-      #$episode = sprintf( ". %d .", $ep_nr-1 );
-    #}
-
-    # The director and actor info are children of 'credits'
-    #my $directors = $sc->getElementsByTagName( 'director' );
-    #my $actors = $sc->getElementsByTagName( 'actor' );
-    #my $writers = $sc->getElementsByTagName( 'writer' );
-    #my $adapters = $sc->getElementsByTagName( 'adapter' );
-    #my $producers = $sc->getElementsByTagName( 'producer' );
-    #my $presenters = $sc->getElementsByTagName( 'presenter' );
-    #my $commentators = $sc->getElementsByTagName( 'commentator' );
-    #my $guests = $sc->getElementsByTagName( 'guest' );
-
-    # parse $desc field
-    if( $desc ){
-      ( $description , $episode , $production_year , $duration , $directors , $actors ) = $self->ParseDescField( norm($desc) );
-#progress("===EPIZODA: $episode") if defined $episode ;
-#progress("===GODINA:  $production_year") if defined $production_year ;
-#progress("===TRAJANJE:  $duration") if defined $duration ;
-#progress("===DIRECTORS:  $directors") if defined $directors ;
-#progress("===ACTORS:  $actors") if defined $actors ;
-    }
-
-    my $stereo = 'stereo';
-    my $sixteen_nine = 0;
-
-    progress("RTLTV: $chd->{xmltvid}: $start - $title");
+    progress("RTLTV: $chd->{xmltvid}: $time - $title");
 
     my $ce = {
-      channel_id   => $chd->{id},
-      title        => norm($title),
-      #subtitle     => norm($subtitle),
-      description  => norm($desc),
-      start_time   => $start->ymd("-") . " " . $start->hms(":"),
-      end_time     => $end->ymd("-") . " " . $end->hms(":"),
-      stereo       => $stereo,
-      aspect       => $sixteen_nine ? "16:9" : "4:3", 
-      directors    => norm($directors),
-      actors       => norm($actors),
-      #writers      => norm($writers),
-      #adapters     => norm($adapters),
-      #producers    => norm($producers),
-      #presenters   => norm($presenters),
-      #commentators => norm($commentators),
-      #guests       => norm($guests),
-      url          => norm($url),
+      channel_id => $chd->{id},
+      start_time => $time,
+      title => norm( $title ),
+      description => norm( $description ),
     };
 
-    if( defined( $episode ) and ($episode =~ /\S/) )
-    {
-      $ce->{episode} = norm($episode);
-      $ce->{program_type} = 'series';
+
+    if( $genre ){
+      my($program_type, $category ) = $ds->LookupCat( "RTLTV", norm($genre) );
+      AddCategory( $ce, $program_type, $category );
     }
 
-    my($program_type, $category ) = $ds->LookupCat( "RTLTV", $genre );
-    AddCategory( $ce, $program_type, $category );
-
-    if( defined( $production_year ) and ($production_year =~ /(\d\d\d\d)/) )
-    {
-      $ce->{production_date} = "$1-01-01";
-    }
-
-    $ds->AddProgramme( $ce );
+    $dsh->AddProgramme( $ce );
   }
   
   # Success
   return 1;
 }
 
-sub create_dt
+sub ParseDateTime
 {
-  my $self = shift;
-  my( $str ) = @_;
-  
-  if( not defined $str  or length($str) eq 0 )
-  {
-    return undef;
-  }
+  my( $text ) = @_;
 
-  #print "DT: $str " . length($str). "\n";
+  my( $year, $month, $day, $hour, $min, $sec ) = ( $text =~ /^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})\s+/ );
 
-  my $year = substr( $str , 0 , 4 );
-  my $month = substr( $str , 4 , 2 );
-  my $day = substr( $str , 6 , 2 );
-  my $hour = substr( $str , 8 , 2 );
-  my $minute = substr( $str , 10 , 2 );
-  my $second = substr( $str , 12 , 2 );
-  my $offset = substr( $str , 15 , 5 );
-
-  if( not defined $year )
-  {
-    return undef;
-  }
-  
-  my $dt = DateTime->new( year   => $year,
-                          month  => $month,
-                          day    => $day,
-                          hour   => $hour,
-                          minute => $minute,
-                          second => $second,
-                          time_zone => 'Europe/Zagreb',
-                          );
-  
-  $dt->set_time_zone( "UTC" );
-  
-  return $dt;
-}
-
-sub ParseDescField
-{
-  my $self = shift;
-  my( $d ) = @_;
-
-  my $episode = undef;
-  my $prodyear = undef;
-  my $duration = undef;
-  my $directors = undef;
-  my $actors = undef;
-
-  my $tmps = $d;
-
-  # extract episode
-  if( $tmps =~ m/^Epizoda:/ )
-  {
-    my $ep_nr = 0;
-    my $ep_se = 0;
-
-    ( $ep_nr , $ep_se ) = ( $tmps =~ /^Epizoda: (\d+)\/(\d+)/ );
-
-    if( ($ep_nr > 0) and ($ep_se > 0) )
-    {
-      $episode = sprintf( "%d . %d .", $ep_se-1, $ep_nr-1 );
-    }
-    elsif( $ep_nr > 0 )
-    {
-      $episode = sprintf( ". %d .", $ep_nr-1 );
-    }
-  }
-
-  $tmps = $d;
-  if( $tmps =~ /Godina: (\d+)/ ){
-    $prodyear = $1;
-  }
-
-  $tmps = $d;
-  if( $tmps =~ /Trajanje: (\d+)/ ){
-    $duration = $1;
-  }
-
-  $tmps = $d;
-  if( $tmps =~ /Redatelj:(.*?)Uloge:/ ){
-    $directors = $1;
-  }
-
-  $tmps = $d;
-  if( $tmps =~ /Uloge:(.*?)$/ ){
-    $actors = $1;
-  }
-
-  return( $d , $episode , $prodyear , $duration , $directors , $actors );
+  return( $year . "-" . $month . "-" . $day , $hour . ":" . $min );
 }
 
 sub FetchDataFromSite

@@ -32,12 +32,12 @@ sub BatchPeriods {
   my $self = shift;
   my( $shortgrab ) = @_;
 
-  my $start_dt = DateTime->today(time_zone => 'local' );
-
-  my $maxmonths = $shortgrab ? $self->{MaxMonthsShort} : 
-    $self->{MaxMonths};
-
   my @periods;
+
+  my $start_dt = DateTime->today(time_zone => 'local' );
+  push @periods, $start_dt->year . '-' . $start_dt->month;
+
+  my $maxmonths = $shortgrab ? $self->{MaxMonthsShort} : $self->{MaxMonths};
 
   my $dt = $start_dt->clone;
 
