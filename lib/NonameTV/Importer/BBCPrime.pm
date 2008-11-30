@@ -59,19 +59,19 @@ sub ImportContentFile
 
   my $currdate = "x";
 
-  progress( "FOX: $channel_xmltvid: Processing $file" );
+  progress( "BBCPrime: $channel_xmltvid: Processing $file" );
 
   my $oBook = Spreadsheet::ParseExcel::Workbook->Parse( $file );
 
   if( not defined( $oBook ) ) {
-    error( "FOX: $file: Failed to parse xls" );
+    error( "BBCPrime: $file: Failed to parse xls" );
     return;
   }
 
   for(my $iSheet=0; $iSheet < $oBook->{SheetCount} ; $iSheet++) {
 
     my $oWkS = $oBook->{Worksheet}[$iSheet];
-    progress("FOX: $channel_xmltvid: processing worksheet named '$oWkS->{Name}'");
+    progress("BBCPrime: $channel_xmltvid: processing worksheet named '$oWkS->{Name}'");
 
     # read the rows with data
     for(my $iR = $oWkS->{MinRow} ; defined $oWkS->{MaxRow} && $iR <= $oWkS->{MaxRow} ; $iR++) {
@@ -106,7 +106,7 @@ sub ImportContentFile
         $dsh->StartDate( $date , "00:00" );
         $currdate = $date;
 
-        progress("FOX: $channel_xmltvid: Date is: $date");
+        progress("BBCPrime: $channel_xmltvid: Date is: $date");
       }
 
       # SRS - column 2
@@ -207,17 +207,28 @@ sub create_dt {
 sub UpdateFiles {
   my( $self ) = @_;
 
-  my $today = my $nowmonth = DateTime->today;
+  my $today = DateTime->today;
+
+  my $filename;
+  my $url;
 
   foreach my $data ( @{$self->ListChannels()} ) { 
 
     my $xmltvid = $data->{xmltvid};
 
-    # first download the default file
-    my $filename = 'Prime%20Europe%20' . $today->month_name . '%20' . $today->year . '.XLS';
-    my $url = $self->{UrlRoot} . '/' . $filename;
-    progress("BBCPrime: Fetching data from default $url");
-    http_get( $url, $self->{FileStore} . '/' . $xmltvid . '/' . $filename );
+    # first download the default files
+    # do it for MaxMonths in advance
+    for(my $month=0; $month <= $self->{MaxMonths} ; $month++) {
+
+      my $dt = $today->clone->add( months => $month );
+
+      $filename = 'Prime%20Europe%20' . $dt->month_name . '%20' . $dt->year . '.XLS';
+      $url = $self->{UrlRoot} . '/' . $filename;
+
+      progress("BBCPrime: Fetching data from default $url");
+      http_get( $url, $self->{FileStore} . '/' . $xmltvid . '/' . $filename );
+
+    }
 
     # then download updated file
     # which url must be stored in grabber_info

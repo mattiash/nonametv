@@ -54,7 +54,7 @@ sub Object2Url {
                           time_zone   => 'Europe/Zagreb',
   );
 
-  my $daydiff = $dt->day - $today->day;
+  my $daydiff = DateTime->compare( $dt, $today );
 
   if( $daydiff lt 0 ){
     progress( "RTLTV: $objectname: Skipping date in the past " . $dt->ymd() );
@@ -62,6 +62,7 @@ sub Object2Url {
   }
 
   my $url = $self->{UrlRoot} . "/" . $daydiff;
+  progress( "RTLTV: $objectname: Fetching data from $url" );
 
   return( $url, undef );
 }
@@ -81,8 +82,10 @@ sub ImportContent
 
   # clean some characters from xml that can not be parsed
   my $xmldata = $$cref;
-  #$xmldata =~ s/&bdquo;//;
-  #$xmldata =~ s/&nbsp;//;
+  $xmldata =~ s/&bdquo;//;
+  $xmldata =~ s/&nbsp;//;
+  $xmldata =~ s/&scaron;//;
+  $xmldata =~ s/&eacute;//;
 
   my $xml = XML::LibXML->new;
   my $doc;

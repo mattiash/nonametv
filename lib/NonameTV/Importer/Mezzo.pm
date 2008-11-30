@@ -106,6 +106,12 @@ sub ImportXLS
 
           if( $oWkS->{Cells}[$iR][$iC] ){
             $columns{$oWkS->{Cells}[$iR][$iC]->Value} = $iC;
+
+            # other possible names of the columns
+            $columns{'DATE'} = $iC if( $oWkS->{Cells}[$iR][$iC]->Value =~ /^DATES$/ );
+            $columns{'LENGTH'} = $iC if( $oWkS->{Cells}[$iR][$iC]->Value =~ /^LENGHT$/ );
+            $columns{'TITLE'} = $iC if( $oWkS->{Cells}[$iR][$iC]->Value =~ /^TITLES$/ );
+            $columns{'DESCRIPTION'} = $iC if( $oWkS->{Cells}[$iR][$iC]->Value =~ /^DESCRIPTIONS$/ );
           }
 
 #foreach my $cl (%columns) {
@@ -257,7 +263,7 @@ return;
 
       my $dt = $today->clone->add( months => $month );
 
-      my $filename = "Mezzo_Schedule_" . $dt->month_name . "_" . $dt->strftime( '%g' ) . ".xls";
+      my $filename = "Mezzo_Schedule_" . $dt->month_name . "_" . $dt->strftime( '%G' ) . ".xls";
 
       my $url = $self->{UrlRoot} . "/" . $filename;
       progress("Mezzo: Fetching xls file from $url");
