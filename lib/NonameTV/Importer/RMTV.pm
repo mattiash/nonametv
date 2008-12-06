@@ -5,7 +5,8 @@ use warnings;
 
 =pod
 
-Import data from Excel files delivered via e-mail.
+Import data from Xls files delivered via e-mail.  Each
+day is handled as a separate batch.
 
 Features:
 
@@ -14,12 +15,13 @@ Features:
 use utf8;
 
 use DateTime;
+use Encode qw/encode decode/;
 use Spreadsheet::ParseExcel;
-use Spreadsheet::XLSX;
+use Archive::Zip;
 use Data::Dumper;
 use File::Temp qw/tempfile/;
 
-use NonameTV qw/norm AddCategory/;
+use NonameTV qw/norm AddCategory MonthNumber/;
 use NonameTV::DataStore::Helper;
 use NonameTV::Log qw/progress error/;
 
@@ -33,9 +35,7 @@ sub new {
   my $self  = $class->SUPER::new( @_ );
   bless ($self, $class);
 
-  $self->{grabber_name} = "RMTV";
-
-  my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore} );
+  my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore}, "Europe/Madrid" );
   $self->{datastorehelper} = $dsh;
 
   return $self;
@@ -47,102 +47,13 @@ sub ImportContentFile {
 
   $self->{fileerror} = 0;
 
-  my $xmltvid = $chd->{xmltvid};
   my $channel_id = $chd->{id};
+  my $channel_xmltvid = $chd->{xmltvid};
   my $dsh = $self->{datastorehelper};
   my $ds = $self->{datastore};
 
-  if( $file =~ /\.xlsx$/i ){
-    $self->ImportXLSX( $file, $channel_id, $xmltvid );
-  } elsif( $file =~ /\.xls$/i ){
-    $self->ImportXLS( $file, $channel_id, $xmltvid );
-  }
-
-  return;
-}
-
-sub ImportXLSX
-{
-  my $self = shift;
-  my( $file, $channel_id, $xmltvid ) = @_;
-
-  my $dsh = $self->{datastorehelper};
-  my $ds = $self->{datastore};
-
-  return if( $file !~ /\.xlsx$/i );
-  progress( "RMTV XLSx: $xmltvid: Processing $file" );
-
-  my %columns = ();
-  my $date;
-  my $currdate = undef;
-
-  my $excel = Spreadsheet::XLSX->new ( $file );
-
-  foreach my $sheet (@{$excel->{Worksheet}}){
-
-    progress( "RMTV XLSx: $xmltvid: Processing worksheet: $sheet->{Name}" );
-
-print "MINROW: $sheet->{MinRow}\n";
-print "MAXROW: $sheet->{MaxRow}\n";
-print "MINCOL: $sheet->{MinCol}\n";
-print "MAXCOL: $sheet->{MaxCol}\n";
-
-    foreach my $row ($sheet->{MinRow} .. $sheet->{MaxRow}){
-print "ROW: $row\n";
-
-      # try if the date is in the first column
-      my $cell = $sheet->{Cells}[$row][3];
-      if( $cell ){
-
-print "$cell->{Val}\n" if $cell->{Val};
-
-      }
-
-        #if( isDate( $cell->{Val} ) ){
-#print "DATUUUUUUUUUUUUUUUUUUUUUUUUUU\n";
-        #}
-
-#exit if ( $row gt 10 );
-
-      #foreach my $col ($sheet->{MinCol} .. $sheet->{MaxCol}){
-#print "COL: $col\n";
-
-        #my $cell = $sheet->{Cells}[$row][$col];
-        #next if( ! $cell );
-#print $row . " - " . $col . " - " . $cell->{Val} . "\n";
-
-      #}
-
-      # get the date
-      # from column 0
-#      my $cell = $sheet->{Cells}[$row][0];
-#      if( $cell ){
-#print $row . " - " . $cell->{Val} . "\n";
-
-#        if( isDate( $cell->{Val} ) ){
-
-#          if( $date = ParseDate( $cell->{Val} ) ){
-#print "DATUM: $date\n";
-
-#            $dsh->EndBatch( 1 ) if defined $currdate;
-
-#            my $batch_id = "${xmltvid}_" . $date;
-#            $dsh->StartBatch( $batch_id, $channel_id );
-#            $dsh->StartDate( $date , "00:00" );
-#            $currdate = $date;
-
-#            progress("RMTV XLS: Date is $date");
-
-#            # after each row with the date
-#            # comes the one with column names
-#            %columns = ();
-
-#            next;
-#          }
-#        }
-#      }
-    }
-
+  if( $file =~ /\.xls$/i ){
+    $self->ImportXLS( $file, $channel_id, $channel_xmltvid );
   }
 
   return;
@@ -151,100 +62,89 @@ print "$cell->{Val}\n" if $cell->{Val};
 sub ImportXLS
 {
   my $self = shift;
-  my( $file, $channel_id, $xmltvid ) = @_;
+  my( $file, $channel_id, $channel_xmltvid ) = @_;
 
   my $dsh = $self->{datastorehelper};
   my $ds = $self->{datastore};
 
-return;
+  my $dayoff = 0;
+  my $year = DateTime->today->year();
 
-  return if( $file !~ /\.xls$/i );
-  progress( "RMTV XLS: $xmltvid: Processing $file" );
-
-  my %columns = ();
   my $date;
-  my $currdate = undef;
+  my $currdate = "x";
 
-  my $oBook = Spreadsheet::ParseExcel::Workbook->Parse( $file );
+  progress( "RMTV: $channel_xmltvid: Processing XLS $file" );
 
-  # main loop
+  my( $oBook, $oWkS, $oWkC );
+  $oBook = Spreadsheet::ParseExcel::Workbook->Parse( $file );
+
+  if( not defined( $oBook ) ) {
+    error( "RMTV: $file: Failed to parse xls" );
+    return;
+  }
+
   for(my $iSheet=0; $iSheet < $oBook->{SheetCount} ; $iSheet++) {
 
-    my $oWkS = $oBook->{Worksheet}[$iSheet];
-    progress( "RMTV XLS: $xmltvid: Processing worksheet: $oWkS->{Name}" );
+    $oWkS = $oBook->{Worksheet}[$iSheet];
+    progress("RMTV: $channel_xmltvid: processing worksheet named '$oWkS->{Name}'");
 
-    # browse through rows
+    # read the rows with data
     for(my $iR = $oWkS->{MinRow} ; defined $oWkS->{MaxRow} && $iR <= $oWkS->{MaxRow} ; $iR++) {
-
-      # get the date
-      # from column 0
-      if( $oWkS->{Cells}[$iR][0] ){
-
-        if( isDate( $oWkS->{Cells}[$iR][0]->Value ) ){
-
-          if( $date = ParseDate( $oWkS->{Cells}[$iR][0]->Value ) ){
-
-            $dsh->EndBatch( 1 ) if defined $currdate;
-
-            my $batch_id = "${xmltvid}_" . $date;
-            $dsh->StartBatch( $batch_id, $channel_id );
-            $dsh->StartDate( $date , "00:00" );
-            $currdate = $date;
-
-            progress("RMTV XLS: Date is $date");
-
-            # after each row with the date
-            # comes the one with column names
-            %columns = ();
-
-            next;
-          }
-        }
-      }
-
-      # get the names of the columns from the 1st row
-      if( $date and not %columns ){
-        for(my $iC = $oWkS->{MinCol} ; defined $oWkS->{MaxCol} && $iC <= $oWkS->{MaxCol} ; $iC++) {
-          if( $oWkS->{Cells}[$iR][$iC] ){
-            $columns{norm($oWkS->{Cells}[$iR][$iC]->Value)} = $iC;
-          }
-        }
-#foreach my $cl (%columns) {
-#print "$cl\n";
-#}
-        next;
-      }
-
-      # we have to skip first few rows
-      # until we find the one with the date
-      next if not $date;
 
       my $oWkC;
 
-      # time - column 'TIME CEST'
-      $oWkC = $oWkS->{Cells}[$iR][$columns{'TIME CEST'}];
+      # check the 1st column for the date
+      $oWkC = $oWkS->{Cells}[$iR][0];
+      if( isDate( $oWkC->Value ) ){
+
+        $date = ParseDate( $oWkC->Value );
+
+        if( $date ne $currdate ) {
+          if( $currdate ne "x" ) {
+            $dsh->EndBatch( 1 );
+          }
+
+          my $batch_id = $channel_xmltvid . "_" . $date;
+          $dsh->StartBatch( $batch_id , $channel_id );
+          $dsh->StartDate( $date , "00:00" );
+          $currdate = $date;
+
+          progress("RMTV: $channel_xmltvid: Date is: $date");
+        }
+      }
+
+      # check the 2nd column for the time
+      $oWkC = $oWkS->{Cells}[$iR][1];
       next if( ! $oWkC );
-      my $time = $oWkC->Value if( $oWkC->Value );
-      $time =~ s/^24\:/0:/; 
+      next if( ! $oWkC->Value );
+      my $time = $oWkC->Value;
+      next if ( $time !~ /^\d{2}:\d{2}$/ );
 
-      # title - column 'PROGRAMME'
-      $oWkC = $oWkS->{Cells}[$iR][$columns{'PROGRAMME'}];
+      # check the 5rd column for the title
+      $oWkC = $oWkS->{Cells}[$iR][4];
       next if( ! $oWkC );
-      my $title = $oWkC->Value if( $oWkC->Value );
+      next if( ! $oWkC->Value );
+      my $title = $oWkC->Value;
 
-      # synopsis - column 'WEB SYNOPSIS'
-      $oWkC = $oWkS->{Cells}[$iR][$columns{'WEB SYNOPSIS'}];
-      my $synopsis = $oWkC->Value if( $oWkC->Value );
+      # check the 6th column for the description
+      $oWkC = $oWkS->{Cells}[$iR][5];
+      next if( ! $oWkC );
+      next if( ! $oWkC->Value );
+      my $description = $oWkC->Value;
 
-      # duration - column 'DUR'
-      $oWkC = $oWkS->{Cells}[$iR][$columns{'DUR'}];
-      my $duration = $oWkC->Value if( $oWkC->Value );
+      # check the 7th column for the duration
+      $oWkC = $oWkS->{Cells}[$iR][6];
+      next if( ! $oWkC );
+      next if( ! $oWkC->Value );
+      my $duration = $oWkC->Value;
 
-      # ref - column 'RMTV REF'
-      $oWkC = $oWkS->{Cells}[$iR][$columns{'RMTV REF'}];
-      my $ref = $oWkC->Value if( $oWkC->Value );
+      # check the 8th column for the reference
+      $oWkC = $oWkS->{Cells}[$iR][7];
+      next if( ! $oWkC );
+      next if( ! $oWkC->Value );
+      my $ref = $oWkC->Value;
 
-      progress("RMTV XLS: $xmltvid: $time - $title");
+      progress( "RMTV: $channel_xmltvid: $time - $title" );
 
       my $ce = {
         channel_id => $channel_id,
@@ -252,12 +152,13 @@ return;
         start_time => $time,
       };
 
-      $ce->{subtitle} = $ref if $ref;
-      $ce->{description} = $synopsis if $synopsis;
-
+      $ce->{description} = $description if $description;
+    
       $dsh->AddProgramme( $ce );
-    }
-  }
+
+    } # next row
+
+  } # next worksheet
 
   $dsh->EndBatch( 1 );
 
@@ -267,41 +168,94 @@ return;
 sub isDate {
   my( $text ) = @_;
 
-print ">$text<\n";
-  return 0 if( ! $text );
-
-  # the format is 'Saturday, 7 June 2008'
-  # or may be also 'Friday, 13th June 2008'
-  # or without the ',' like 'Tuesday 10th June 2008'
-  if( $text =~ /^(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\,*\s*\d+\S*\s+\S+\s+\d+$/i ){
+  # the format is 'Saturday, 29th November 2008'
+  if( $text =~ /^(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\,*\s*\d+(st|nd|rd|th)\s+(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d+$/i ){
     return 1;
   }
 
   return 0;
 }
 
+
 sub ParseDate {
   my( $text ) = @_;
 
-print "TXT: $text\n";
-  return undef if( ! $text );
+  # the format is 'Saturday, 29th November 2008'
+  my( $dayname, $day, $sufix, $monthname, $year ) = ( $text =~ /^(\S+)\,*\s*(\d+)(st|nd|rd|th)\s+(\S+)\s+(\d+)$/ );
 
-  if( $text =~ /^(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\,*\s*\d+\S*\s+\S+\s+\d+$/i ){
+  $dayname =~ s/\,//;
 
-    my( $dayname, $day, $monthname, $year ) = ( $text =~ /^(\S+)\,*\s*(\d+)\S*\s+(\S+)\s+(\d+)$/i );
+  $year += 2000 if $year lt 100;
 
-    my @months_eng = qw/january february march april may june july august september october november december/;
-    my %monthnames = ();
-    for( my $i = 0; $i < scalar(@months_eng); $i++ )
-      { $monthnames{$months_eng[$i]} = $i+1;}
+  my( $month ) = MonthNumber( $monthname, "en" );
 
-    my $month = $monthnames{lc $monthname};
+  return sprintf( '%d-%02d-%02d', $year, $month, $day );
+}
 
-    my $date = sprintf( "%04d-%02d-%02d", $year, $month, $day );
-    return $date;
+sub ExtractDate {
+  my( $fn ) = @_;
+  my $month;
+
+  # format of the file name could be
+  # 'FOX Crime schedule 28 Apr - 04 May CRO.xml'
+  # or
+  # 'Life Programa 05 - 11 May 08 CRO.xml'
+
+  my( $day , $monthname );
+
+  # format: 'Programa 29 Sept - 05 Oct CRO.xls'
+  if( $fn =~ m/.*\s+\d+\s+\S+\s*-\s*\d+\s+\S+.*/ ){
+    ( $day , $monthname ) = ($fn =~ m/.*\s+(\d+)\s+(\S+)\s*-\s*\d+\s+\S+.*/ );
+
+  # format: 'Programa 15 - 21 Sep 08 CRO.xls'
+  } elsif( $fn =~ m/.*\s+\d+\s*-\s*\d+\s+\S+.*/ ){
+    ( $day , $monthname ) = ($fn =~ m/.*\s+(\d+)\s*-\s*\d+\s+(\S+).*/ );
   }
 
-  return undef;
+  # try the first format
+  ###my( $day , $monthname ) = ($fn =~ m/\s(\d\d)\s(\S+)\s/ );
+  
+  # try the second if the first failed
+  ###if( not defined( $monthname ) or ( $monthname eq '-' ) ) {
+    ###( $day , $monthname ) = ($fn =~ m/\s(\d\d)\s\-\s\d\d\s(\S+)\s/ );
+  ###}
+
+  if( not defined( $day ) ) {
+    return undef;
+  }
+
+  $month = MonthNumber( $monthname, 'en' );
+
+  return ($month,$day);
+}
+
+sub create_dt {
+  my ( $yr , $mn , $fd , $doff , $timeslot ) = @_;
+
+  my( $hour, $minute );
+
+  if( $timeslot =~ /^\d{4}-\d{2}-\d{2}T\d\d:\d\d:/ ){
+    ( $hour, $minute ) = ( $timeslot =~ /^\d{4}-\d{2}-\d{2}T(\d\d):(\d\d):/ );
+  } elsif( $timeslot =~ /^\d+:\d+/ ){
+    ( $hour, $minute ) = ( $timeslot =~ /^(\d+):(\d+)/ );
+  }
+
+  my $dt = DateTime->new( year   => $yr,
+                          month  => $mn,
+                          day    => $fd,
+                          hour   => $hour,
+                          minute => $minute,
+                          second => 0,
+                          nanosecond => 0,
+                          time_zone => 'Europe/Zagreb',
+  );
+
+  # add dayoffset number of days
+  $dt->add( days => $doff );
+
+  #$dt->set_time_zone( "UTC" );
+
+  return $dt;
 }
 
 1;

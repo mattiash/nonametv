@@ -92,32 +92,32 @@ sub ImportContentFile
     if( $text eq "" ) {
       # blank line
     }
-    elsif( $text =~ /^\d{4}\.\d{2}\.\d{2}\s+\S+$/ ) { # the line with date in format '2008.05.26 Monday'
+    elsif( isDate( $text ) ) { # the line with date in format '2008.05.26 Monday'
 
       $date = ParseDate( $text );
 
       if( defined $date ) {
-        progress("BebeTV: $xmltvid: Date $date");
+        progress("BebeTV: $xmltvid: Date is $date");
 
         if( defined $currdate ){
           $dsh->EndBatch( 1 )
         }
 
-        my $batch_id = "${xmltvid}_" . $date->ymd();
+        my $batch_id = "${xmltvid}_" . $date;
         $dsh->StartBatch( $batch_id, $channel_id );
-        $dsh->StartDate( $date->ymd("-") , "00:00" ); 
+        $dsh->StartDate( $date, "00:00" ); 
         $currdate = $date;
       }
     }
-    elsif( $text =~ /^\d{4}\.\d{2}\.\d{2}\s+\d+:\d+\s+\S+/ ) { # the line with show in format '2008.05.26 0:15 Title'
+    elsif( isShow( $text ) ) { # the line with show in format '2008.05.26 0:15 Title'
 
-      my( $starttime, $title, $episinfo, $duration ) = ParseShow( $text , $date );
+      my( $time, $title, $episinfo, $duration ) = ParseShow( $text );
 
-      progress("BebeTV: $xmltvid: $starttime - $title");
+      progress("BebeTV: $xmltvid: $time - $title");
 
       my $ce = {
         channel_id   => $chd->{id},
-	start_time => $starttime->hms(":"),
+	start_time => $time,
 	title => norm($title),
       };
 
@@ -150,38 +150,59 @@ sub ImportContentFile
   return;
 }
 
+sub isDate {
+  my( $text ) = @_;
+
+  if( $text =~ /^\d{4}\.\d{2}\.\d{2}\.*\s+\S+$/ ){
+    return 1;
+  }
+
+  return 0;
+}
+
 sub ParseDate {
   my( $text ) = @_;
 
-  my( $year , $month , $day , $dayname ) = ( $text =~ /(\d{4})\.(\d{2})\.(\d{2})\s+(\S+)/ );
+  my( $year , $month , $day , $dayname ) = ( $text =~ /(\d{4})\.(\d{2})\.(\d{2})\.*\s+(\S+)/ );
   
-  my $dt = DateTime->new( year   => $year,
-                          month  => $month,
-                          day    => $day,
-                          hour   => 0,
-                          minute => 0,
-                          second => 0,
-                          time_zone => 'Europe/Zagreb',
-  );
+  $year += 2000 if $year lt 100;
 
-  return $dt;
+  return sprintf( "%04d-%02d-%02d", $year, $month, $day );
+}
+
+sub isShow {
+  my( $text ) = @_;
+
+  if( $text =~ /^\d+\.\d+\.\d+\.*\s+\d+:\d+/ ){
+    return 1;
+  }
+
+  return 0;
 }
 
 sub ParseShow {
-  my( $text, $date ) = @_;
+  my( $text ) = @_;
 
-  my( $hour, $min, $string ) = ( $text =~ /\d{4}\.\d{2}\.\d{2}\s+(\d+):(\d+)\s+(.*)/ );
+  my( $hour, $min, $sec, $string );
+
+  if( $text =~ /^\d+\.\d+\.\d+\.*\s+\d+:\d+\s+.*$/ ){
+    ( $hour, $min, $string ) = ( $text =~ /^\d+\.\d+\.\d+\.*\s+(\d+):(\d+)\s+(.*)$/ );
+  } elsif( $text =~ /^\d+\.\d+\.\d+\.*\s+\d+:\d+:\d+\s+.*$/ ){
+    ( $hour, $min, $sec, $string ) = ( $text =~ /^\d+\.\d+\.\d+\.*\s+(\d+):(\d+):(\d+)\s+(.*)$/ );
+  }
 
   my( $title, $episode, $duration );
   if( $string =~ /Ep\.:(\d+)\/(\d+)/ ){ # example: 'Magic fingers	Ep.:2/1	2'
   	( $title, $episode, $duration ) = ( $string =~ /(.*)Ep\.:(\d+\/\d+)\s+(\d+)/ );
-  } else { # example: Waterworld	Ep.:6	15'
+  } elsif( $string =~ /Ep\.:\d+\s+\d+/ ){ # example: Waterworld	Ep.:6	15'
   	( $title, $episode, $duration ) = ( $string =~ /(.*)Ep\.:(\d+)\s+(\d+)/ );
+  } else {
+    $title = $string;
   }
 
-  my $sdt = $date->clone()->add( hours => $hour , minutes => $min );
+  my $time = sprintf( "%02d:%02d", $hour, $min );
 
-  return( $sdt , $title , $episode , $duration );
+  return( $time , $title , $episode , $duration );
 }
 
 1;
