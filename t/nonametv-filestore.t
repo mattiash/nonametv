@@ -9,14 +9,16 @@ use lib "$FindBin::Bin/../lib";
 
 use File::Temp qw/tempdir/;
 
-use Test::More tests => 13;
+use Test::More tests => 15;
 
 BEGIN { 
     use_ok( 'NonameTV::FileStore' ); 
 }
 
+my $path = tempdir( CLEANUP => 1 );
+
 my $fs = NonameTV::FileStore->new( 
-	{ Path => tempdir( CLEANUP => 1 ) } );
+	{ Path => $path } );
 
 my $content = "Helloåäö";
 
@@ -51,6 +53,29 @@ $fs->AddFile( "p1.sr.se", "test2", \$c2 );
 @files = $fs->ListFiles( "p1.sr.se" );
 is( scalar( @files ), 2 );
 
-my $cref = $fs->GetFile( "p1.sr.se", "test" );
-is( $$cref, "Helloåäö" );
+{
+  my $cref = $fs->GetFile( "p1.sr.se", "test" );
+  is( $$cref, "Helloåäö" );
+}
 
+$fs = undef;
+
+$fs = NonameTV::FileStore->new( 
+    { Path => $path } );
+
+{
+  my $cref = $fs->GetFile( "p1.sr.se", "test" );
+  is( $$cref, "Helloåäö" );
+}
+
+$fs->AddFile( "p1.sr.se", "test3", \$c2 );
+
+$fs = undef;
+
+$fs = NonameTV::FileStore->new( 
+    { Path => $path } );
+
+{
+  my $cref = $fs->GetFile( "p1.sr.se", "test3" );
+  is( $$cref, "Helloåäö" );
+}
