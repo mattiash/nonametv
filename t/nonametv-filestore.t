@@ -76,6 +76,6 @@ $fs = NonameTV::FileStore->new(
     { Path => $path } );
 
 {
-  my $cref = $fs->GetFile( "p1.sr.se", "test3" );
-  is( $$cref, "Helloåäö" );
+    my @files = $fs->ListFiles( "p1.sr.se" );
+    is( $files[-1][0], "test3", "Check that file addition is persistent." );
 }
