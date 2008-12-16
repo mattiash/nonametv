@@ -98,6 +98,7 @@ sub AddFileMeta {
       [ grep { $_->[0] ne $filename } @{$self->{_fl}->{$xmltvid}} ];
 
   push @{$self->{_fl}->{$xmltvid}}, [ $filename, $md5, time()];
+  $self->{_flmodified}->{$xmltvid} = 1;
 }
 
 =begin nd
