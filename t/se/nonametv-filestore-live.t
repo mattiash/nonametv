@@ -7,7 +7,7 @@ use strict;
 use Test::More qw/no_plan/;
 
 use FindBin;
-use lib "$FindBin::Bin/../lib";
+use lib "$FindBin::Bin/../../lib";
 
 use NonameTV::Config;
 
