@@ -9,73 +9,72 @@ use lib "$FindBin::Bin/../lib";
 
 use File::Temp qw/tempdir/;
 
-use Test::More tests => 15;
+use Test::More tests => 16;
 
 BEGIN { 
-    use_ok( 'NonameTV::FileStore' ); 
+  use_ok( 'NonameTV::FileStore' ); 
 }
 
 my $path = tempdir( CLEANUP => 1 );
-
-my $fs = NonameTV::FileStore->new( 
-	{ Path => $path } );
-
-my $content = "Helloåäö";
-
-$fs->AddFile( "p1.sr.se", "test", \$content );
-
-my @files = $fs->ListFiles( "p1.sr.se" );
-is( scalar( @files ), 1 );
-is( $files[0][0], 'test' );
-
-my $md5 = $files[0][1];
-my $ts = $files[0][2];
-
-$fs->RecreateIndex( "p1.sr.se" );
-
-@files = $fs->ListFiles( "p1.sr.se" );
-is( scalar( @files ), 1 );
-is( $files[0][0], 'test' );
-is( $files[0][1], $md5 );
-is( $files[0][2], $ts );
-
-my $c2 = "Helloåäö";
-
-$fs->AddFile( "p1.sr.se", "test", \$c2 );
-
-@files = $fs->ListFiles( "p1.sr.se" );
-is( scalar( @files ), 1 );
-is( $files[0][0], 'test' );
-is( $files[0][1], $md5 );
-is( $files[0][2], $ts );
-
-$fs->AddFile( "p1.sr.se", "test2", \$c2 );
-@files = $fs->ListFiles( "p1.sr.se" );
-is( scalar( @files ), 2 );
+my $xmltvid = "p1.sr.se";
 
 {
-  my $cref = $fs->GetFile( "p1.sr.se", "test" );
-  is( $$cref, "Helloåäö" );
+  my $fs = NonameTV::FileStore->new( 
+    { Path => $path } );
+  
+  $fs->AddFile( $xmltvid, "test", \ "Helloåäö" );
+  
+  my @files = $fs->ListFiles( $xmltvid );
+  is( scalar( @files ), 1, "ListFiles - Correct number of files" );
+  is( $files[0][0], 'test', "ListFiles - Correct filename" );
+
+  my $cref = $fs->GetFile( $xmltvid, "test" );
+  is( $$cref, "Helloåäö", "GetFile - Correct content" );
 }
 
-$fs = undef;
-
-$fs = NonameTV::FileStore->new( 
-    { Path => $path } );
-
 {
-  my $cref = $fs->GetFile( "p1.sr.se", "test" );
-  is( $$cref, "Helloåäö" );
+  my $fs = NonameTV::FileStore->new( 
+    { Path => $path } );
+  
+  my @files = $fs->ListFiles( $xmltvid );
+  is( scalar( @files ), 1, "ListFiles Persistent - Correct number of files" );
+  is( $files[0][0], 'test', "ListFiles Persistent - Correct filename" );
+
+  my $cref = $fs->GetFile( $xmltvid, "test" );
+  is( $$cref, "Helloåäö", "GetFile Persistent - Correct content" );
 }
 
-$fs->AddFile( "p1.sr.se", "test3", \$c2 );
-
-$fs = undef;
-
-$fs = NonameTV::FileStore->new( 
+{
+  my $fs = NonameTV::FileStore->new( 
     { Path => $path } );
+  
+  my @files = $fs->ListFiles( $xmltvid );
+  my $md5 = $files[0][1];
+  my $ts = $files[0][2];
+  
+  $fs->RecreateIndex( $xmltvid );
+    
+  @files = $fs->ListFiles( $xmltvid );
+  is( scalar( @files ), 1, "RecreateIndex - Unchanged number of files" );
+  is( $files[0][0], 'test', "RecreateIndex - Unchanged filename" );
+  is( $files[0][1], $md5, "RecreateIndex - Unchanged md5" );
+  is( $files[0][2], $ts, "RecreateIndex - Unchanged timestamp" );
+
+  $fs->AddFile( $xmltvid, "test", \ "Helloåäö" );
+  
+  @files = $fs->ListFiles( $xmltvid );
+  is( scalar( @files ), 1, "ReAdd - Unchanged number of files" );
+  is( $files[0][0], 'test', "ReAdd - Unchanged filename" );
+  is( $files[0][1], $md5, "ReAdd - Unchanged md5" );
+  is( $files[0][2], $ts, "ReAdd - Unchanged timestamp" );
+}
+
 
 {
-    my @files = $fs->ListFiles( "p1.sr.se" );
-    is( $files[-1][0], "test3", "Check that file addition is persistent." );
+  my $fs = NonameTV::FileStore->new( 
+    { Path => $path } );
+
+  $fs->AddFile( $xmltvid, "test2", \ "Hello" );
+  my @files = $fs->ListFiles( $xmltvid );
+  is( scalar( @files ), 2, "Two files after adding second file" );
 }
