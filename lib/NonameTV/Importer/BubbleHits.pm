@@ -18,7 +18,7 @@ use Spreadsheet::ParseExcel;
 use Data::Dumper;
 use File::Temp qw/tempfile/;
 
-use NonameTV qw/norm AddCategory/;
+use NonameTV qw/norm AddCategory MonthNumber/;
 use NonameTV::DataStore::Helper;
 use NonameTV::Log qw/progress error/;
 
@@ -180,19 +180,7 @@ sub ParseDate
 
   $year += 2000 if $year < 100;
 
-  my $month;
-  $month = 1 if( $monthname =~ /Jan/i );
-  $month = 2 if( $monthname =~ /Feb/i );
-  $month = 3 if( $monthname =~ /Mar/i );
-  $month = 4 if( $monthname =~ /Apr/i );
-  $month = 5 if( $monthname =~ /May/i );
-  $month = 6 if( $monthname =~ /Jun/i );
-  $month = 7 if( $monthname =~ /Jul/i );
-  $month = 8 if( $monthname =~ /Aug/i );
-  $month = 9 if( $monthname =~ /Sep/i );
-  $month = 10 if( $monthname =~ /Oct/i );
-  $month = 11 if( $monthname =~ /Nov/i );
-  $month = 12 if( $monthname =~ /Dec/i );
+  my $month = MonthNumber( $monthname, "en" );;
 
   my $date = sprintf( "%04d-%02d-%02d", $year, $month, $day );
   return $date;

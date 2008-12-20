@@ -18,7 +18,6 @@ use DateTime;
 use Encode;
 use Encode::Guess;
 use Spreadsheet::ParseExcel;
-use Archive::Zip;
 use Data::Dumper;
 use File::Temp qw/tempfile/;
 

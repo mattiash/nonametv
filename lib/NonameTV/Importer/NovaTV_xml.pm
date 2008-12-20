@@ -71,7 +71,8 @@ sub ImportContent {
 
   # clean some characters from xml that can not be parsed
   my $xmldata = $$cref;
-  $xmldata =~ s/ & / and /;
+  $xmldata =~ s/\&/(and)/;
+  $xmldata =~ s/<br >//;
 
   # parse XML
   my $doc;

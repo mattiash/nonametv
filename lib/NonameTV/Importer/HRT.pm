@@ -174,7 +174,7 @@ sub ImportContent
       $ce->{production_date} = "$1-01-01";
     }
 
-    $dsh->AddProgramme( $ce );
+    $ds->AddProgramme( $ce );
   }
   
   # Success
@@ -217,14 +217,6 @@ sub FetchDataFromSite
 {
   my $self = shift;
   my( $batch_id, $data ) = @_;
-
-  my( $year, $week ) = ($batch_id =~ /_(\d+)-(\d+)/);
-
-  # Find the first day in the given week.
-  # Copied from
-  # http://www.nntp.perl.org/group/perl.datetime/5417?show_headers=1 
-  #my $dt = DateTime->new( year=>$year, day => 4 );
-  #$dt->add( days => $week * 7 - $dt->day_of_week - 6 );
 
   my $url = $self->{UrlRoot} . "\?$data->{grabber_info}";
 

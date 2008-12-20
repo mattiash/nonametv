@@ -242,7 +242,6 @@ sub ParseTime
 
 sub UpdateFiles {
   my( $self ) = @_;
-return;
 
   # get current month name
   my $year = DateTime->today->strftime( '%g' );

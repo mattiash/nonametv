@@ -168,6 +168,8 @@ sub ImportContentFile {
 
   $dsh->EndBatch( 1 );
 
+  progress( "Mediaset: $xmltvid: Finished $file" );
+
   return;
 }
 

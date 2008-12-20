@@ -641,8 +641,8 @@ sub MonthNumber {
     @months_3 = qw/1 2 3 4 5 6 7 8 9 10 11 12/;
     @months_4 = qw/1 2 3 4 5 6 7 8 9 10 11 12/;
   } elsif( $lang =~ /^fr$/ ){
-    @months_1 = qw/gen feb mar apr mag giu lug ago set ott nov dic/;
-    @months_2 = qw/gennaio febbraio marzo aprile maggio giugno luglio agosto settembre ottobre novembre décembre/;
+    @months_1 = qw/jan fav mar avr mai jui jul aou sep oct nov dec/;
+    @months_2 = qw/JANVIER favrier mars avril mai juin juillet aout septembre octobre novembre DÉCEMBRE/;
     @months_3 = qw/1 2 3 4 5 6 7 8 9 10 11 12/;
     @months_4 = qw/1 2 3 4 5 6 7 8 9 10 11 12/;
   }
@@ -665,9 +665,10 @@ sub MonthNumber {
     $monthnames{$months_4[$i]} = $i+1;
   }
 
-  my $month = $monthnames{lc $monthname};
+  my $month = $monthnames{$monthname};
+  my $lcmonth = $monthnames{lc $monthname};
 
-  return $month;
+  return $month||$lcmonth;
 }
 
 =begin nd

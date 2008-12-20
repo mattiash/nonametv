@@ -32,7 +32,7 @@ use base 'NonameTV::Importer::BaseFile';
    FT_UNKNOWN    => 0,  # unknown
    FT_SCHEMAXLS  => 1,  # weekly schema in xls
    FT_SCHEMADOC  => 2,  # weekly schema in doc
-   FT_SCHEDULE   => 3,  # daily schedule in doc
+   FT_DAILYXLS   => 3,  # daily schedule in xls
 };
 
 sub new {
@@ -64,6 +64,8 @@ sub ImportContentFile {
 
   if( $ft eq FT_SCHEMAXLS ){
     $self->ImportSchemaXLS( $file, $channel_id, $xmltvid );
+  } elsif( $ft eq FT_DAILYXLS ){
+    $self->ImportDailyXLS( $file, $channel_id, $xmltvid );
   } else {
     error( "WFC: $xmltvid: Unknown file format of $file" );
   }
@@ -76,8 +78,13 @@ sub CheckFileFormat
   my( $file ) = @_;
 
   # check if the file name is in format 'Weekly program Schedule 1 December 2008.xls'
-  if( $file =~ /Weekly program Schedule\s+\d+\s+(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d+\.xls$/i ){
+  if( $file =~ /\/Weekly program Schedule\s+\d+\s+(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d+\.xls$/i ){
     return FT_SCHEMAXLS;
+  }
+
+  # check if the file name is in format '18 December 2008.xls'
+  if( $file =~ /\/\d+\s+(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d+\.xls$/i ){
+    return FT_DAILYXLS;
   }
 
   return FT_UNKNOWN;
@@ -93,18 +100,18 @@ sub ImportSchemaXLS
 
   # Only process .xls files.
   return if( $file !~ /\.xls$/i );
-  progress( "Jetix GridXLS: $xmltvid: Processing $file" );
+  progress( "WFC SchemaXLS: $xmltvid: Processing $file" );
 
   my $firstcol = 1;  # first column - monday
   my $lastcol = 13;  # last column - sunday
   my $firstrow = 2;  # schedules are starting from this row
 
   my( $dtstart, $firstdate, $lastdate ) = ParsePeriod( $file );
-  progress( "Jetix GridXLS: $xmltvid: Importing data for period from " . $firstdate->ymd("-") . " to " . $lastdate->ymd("-") );
+  progress( "WFC SchemaXLS: $xmltvid: Importing data for period from " . $firstdate->ymd("-") . " to " . $lastdate->ymd("-") );
   my $period = $lastdate - $firstdate;
   my $spreadweeks = int( $period->delta_days / 7 ) + 1;
   if( $period->delta_days > 6 ){
-    progress( "Jetix GridXLS: $xmltvid: Schedules scheme will spread accross $spreadweeks weeks" );
+    progress( "WFC SchemaXLS: $xmltvid: Schedules scheme will spread accross $spreadweeks weeks" );
   }
 
   my @shows = ();
@@ -123,7 +130,7 @@ sub ImportSchemaXLS
     next if( ! $oWkC->Value );
     next if( $oWkC->Value !~ /^\d+:\d+$/ );
 
-    progress( "Jetix GridXLS: $xmltvid: Processing worksheet: $oWkS->{Name}" );
+    progress( "WFC SchemaXLS: $xmltvid: Processing worksheet: $oWkS->{Name}" );
 
     my $dayno = 0;
 
@@ -168,6 +175,80 @@ sub ImportSchemaXLS
 
   } # next worksheet
 }
+
+sub ImportDailyXLS
+{
+  my $self = shift;
+  my( $file, $channel_id, $xmltvid ) = @_;
+
+  my $dsh = $self->{datastorehelper};
+  my $ds = $self->{datastore};
+
+  # Only process .xls files.
+  return if( $file !~ /\.xls$/i );
+  progress( "WFC DailyXLS: $xmltvid: Processing $file" );
+
+  my $oBook = Spreadsheet::ParseExcel::Workbook->Parse( $file );
+  if( not defined( $oBook ) ) {
+    error( "WFC DailyXLS: $file: Failed to parse xls" );
+    return;
+  }
+
+  for(my $iSheet=0; $iSheet < $oBook->{SheetCount} ; $iSheet++) {
+
+    my $oWkS = $oBook->{Worksheet}[$iSheet];
+    progress("WFC DailyXLS: $xmltvid: processing worksheet named '$oWkS->{Name}'");
+
+    my $date = ParseDate( $oWkS->{Name} );
+
+    my $batch_id = $xmltvid . "_" . $date;
+    $dsh->StartBatch( $batch_id , $channel_id );
+    $dsh->StartDate( $date , "00:00" );
+
+    progress("WFC DailyXLS: $xmltvid: Date is: $date");
+
+    # read the rows with data
+    for(my $iR = $oWkS->{MinRow} ; defined $oWkS->{MaxRow} && $iR <= $oWkS->{MaxRow} ; $iR++) {
+
+      # column 0 - progid
+      my $oWkC = $oWkS->{Cells}[$iR][0];
+      next if( ! $oWkC );
+      next if( ! $oWkC->Value );
+      my $progid = $oWkC->Value;
+
+      # column 1 - title
+      $oWkC = $oWkS->{Cells}[$iR][1];
+      next if( ! $oWkC );
+      next if( ! $oWkC->Value );
+      my $title = ParseShow( $oWkC->Value );
+
+      # column 2 - time
+      $oWkC = $oWkS->{Cells}[$iR][2];
+      next if( ! $oWkC );
+      next if( ! $oWkC->Value );
+      my $time = ParseTime( $oWkC->Value );
+
+      # column 3 - duration
+      $oWkC = $oWkS->{Cells}[$iR][3];
+      next if( ! $oWkC );
+      next if( ! $oWkC->Value );
+      my $duration = $oWkC->Value;
+
+      progress( "WFC DailyXLS: $xmltvid: $time - $title" );
+
+      my $ce = {
+        channel_id => $channel_id,
+        title => $title,
+        start_time => $time,
+      };
+
+      $dsh->AddProgramme( $ce );
+    }
+
+    $dsh->EndBatch( 1 );
+  }
+}
+
 
 sub ParsePeriod {
   my ( $text ) = @_;
@@ -224,7 +305,6 @@ sub SpreadWeeks {
   my ( $spreadweeks, @shows ) = @_;
 
   for( my $w = 1; $w < $spreadweeks; $w++ ){
-print "WEEK $w\n";
     for( my $d = 0; $d < 7; $d++ ){
       my @tmpshows = @{$shows[$d]};
       @{$shows[ ( $w * 7 ) + $d ]} = @tmpshows;
@@ -298,11 +378,23 @@ sub isDate {
 sub ParseDate {
   my( $text ) = @_;
 
-  my( $dayname, $day, $month, $year ) = ( $text =~ /(\S+)\s+(\d+)\.\s*(\d+)\.\s*(\d+)\.*$/ );
+  # format '22 December 2008'
+  my( $day, $monthname, $year ) = ( $text =~ /^(\d+)\s+(\S+)\s+(\d+)$/ );
 
   $year += 2000 if $year lt 100;
 
+  my $month = MonthNumber( $monthname, "en" );
+
   return sprintf( '%d-%02d-%02d', $year, $month, $day );
+}
+
+sub ParseTime {
+  my( $text ) = @_;
+
+  # format '01:11:39:09'
+  my( $hour, $min, $sec, $frame ) = ( $text =~ /^(\d+):(\d+):(\d+):(\d+)$/ );
+
+  return sprintf( '%02d:%02d:%02d', $hour, $min, $sec );
 }
 
 sub isShow {
@@ -319,16 +411,9 @@ sub isShow {
 sub ParseShow {
   my( $text ) = @_;
 
-  my( $hour, $min, $title, $genre );
+  my( $title ) = ( $text =~ /^\S+\d+_(.*)$/ );
 
-#  if( $text =~ /\,.*/ ){
-#    ( $genre ) = ( $text =~ /\,\s*(.*)$/ );
-#    $text =~ s/\,.*//;
-#  }
-
-  ( $hour, $min, $title ) = ( $text =~ /^(\d+)[\,|\:](\d+)\s+(.*)$/ );
-
-  return( $hour . ":" . $min , $title , $genre );
+  return $title;
 }
 
 1;
