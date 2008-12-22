@@ -60,10 +60,10 @@ sub Object2Url {
   my( $year, $week ) = ( $objectname =~ /(\d+)-(\d+)$/ );
  
   # Prefer Hvid but sometimes only Blå exists.
-  my $url1 = sprintf( "%s%s_%4d_%2d_Hvid.txt",
+  my $url1 = sprintf( "%s%s_%4d_%d_Hvid.txt",
 		      $self->{UrlRoot}, $chd->{grabber_info}, 
 		      $year, $week );
-  my $url2 = sprintf( "%s%s_%4d_%2d_Blå.txt",
+  my $url2 = sprintf( "%s%s_%4d_%d_Blå.txt",
 		      $self->{UrlRoot}, $chd->{grabber_info}, 
 		      $year, $week );
 
