@@ -108,15 +108,24 @@ sub ImportContent {
     if( not defined( $column ) ) {
       # This is the first row. Check where the columns are.
       my $ns2 = $row->find( ".//ss:Cell" );
+      next if $ns2->size() == 0;
+
       my $i = 1;
       $column = {};
       foreach my $cell ($ns2->get_nodelist) {
 	my $v = $cell->findvalue( "." );
+	d "Found column $v";
 	$column->{$v} = "ss:Cell[$i]";
 	$i++;
       }
 
       # Check that we found the necessary columns.
+      foreach my $col ("Date", "Time", "(SWE) Title", "SYNOPSIS") {
+	if( not defined( $column->{$col} ) ) {
+	  f "Column $col not found.";
+	  return 0;
+	}
+      }
 
       next;
     }
@@ -125,6 +134,11 @@ sub ImportContent {
     my $orgstarttime = norm( $row->findvalue( $column->{Time} ) );
     my $title = norm( $row->findvalue( $column->{"(SWE) Title"} ) );
     my $synopsis = norm( $row->findvalue( $column->{SYNOPSIS} ) );
+
+    if( $orgdate !~ /\S/ ) {
+	w "Empty date for $title";
+	next;
+    }
 
     my( $year, $month, $day ) = ParseDate( $orgdate );
     if( not defined $day ) {
