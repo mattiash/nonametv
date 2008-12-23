@@ -19,7 +19,7 @@ use NonameTV qw/CompareArrays/;
 use NonameTV::Log qw/d p w f StartLogSection EndLogSection/;
 
 use NonameTV::Config qw/ReadConfig/;
-use NonameTV::Factory qw/CreateFileStore/;
+use NonameTV::Factory qw/CreateFileStore CreateDataStoreDummy/;
 
 use NonameTV::Importer;
 
@@ -52,19 +52,19 @@ sub ImportData {
   my $self = shift;
   my( $p ) = @_;
   
-  NonameTV::Log::SetVerbosity( $p->{verbose}, $p->{quiet} );
-
   if( $p->{interactive} ) {
       $self->ImportDataInteractive();
   }
   else {
-      $self->ImportDataAutomatic();
+      $self->ImportDataAutomatic( $p );
   }
 }
 
 sub ImportDataAutomatic {
   my $self = shift;
   my( $p ) = @_;
+
+  NonameTV::Log::SetVerbosity( $p->{verbose}, $p->{quiet} );
 
   my $ds = $self->{datastore};
   my $fs = $self->{filestore};
@@ -134,6 +134,8 @@ sub ImportDataInteractive {
 
   require Term::ReadLine;
 
+  NonameTV::Log::SetVerbosity( 1, 0 );
+
   my $ds = $self->{datastore};
   my $fs = $self->{filestore};
 
@@ -155,7 +157,7 @@ sub ImportDataInteractive {
       }
     }
     elsif( $command eq "channel" ) {
-      if( $arg[0] > 0 and $arg[0] < scalar( @channels ) ) {
+      if( $arg[0] > 0 and $arg[0] <= scalar( @channels ) ) {
 	$data = $channels[$arg[0]-1];
 	@files = $self->ListFiles( $data );
       }
@@ -165,6 +167,7 @@ sub ImportDataInteractive {
     }
     elsif( $command eq "rescan" ) {
       $self->{filestore}->RecreateIndex( $data->{xmltvid} );
+      @files = $self->ListFiles( $data );
     }
     elsif( $command eq "files" ) {
       my $c = 1;
@@ -174,6 +177,43 @@ sub ImportDataInteractive {
     }
     elsif( $command eq "info" ) {
       print $files[$arg[0]-1]->[3] . "\n";
+    }
+    elsif( $command eq "import" ) {
+      if( $arg[0] < 1 or $arg[0] > scalar @files ) {
+	print "No such file $arg[0].\n";
+      }
+      else {
+        my $filename = $files[$arg[0]-1][0];
+        my $md5sum = $files[$arg[0]-1][4];
+	$ds->sa->Delete( "files", { channelid => $data->{id},
+				    "binary filename" => $filename } );
+      
+	$ds->sa->Add( "files", { channelid => $data->{id},
+				 filename => $filename,
+				 'md5sum' => $md5sum,
+		      } );
+
+	$self->DoImportContent( $filename, $data );
+	@files = $self->ListFiles( $data );
+      }
+    }
+    elsif( $command eq "debug" ) {
+      if( $arg[0] < 1 or $arg[0] > scalar @files ) {
+	print "No such file $arg[0].\n";
+      }
+      else {
+        my $filename = $files[$arg[0]-1][0];
+        my $md5sum = $files[$arg[0]-1][1];
+
+	NonameTV::Log::SetVerbosity( 2, 0 );
+	
+	my $ds_org = $self->{datastore};
+	$self->{datastore} = CreateDataStoreDummy();
+	$self->DoImportContent( $filename, $data );
+	$self->{datastore} = $ds_org;
+
+	NonameTV::Log::SetVerbosity( 1, 0 );
+      }
     }
     elsif( $command eq "help" ) {
       print << 'EOHELP';
@@ -190,6 +230,14 @@ files
 
 info <num>
   Print the error-message for a specific file.
+
+import <num>
+  Import data from the specified file.
+
+debug <num>
+  Perform a debug import from the specified file. The database will
+  not be updated and the imported data will be printed on the console
+  instead.
 
 rescan
   Rescan the list of files for this channel.
@@ -218,11 +266,11 @@ sub ListFiles {
   
   my @files;
   CompareArrays( \@new, \@old, {
-    added => sub { push @files, [ $_[0][0], $_[0][2], "N", "" ] },
+    added => sub { push @files, [ $_[0][0], $_[0][2], "N", "", $_[0][1] ] },
     deleted => sub {},
     equal => sub { push @files, [$_[0][0], $_[0][2], 
 				 $_[0][1] ne $_[1][1] ? "C" :
-				 ($_[1][2] ? " " : "E"), $_[1][3] ];
+				 ($_[1][2] ? " " : "E"), $_[1][3], $_[0][1] ];
     },
     cmp => sub { $_[0]->[0] cmp $_[1]->[0] },
     max => [ "zzzzzzzz" ],
