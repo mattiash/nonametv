@@ -189,6 +189,9 @@ sub finish_programme {
  
 
   $ce->{title} = norm( $ce->{title} );
+  if( $ce->{title} eq "Godnat" ) {
+    $ce->{title} = "end-of-transmission";
+  }
 
   $ce->{description} = norm( join( " ", @{$ce->{description}} ) );
   $dsh->AddProgramme( $ce );
