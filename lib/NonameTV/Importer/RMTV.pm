@@ -119,6 +119,11 @@ sub ImportXLS
       next if( ! $oWkC->Value );
       my $time = $oWkC->Value;
       next if ( $time !~ /^\d{2}:\d{2}$/ );
+      my( $hour, $min ) = ( $time =~ /^(\d{2}):(\d{2})$/ );
+      if( $hour gt 23 ){
+        $hour -= 24;
+        $time = sprintf( "%02d:%02d", $hour, $min );
+      }
 
       # check the 5rd column for the title
       $oWkC = $oWkS->{Cells}[$iR][4];
@@ -227,35 +232,6 @@ sub ExtractDate {
   $month = MonthNumber( $monthname, 'en' );
 
   return ($month,$day);
-}
-
-sub create_dt {
-  my ( $yr , $mn , $fd , $doff , $timeslot ) = @_;
-
-  my( $hour, $minute );
-
-  if( $timeslot =~ /^\d{4}-\d{2}-\d{2}T\d\d:\d\d:/ ){
-    ( $hour, $minute ) = ( $timeslot =~ /^\d{4}-\d{2}-\d{2}T(\d\d):(\d\d):/ );
-  } elsif( $timeslot =~ /^\d+:\d+/ ){
-    ( $hour, $minute ) = ( $timeslot =~ /^(\d+):(\d+)/ );
-  }
-
-  my $dt = DateTime->new( year   => $yr,
-                          month  => $mn,
-                          day    => $fd,
-                          hour   => $hour,
-                          minute => $minute,
-                          second => 0,
-                          nanosecond => 0,
-                          time_zone => 'Europe/Zagreb',
-  );
-
-  # add dayoffset number of days
-  $dt->add( days => $doff );
-
-  #$dt->set_time_zone( "UTC" );
-
-  return $dt;
 }
 
 1;
