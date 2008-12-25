@@ -163,29 +163,32 @@ sub guess_channel
   }
 
   if( $dir =~ /Disney/ ) {
-    if( $filename =~ /xml/i ) {
-      if( $filename =~ /\btoon/i ) {
-	return "toon.disneychannel.se";
-      }
-      elsif( $filename =~ /playhouse/i ) {
-	return "playhouse.disneychannel.se";
-      }
-      elsif( $filename =~ /disney channel/i ) {
-	return "disneychannel.se";
-      }
-      elsif( $subject =~ /toon disney/i ) {
-	return "toon.disneychannel.se";
-      }
-      elsif( $subject =~ /playhouse/i ) {
-	return "playhouse.disneychannel.se";
-      }
-      elsif( $subject =~ /disney channel/i ) {
-	return "disneychannel.se";
-      }
-
+    # The Disney filenames are very unreliable. 
+    if( $filename =~ /\btoon/i ) {
+      return "toon.disneychannel.se";
+    }
+    elsif( $filename =~ /playhouse/i ) {
+      return "playhouse.disneychannel.se";
+    }
+    elsif( $filename =~ /disney channel/i ) {
+      return "disneychannel.se";
+    }
+    elsif( $filename eq "noname" ) {
       return undef;
     }
+    elsif( $subject =~ /toon disney/i ) {
+      return "toon.disneychannel.se";
+    }
+    elsif( $subject =~ /playhouse/i ) {
+      return "playhouse.disneychannel.se";
+    }
+    elsif( $subject =~ /disney channel/i ) {
+      return "disneychannel.se";
+    }
+
+    return undef;
   }
+
 
   if( $dir =~ /Aftonbladet/ ) {
     if( $type eq "application/msword" or $size > 10000 ) {

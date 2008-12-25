@@ -12,6 +12,7 @@ use warnings;
 
 use DateTime;
 use XML::LibXML;
+use Lingua::EN::Titlecase;
 
 use NonameTV qw/MyGet norm/;
 use NonameTV::Log qw/progress error/;
@@ -38,7 +39,8 @@ sub Object2Url {
 
   my( $date ) = ($objectname =~ /_(.*)/);
 
-  my $url = $self->{UrlRoot} . '&siteid=' . $chd->{grabber_info} . 
+  my( $countryid, $siteid, $fixcase ) = split( /:/, $chd->{grabber_info} );
+  my $url = $self->{UrlRoot} . "&countryid=$countryid&siteid=$siteid" . 
      '&date=' . $date;
 
   return ($url, undef);
@@ -56,6 +58,10 @@ sub ImportContent
 {
   my $self = shift;
   my( $batch_id, $cref, $chd ) = @_;
+
+  my( $countryid, $siteid, $fixcase ) = split( /:/, $chd->{grabber_info} );
+  
+  my $tc = Lingua::EN::Titlecase->new();
 
   $self->{batch_id} = $batch_id;
 
@@ -90,6 +96,8 @@ sub ImportContent
     my $start_dt = $self->create_dt( $starttime );
     
     my $title =$pgm->findvalue( 'StoryTypeName' );
+    $title = $tc->title( $title ) if $fixcase;
+
     my $desc = $pgm->findvalue( 'ShowSynopsis' );
     
 # Should we store url and image in the database?

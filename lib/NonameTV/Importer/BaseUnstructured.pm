@@ -19,7 +19,7 @@ use NonameTV qw/CompareArrays/;
 use NonameTV::Log qw/d p w f StartLogSection EndLogSection/;
 
 use NonameTV::Config qw/ReadConfig/;
-use NonameTV::Factory qw/CreateFileStore/;
+use NonameTV::Factory qw/CreateFileStore CreateDataStoreDummy/;
 
 use NonameTV::Importer;
 
@@ -31,12 +31,14 @@ sub new {
     my $self  = $class->SUPER::new( @_ );
     bless ($self, $class);
 
-    $self->{OptionSpec} = [ qw/force-update verbose+ quiet+ rescan/ ];
+    $self->{OptionSpec} = [ qw/force-update verbose+ quiet+ rescan 
+                               interactive/ ];
     $self->{OptionDefaults} = { 
       'force-update' => 0,
       'verbose'      => 0,
       'quiet'        => 0,
-      'rescan'         => 0,
+      'rescan'       => 0,
+      'interactive'  => 0,
     };
 
     my $conf = ReadConfig();
@@ -50,6 +52,18 @@ sub ImportData {
   my $self = shift;
   my( $p ) = @_;
   
+  if( $p->{interactive} ) {
+      $self->ImportDataInteractive();
+  }
+  else {
+      $self->ImportDataAutomatic( $p );
+  }
+}
+
+sub ImportDataAutomatic {
+  my $self = shift;
+  my( $p ) = @_;
+
   NonameTV::Log::SetVerbosity( $p->{verbose}, $p->{quiet} );
 
   my $ds = $self->{datastore};
@@ -113,6 +127,157 @@ sub ImportData {
     
     EndLogSection( $data->{xmltvid} );
   }
+}
+
+sub ImportDataInteractive {
+  my $self = shift;
+
+  require Term::ReadLine;
+
+  NonameTV::Log::SetVerbosity( 1, 0 );
+
+  my $ds = $self->{datastore};
+  my $fs = $self->{filestore};
+
+  my @channels = @{$self->ListChannels()};
+
+  my $term = new Term::ReadLine "BaseUnstructured";
+  my $data = $channels[0];
+
+  my @files = $self->ListFiles( $data );
+
+  my $OUT = $term->OUT || \*STDOUT;
+  while ( defined (my $line = $term->readline("$data->{xmltvid}> ")) ) {
+    my( $command, @arg ) = split( /\s+/, $line );
+    next if not defined $command;
+    if( $command eq "channels" ) {
+      my $c=1;
+      foreach my $d (@channels) {
+        printf("%2d. %s\n", $c++, $d->{xmltvid} );
+      }
+    }
+    elsif( $command eq "channel" ) {
+      if( $arg[0] > 0 and $arg[0] <= scalar( @channels ) ) {
+	$data = $channels[$arg[0]-1];
+	@files = $self->ListFiles( $data );
+      }
+      else {
+        print $OUT "Unknown channel $arg[0]\n";
+      }
+    }
+    elsif( $command eq "rescan" ) {
+      $self->{filestore}->RecreateIndex( $data->{xmltvid} );
+      @files = $self->ListFiles( $data );
+    }
+    elsif( $command eq "files" ) {
+      my $c = 1;
+      foreach my $file (@files) {
+	printf( "%2d. %s %s\n", $c++, $file->[2], $file->[0] );
+      }
+    }
+    elsif( $command eq "info" ) {
+      print $files[$arg[0]-1]->[3] . "\n";
+    }
+    elsif( $command eq "import" ) {
+      if( $arg[0] < 1 or $arg[0] > scalar @files ) {
+	print "No such file $arg[0].\n";
+      }
+      else {
+        my $filename = $files[$arg[0]-1][0];
+        my $md5sum = $files[$arg[0]-1][4];
+	$ds->sa->Delete( "files", { channelid => $data->{id},
+				    "binary filename" => $filename } );
+      
+	$ds->sa->Add( "files", { channelid => $data->{id},
+				 filename => $filename,
+				 'md5sum' => $md5sum,
+		      } );
+
+	$self->DoImportContent( $filename, $data );
+	@files = $self->ListFiles( $data );
+      }
+    }
+    elsif( $command eq "debug" ) {
+      if( $arg[0] < 1 or $arg[0] > scalar @files ) {
+	print "No such file $arg[0].\n";
+      }
+      else {
+        my $filename = $files[$arg[0]-1][0];
+        my $md5sum = $files[$arg[0]-1][1];
+
+	NonameTV::Log::SetVerbosity( 2, 0 );
+	
+	my $ds_org = $self->{datastore};
+	$self->{datastore} = CreateDataStoreDummy();
+	$self->DoImportContent( $filename, $data );
+	$self->{datastore} = $ds_org;
+
+	NonameTV::Log::SetVerbosity( 1, 0 );
+      }
+    }
+    elsif( $command eq "help" ) {
+      print << 'EOHELP';
+Available commands:
+
+channels
+  List available channels for this importer.
+
+channel <num>
+  Select a new channel.
+
+files
+  List available files along with their status for the current channel.
+
+info <num>
+  Print the error-message for a specific file.
+
+import <num>
+  Import data from the specified file.
+
+debug <num>
+  Perform a debug import from the specified file. The database will
+  not be updated and the imported data will be printed on the console
+  instead.
+
+rescan
+  Rescan the list of files for this channel.
+
+EOHELP
+    }
+    else {
+      print $OUT "Unknown command $command\n";
+    }
+    $term->addhistory($line);
+  }
+
+  print $OUT "\n";
+}
+
+sub ListFiles {
+  my $self = shift;
+  my( $data ) = @_;
+
+  my $dbfiles = $self->{datastore}->sa->LookupMany( "files", 
+				     { channelid => $data->{id} } );
+  my @old = map { [ $_->{filename}, $_->{md5sum}, 
+		    $_->{successful}, $_->{message} ] } @{$dbfiles};
+  
+  my @new = $self->{filestore}->ListFiles( $data->{xmltvid} );
+  
+  my @files;
+  CompareArrays( \@new, \@old, {
+    added => sub { push @files, [ $_[0][0], $_[0][2], "N", "", $_[0][1] ] },
+    deleted => sub {},
+    equal => sub { push @files, [$_[0][0], $_[0][2], 
+				 $_[0][1] ne $_[1][1] ? "C" :
+				 ($_[1][2] ? " " : "E"), $_[1][3], $_[0][1] ];
+    },
+    cmp => sub { $_[0]->[0] cmp $_[1]->[0] },
+    max => [ "zzzzzzzz" ],
+  } );
+
+  # Process the oldest (lowest timestamp) files first.
+  return sort { $a->[1] <=> $b->[1] } @files;
 }
 
 sub DoImportContent {

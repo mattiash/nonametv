@@ -101,6 +101,11 @@ sub ImportContent {
     $e->{end_time} = $e->{stop_dt}->ymd('-') . " " . 
         $e->{stop_dt}->hms(':');
     delete $e->{stop_dt};
+
+    # SR uses zero-length programmes to signal the start of a
+    # block of programmes.
+    next if $e->{start_time} eq $e->{end_time};
+
     $e->{channel_id} = $chd->{id};
     
     $ds->AddProgrammeRaw( $e );

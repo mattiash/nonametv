@@ -169,7 +169,7 @@ sub CreateDataStoreDummy {
   my $conf = ReadConfig();
   
   require NonameTV::DataStore::Dummy;
-  return NonameTV::DataStore::Dummy->new( $conf->{DataStore} );;
+  return NonameTV::DataStore::Dummy->new( $conf->{DataStore} );
 }
 
 =item InitHttpCache
