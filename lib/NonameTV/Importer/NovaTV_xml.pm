@@ -72,7 +72,8 @@ sub ImportContent {
   # clean some characters from xml that can not be parsed
   my $xmldata = $$cref;
   $xmldata =~ s/\&/(and)/;
-  $xmldata =~ s/<br >//;
+  $xmldata =~ s/<br >//i;
+  $xmldata =~ s/<\/b>//i;
 
   # parse XML
   my $doc;
@@ -96,7 +97,7 @@ sub ImportContent {
   foreach my $ntv ($ntvs->get_nodelist) {
 
     my $tvsource = $ntv->findvalue( './@source' );
-    if( $tvsource !~ /^NovaTV$/ and $tvsource !~ /^MiniTV$/ ){
+    if( $tvsource !~ /^NovaTV$/ and $tvsource !~ /^NOVA TV$/ and $tvsource !~ /^MiniTV$/ ){
       error( "NovaTV_xml: $channel_xmltvid: Invalid tv source: $tvsource" );
       return;
     }

@@ -56,12 +56,18 @@ sub Object2Url {
 
   my $url = sprintf( "%s%02d-%02d-%04d.html", $self->{UrlRoot}, $dt->day, $dt->month, $dt->year );
 
+  progress( "RAI: $chd->{xmltvid}: Fetching from $url" );
+
   return( $url, undef );
 }
 
 sub FilterContent {
   my $self = shift;
   my( $cref, $chd ) = @_;
+
+  # do some corrections
+  # on the end of the page, after rai3 chunk there is an error: the div is closed but no div is opened before
+  $$cref =~ s/<\/ul><\/div><\/div>/<\/ul>/g;
 
   my $doc = Html2Xml( $$cref );
   
@@ -73,6 +79,8 @@ sub FilterContent {
     error( "You must specify grabber_info for $chd->{xmltvid}" );
     return( undef, undef );
   }
+
+  progress( "RAI: $chd->{xmltvid}: Filtering on '$chd->{grabber_info}'" );
 
   my $paragraphs = FindParagraphs( $doc, "//div[\@class='Main clearfix']//div[\@class='$chd->{grabber_info}']//." );
 

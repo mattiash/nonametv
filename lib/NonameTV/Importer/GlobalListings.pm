@@ -186,7 +186,7 @@ sub ImportFull
     {
       $type = T_HEAD_ENG;
     }
-    elsif( $text =~ /^\s*END\s*$/ )
+    elsif( $text =~ /^\s*END\s*$/ or $text =~ /^\s*KRAJ\s*$/ )
     {
       $type = T_STOP;
     }
@@ -568,7 +568,8 @@ sub isDate {
   #
 
   # format 'utorak(,) 1(.) srpnja 2008(.)'
-  if( $text =~ /^(ponedjeljak|utorak|srijeda|èvrtak|petak|subota|nedjelja)\,*\s*\d+\.*\s*\D+\,*\s*\d+\.*$/i ){
+  #if( $text =~ /^(ponedjeljak|utorak|srijeda|èvrtak|petak|subota|nedjelja)\,*\s*\d+\.*\s*\D+\,*\s*\d+\.*$/i ){
+  if( $text =~ /^(ponedjeljak|utorak|srijeda|četvrtak|petak|subota|nedjelja)\,*\s*\d+\.*\s*\D+\,*\s*\d+\.*$/i ){
     return 1;
   }
 
@@ -602,7 +603,8 @@ sub ParseDate
   } elsif( $lang =~ /^hr$/ ){
 
       # try 'utorak 1. srpnja 2008.'
-      if( $text =~ /^(ponedjeljak|utorak|srijeda|èvrtak|petak|subota|nedjelja)\,*\s*\d+\.*\s*\D+\,*\s*\d+\.*$/i ){
+      #if( $text =~ /^(ponedjeljak|utorak|srijeda|èvrtak|petak|subota|nedjelja)\,*\s*\d+\.*\s*\D+\,*\s*\d+\.*$/i ){
+      if( $text =~ /^(ponedjeljak|utorak|srijeda|četvrtak|petak|subota|nedjelja)\,*\s*\d+\.*\s*\D+\,*\s*\d+\.*$/i ){
         ( $weekday, $day, $monthname, $year ) = ( $text =~ /^(\S+?)\s*(\d+)\.*\s*(\S+?)\,*\s*(\d+)\.*$/ );
       }
 

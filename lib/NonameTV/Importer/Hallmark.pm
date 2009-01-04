@@ -100,6 +100,10 @@ sub ImportContentFile {
       next if( ! $oWkC );
       my $title = $oWkC->Value if( $oWkC->Value );
 
+      # CRO title - column ('Title CRO')
+      $oWkC = $oWkS->{Cells}[$iR][$columns{'Title CRO'}];
+      my $titlecro = $oWkC->Value if( $oWkC->Value );
+
       my $type = $oWkS->{Cells}[$iR][$columns{'Type'}]->Value if $oWkS->{Cells}[$iR][$columns{'Type'}];
       my $prodno = $oWkS->{Cells}[$iR][$columns{'Prod No.'}]->Value if $oWkS->{Cells}[$iR][$columns{'Prod No.'}];
       my $episodetitle = $oWkS->{Cells}[$iR][$columns{'Episode Title'}]->Value if $oWkS->{Cells}[$iR][$columns{'Episode Title'}];
@@ -120,12 +124,14 @@ sub ImportContentFile {
         channel_id   => $channel_id,
         start_time   => $starttime->ymd("-") . " " . $starttime->hms(":"),
         end_time     => $endtime->ymd("-") . " " . $endtime->hms(":"),
-        title        => $title,
+        title        => $titlecro || $title,
       };
 
       # subtitle
       if( $episodetitle ){
         $ce->{subtitle} = $episodetitle;
+      } elsif( $titlecro ){
+        $ce->{subtitle} = $title;
       }
 
       # description

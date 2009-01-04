@@ -13,6 +13,7 @@ Features:
 =cut
 
 use DateTime;
+use DateTime::Duration;
 use XML::LibXML;
 
 use NonameTV qw/MyGet norm AddCategory/;
@@ -54,17 +55,18 @@ sub Object2Url {
                           time_zone   => 'Europe/Zagreb',
   );
 
-  my $daydiff = DateTime->compare( $dt, $today );
+  my $dur = $dt->subtract_datetime($today);
+#print "DUR " . $dur->delta_days . "\n";
 
-  if( $daydiff lt 0 ){
+  if( $dur->delta_days < 0 ){
     progress( "RTLTV: $objectname: Skipping date in the past " . $dt->ymd() );
     return( undef, undef );
   }
 
-  my $url = $self->{UrlRoot} . "/" . $daydiff;
+  my $url = $self->{UrlRoot} . "/" . $dur->delta_days;
   progress( "RTLTV: $objectname: Fetching data from $url" );
 
-  return( $url, undef );
+  return( [$url], undef );
 }
 
 sub ImportContent
@@ -117,9 +119,11 @@ sub ImportContent
     }
     my $time;
     ( $date, $time ) = ParseDateTime( $start );
-    next if not $time;
+    next if( ! $date );
+    next if( ! $time );
 
     my $title = $sc->getElementsByTagName( 'title' );
+    next if( ! $title );
     my $genre = $sc->getElementsByTagName( 'category' );
     my $description = $sc->getElementsByTagName( 'desc' );
     my $url = $sc->getElementsByTagName( 'url' );
