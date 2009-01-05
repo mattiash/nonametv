@@ -70,20 +70,14 @@ sub ImportContent {
     return 0;
   }
 
-  if( $filename =~ /amend/i ) {
-    return $self->ImportAmendments( $filename, $doc, 
-                                    $channel_xmltvid, $channel_id );
-  }
-  else {
-    return $self->ImportFull( $filename, $doc, 
-                              $channel_xmltvid, $channel_id );
-  }
+  return $self->ImportDocument( $filename, $doc, 
+			    $channel_xmltvid, $channel_id );
 }
 
 # Import files that contain full programming details,
 # usually for an entire month.
 # $doc is an XML::LibXML::Document object.
-sub ImportFull {
+sub ImportDocument {
   my $self = shift;
   my( $filename, $doc, $channel_xmltvid, $channel_id ) = @_;
   
@@ -169,7 +163,11 @@ sub ImportFull {
     {
       if( $type == T_TEXT )
       {
-        # Ignore
+        if( $text =~ /M.nadskorrektur/ or 
+	    $text =~ /Observera f.ljande .ndringar/ ) {
+	    f "Ignoring amendments document.";
+	    return 0;
+	}
       }
       elsif( $type == T_DATE )
       {
@@ -248,240 +246,6 @@ sub ImportFull {
   return 1;
 }
 
-#
-# Import data from a file that contains programme updates only.
-# $doc is an XML::LibXML::Document object.
-#
-sub ImportAmendments
-{
-  my $self = shift;
-  my( $filename, $doc, $channel_xmltvid, $channel_id ) = @_;
-
-  my $dsu = $self->{datastoreupdater};
-
-  my $loghandle;
-
-  # Find all div-entries.
-  my $ns = $doc->find( "//div" );
-  
-  if( $ns->size() == 0 )
-  {
-    f "No programme entries found.";
-    return 0;
-  }
-
-  use constant {
-    ST_HEAD => 0,
-    ST_FOUND_DATE => 1,
-  };
-
-  my $state=ST_HEAD;
-
-  my( $date, $prevtime, $e );
-  
-  foreach my $div ($ns->get_nodelist)
-  {
-    my( $text ) = norm( $div->findvalue( './/text()' ) );
-    next if $text eq "";
-
-    my( $time, $command, $title );
-
-    if( ($text =~ /^sida \d+ av \d+$/i) or
-        ($text =~ /tablån fortsätter som tidigare/i) or
-        ($text =~ /slut på tablå/i) or
-        ($text =~ /^page \d+ of \d+$/i) or
-        ($text =~ /schedule resumes as/i)
-        )
-    {
-      next;
-    }
-    elsif( $text =~ /^SLUT|END$/ )
-    {
-      last;
-    }
-    elsif( $text =~ /^(måndag|tisdag|onsdag|torsdag|fredag|lördag|söndag|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\s*\d+\s*\D+\s*\d+$/i  )
-    {
-      if( $state != ST_HEAD )
-      {
-        $self->process_command( $channel_id, $e )
-          if( defined( $e ) );
-        $e = undef;
-        $dsu->EndBatchUpdate( 1 )
-          if( $self->{process_batch} ); 
-      }
-
-      $date = parse_date( $text );
-      if( not defined $date ) {
-	w "Invalid date $text";
-      }
-
-      $state = ST_FOUND_DATE;
-
-      $self->{process_batch} = 
-        $dsu->StartBatchUpdate( "${channel_xmltvid}_$date", $channel_id ) ;
-      
-      $self->AddDate( $date ) if $self->{process_batch};
-      $self->start_date( $date );
-    }
-    elsif( ($command, $title) = 
-           ($text =~ /^($command_re)\s
-                       (.*?)\s*
-                       ( \( [^)]* \) )*
-                     $/x ) )
-    {
-      if( $state != ST_FOUND_DATE )
-      {
-        f "Wrong state for $text";
-        return 0;
-      }
-
-      $self->process_command( $channel_id, $e )
-        if defined $e;
-
-      $e = $self->parse_command( $prevtime, $command, $title );
-    }
-    elsif( ($time, $command, $title) = 
-           ($text =~ /^($time_re)\s
-                       ($command_re)\s+
-                       ([A-ZÅÄÖ].*?)\s*
-                       ( \( [^)]* \) )*
-                     $/x ) )
-    {
-      if( $state != ST_FOUND_DATE )
-      {
-        f "Wrong state for $text";
-        return 0;
-      }
-
-      $self->process_command( $channel_id, $e )
-        if defined $e;
-
-      $e = $self->parse_command( $time, $command, $title );
-
-      $prevtime = $time;
-    }
-    elsif( $state == ST_FOUND_DATE )
-    {
-      # Plain text. This must be a description.
-      if( defined( $e ) )
-      {
-        $e->{desc} .= $text;
-        $self->process_command( $channel_id, $e );
-        $e = undef;
-      }
-      else
-      {
-        w "Ignored text: $text";
-      }
-    }
-    else
-    {
-      # Plain text in header. Ignore.
-    }
-  }
-  $self->process_command( $channel_id, $e )
-    if( defined( $e ) );
-
-  $dsu->EndBatchUpdate( 1 )
-    if( $self->{process_batch} ); 
-
-  return 1;
-}
-
-sub parse_command
-{
-  my $self = shift;
-  my( $time, $command, $title ) = @_;
-
-#  print "PC: $time - $command - $title\n";
-  my $e;
-
-  $e->{time} = $time;
-  $e->{title} = $title;
-  $e->{desc} = "";
-
-  if( $command eq "ÄNDRA" or $command eq "RADERA")
-  {
-    $e->{command} = "DELETEBLIND";
-  }
-  elsif( $command eq "CHANGE" or $command eq "DELETE" )
-  {
-    # This is a document with changes in English.
-    # The titles won't match.
-    $e->{command} = "DELETEBLIND";
-  }    
-  elsif( $command eq "TILL" or $command eq "INFOGA" 
-         or $command eq "TO" or $command eq "INSERT" )
-  {
-    $e->{command} = "INSERT";
-  }
-  elsif( $command eq "EJ ÄNDRAD" or $command eq "UNCHANGED")
-  {
-    $e->{command} = "IGNORE";
-  }
-  else
-  {
-    w "Unknown command $command with time $time";
-  }
-
-  return $e;
-}
-
-sub process_command
-{
-  my $self = shift;
-  my( $channel_id, $e ) = @_;
-
-#  print "DO: $e->{command} $e->{time} $e->{title}\n";
-
-  return unless $self->{process_batch};
-
-  my $dsu = $self->{datastoreupdater};
-
-  my $dt = $self->create_dt( $e->{time} );
-
-  return if $dt < DateTime->today;
-
-  if( $e->{command} eq 'DELETEBLIND' )
-  {
-    my $ce = {
-      channel_id => $channel_id,
-      start_time => $dt->ymd('-') . " " . $dt->hms(':'),
-    };      
-
-    $self->{del_e} = $dsu->DeleteProgramme( $ce, 1 );
-  }
-  elsif( $e->{command} eq "INSERT" )
-  {
-    my $ce = {
-      channel_id => $channel_id,
-      start_time => $dt->ymd('-') . " " . $dt->hms(':'),
-      title => $e->{title},
-    };
-    extract_extra_info( $ce );
-
-    if( $e->{desc} =~ /Programförklaring ej ändrad/ )
-    {
-      # This is a program that has gotten a new title. It means
-      # that it is a record CHANGE ... TO ... Thus, the description
-      # is the same as the description from the record we just deleted.
-      $ce->{description} = $self->{del_e}->{description};
-    }
-    else
-    {
-      $e->{description} = $e->{desc};
-    }
-
-    $dsu->AddProgramme( $ce );
-  }    
-  elsif( $e->{command} eq "IGNORE" )
-  {}
-  else
-  {
-    w "Unknown command $e->{command}";
-  }
-}
-
 sub extract_extra_info
 {
   my( $ce ) = shift;
@@ -492,6 +256,8 @@ sub extract_extra_info
     if defined( $episode );
   ( $ce->{subtitle} ) = ($ce->{title} =~ /:\s*(.+)$/);
   $ce->{title} =~ s/:\s*(.+)$//;
+
+  $ce->{title} =~ s/^PREMI.R\s+//;
 
   if( $ce->{title} =~ /^\bs.ndningsslut\b$/i )
   {
