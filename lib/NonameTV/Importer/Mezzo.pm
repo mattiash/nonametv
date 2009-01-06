@@ -89,10 +89,20 @@ sub ImportXLS
     return;
   }
 
+  if( not $oBook->{SheetCount} ){
+    error( "Mezzo: $file: No worksheets found in file" );
+    return;
+  }
+
   for(my $iSheet=0; $iSheet < $oBook->{SheetCount} ; $iSheet++) {
 
     $oWkS = $oBook->{Worksheet}[$iSheet];
-    progress("Mezzo: $channel_xmltvid: processing worksheet named '$oWkS->{Name}'");
+    if( $oWkS->{Name} =~ /AM(\s+|\/)PM/ ){
+      progress("Mezzo: $channel_xmltvid: Skipping worksheet named '$oWkS->{Name}'");
+      next;
+    }
+
+    progress("Mezzo: $channel_xmltvid: Processing worksheet named '$oWkS->{Name}'");
 
     # read the rows with data
     for(my $iR = $oWkS->{MinRow} ; defined $oWkS->{MaxRow} && $iR <= $oWkS->{MaxRow} ; $iR++) {
@@ -109,7 +119,8 @@ sub ImportXLS
 
             # other possible names of the columns
             $columns{'DATE'} = $iC if( $oWkS->{Cells}[$iR][$iC]->Value =~ /^DATES$/ );
-            $columns{'LENGTH'} = $iC if( $oWkS->{Cells}[$iR][$iC]->Value =~ /^LENGHT$/ );
+            $columns{'TIME'} = $iC if( $oWkS->{Cells}[$iR][$iC]->Value =~ /^TIMES$/ );
+            $columns{'LENGTH'} = $iC if( $oWkS->{Cells}[$iR][$iC]->Value =~ /^LENGHTS$/ );
             $columns{'TITLE'} = $iC if( $oWkS->{Cells}[$iR][$iC]->Value =~ /^TITLES$/ );
             $columns{'DESCRIPTION'} = $iC if( $oWkS->{Cells}[$iR][$iC]->Value =~ /^DESCRIPTIONS$/ );
           }
@@ -125,7 +136,6 @@ sub ImportXLS
       $oWkC = $oWkS->{Cells}[$iR][$columns{'DATE'}];
       next if( ! $oWkC );
       next if( ! $oWkC->Value );
-
       $date = ParseDate( $oWkC->Value );
       next if( ! $date );
 
@@ -149,7 +159,7 @@ sub ImportXLS
       next if( ! $oWkC );
       next if( ! $oWkC->Value );
 
-      my $time = ParseTime( $date, $oWkC->Value );
+      my $time = ParseTime( $oWkC->Value );
       if( not defined( $time ) ) {
         error( "Invalid start-time '$date' '" . $oWkC->Value . "'. Skipping." );
         next;
@@ -179,7 +189,7 @@ sub ImportXLS
       my $ce = {
         channel_id => $channel_id,
         title => $title,
-        start_time => $time->hms(':'),
+        start_time => $time,
       };
 
       $ce->{description} = $description if $description;
@@ -201,43 +211,32 @@ sub ParseDate
 {
   my( $dateinfo ) = @_;
 
-  if( $dateinfo !~ /^\d{2}-\d{2}-\d{2}$/ ){
+  if( $dateinfo !~ /^\d+-\d+-\d+$/ ){
     return undef;
   }
 
-  my( $month, $day, $year ) = ( $dateinfo =~ /^(\d{2})-(\d{2})-(\d{2})$/ );
+  my( $month, $day, $year ) = ( $dateinfo =~ /^(\d+)-(\d+)-(\d+)$/ );
 
   $year += 2000 if( $year < 100);
 
-  sprintf( "%04d-%02d-%02d", $year, $month, $day );
+  return sprintf( "%04d-%02d-%02d", $year, $month, $day );
 }
 
 sub ParseTime
 {
-  my( $date, $timeinfo ) = @_;
+  my( $timeinfo ) = @_;
 
-  my( $hour, $min, $sec, $ampm );
+  my( $hour, $min, $sec );
 
-  if( $timeinfo =~ /^\d+:\d+:\d+$/ ){
+  if( $timeinfo =~ /^\d+:\d+:\d+$/ ){ # format '11:45:00'
     ( $hour, $min, $sec ) = ( $timeinfo =~ /^(\d+):(\d+):(\d+)$/ );
-  } elsif( $timeinfo =~ /^\d+:\d+\s+\D*$/ ){
-    ( $hour, $min, $ampm ) = ( $timeinfo =~ /^(\d+):(\d+)\s+(.*)$/ );
+  } elsif( $timeinfo =~ /^\d+:\d+\s+AM\/PM$/ ){ # format '13:15 AM/PM'
+    ( $hour, $min ) = ( $timeinfo =~ /^(\d+):(\d+)\s+AM\/PM$/ );
   } else {
     return undef;
   }
 
-  my( $year, $month, $day ) = ( $date =~ /^(\d+)-(\d+)-(\d+)$/ );
-
-  my $sdt = DateTime->new( year   => $year,
-                           month  => $month,
-                           day    => $day,
-                           hour   => $hour,
-                           minute => $min,
-                           second => 0,
-                           time_zone => 'Europe/Zagreb',
-                           );
-
-  return $sdt;
+  return sprintf( "%02d:%02d", $hour, $min );
 }
 
 sub UpdateFiles {
@@ -262,7 +261,14 @@ sub UpdateFiles {
 
       my $dt = $today->clone->add( months => $month );
 
-      my $filename = "Mezzo_Schedule_" . $dt->month_name . "_" . $dt->strftime( '%G' ) . ".xls";
+      my $filename = "Mezzo_Schedule_" . $dt->month_name . "_" . $dt->strftime( '%y' ) . ".xls";
+
+      my $url = $self->{UrlRoot} . "/" . $filename;
+      progress("Mezzo: Fetching xls file from $url");
+
+      ftp_get( $url, $self->{FileStore} . '/' .  $xmltvid . '/' . $filename );
+
+      my $filename = "Mezzo_Schedule_" . $dt->month_name . "_" . $dt->strftime( '%Y' ) . ".xls";
 
       my $url = $self->{UrlRoot} . "/" . $filename;
       progress("Mezzo: Fetching xls file from $url");

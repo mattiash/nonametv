@@ -33,7 +33,7 @@ sub new {
   bless ($self, $class);
 
 
-  my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore} );
+  my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore}, 'Europe/Paris' );
   $self->{datastorehelper} = $dsh;
 
   return $self;
@@ -54,9 +54,6 @@ sub ImportContentFile {
   progress( "Tiji: $xmltvid: Processing $file" );
 
   my $date;
-  my $time;
-  my $title;
-  my $episode;
   my $currdate = "x";
 
   open my $CSVFILE, "<", $file or die $!;
@@ -74,43 +71,48 @@ sub ImportContentFile {
   # main loop
   while( my $row = $csv->getline_hr( $CSVFILE ) ){
 
-    if( $row->{'DATE'} ) {
+    # Date
+    next if not $row->{'DATE'};
+    $date = ParseDate( $row->{'DATE'} );
+    next if not $date;
 
-      $date = ParseDate( $row->{'DATE'} );
+    if( $date ne $currdate ){
 
-      if( $date ne $currdate ){
-
-        if( $currdate ne "x" ) {
-          $dsh->EndBatch( 1 );
-        }
-
-        my $batch_id = $xmltvid . "_" . $date;
-        $dsh->StartBatch( $batch_id , $channel_id );
-        $dsh->StartDate( $date , "04:00" );
-        $currdate = $date;
+      if( $currdate ne "x" ) {
+        $dsh->EndBatch( 1 );
       }
+
+      my $batch_id = $xmltvid . "_" . $date;
+      $dsh->StartBatch( $batch_id , $channel_id );
+      $dsh->StartDate( $date , "05:00" );
+      $currdate = $date;
+
+      progress( "Tiji: $xmltvid: Date is $date" );
     }
 
-    if( $row->{'HEURE'} ) {
+    # Time
+    my $time = $row->{'HEURE'};
+    next if not $time;
+    next if ( $time !~ /^\d\d\:\d\d$/ );
 
-      $time = $row->{'HEURE'};
-      next if ( $time !~ /^\d\d\:\d\d$/ );
-    }
+    # Title
+    my $title = $row->{'TITRE ORIGINAL'};
+    next if not $title;
 
-    if( $row->{'TITRE ORIGINAL'} ) {
+    # Subtitle
+    my $subtitle = $row->{'SOUS-TITRE / THEME'};
 
-      $title = $row->{'TITRE ORIGINAL'};
-      next if ( ! $title );
-    }
+    # Genre
+    my $genre = $row->{'FORMAT'};
 
-#print "03: $row->{'SUR-TITRE'}\n";
-#print "04: $row->{'TITRE ORIGINAL'}\n";
-#print "05: $row->{'FORMAT'}\n";
-#print "06: $row->{'EPISODE'}\n";
-#print "07: $row->{'SOUS-TITRE / THEME'}\n";
-#print "08: $row->{'PRESENTATEUR'}\n";
-#print "09: $row->{'REDIFF'}\n";
-#print "10: $row->{'SYNOPSIS/CONCEPT'}\n";
+    # Episode
+    my $episode = $row->{'EPISODE'};
+
+    # Presenters
+    my $presenters = $row->{'PRESENTATEUR'};
+
+    # Description
+    my $description = $row->{'SYNOPSIS/CONCEPT'};
 
     progress( "Tiji: $xmltvid: $time - $title" );
 
@@ -120,39 +122,20 @@ sub ImportContentFile {
       start_time => $time,
     };
 
-    if( $row->{'SOUS-TITRE / THEME'} ) {
-      #$ce->{subtitle} = $row->{'SOUS-TITRE / THEME'};
-    }
+    $ce->{subtitle} = $subtitle if $subtitle;
 
-    if( $row->{'FORMAT'} ) {
-      my $genre = norm($row->{'FORMAT'});
+    if( $genre ) {
       my($program_type, $category ) = $ds->LookupCat( "Tiji", $genre );
       AddCategory( $ce, $program_type, $category );
     }
 
-    if( $row->{'EPISODE'} ) {
-
-      my $ep_nr = int( $row->{'EPISODE'} );
-      my $ep_se = 0;
-      if( ($ep_nr > 0) and ($ep_se > 0) )
-      {
-        $episode = sprintf( "%d . %d .", $ep_se-1, $ep_nr-1 );
-      }
-      elsif( $ep_nr > 0 )
-      {
-        $episode = sprintf( ". %d .", $ep_nr-1 );
-      }
-
-      $ce->{episode} = norm($episode);
+    if( $episode ){
+      $ce->{episode} = sprintf( ". %d .", $episode-1 );
     }
 
-    if( $row->{'PRESENTATEUR'} ){
-      $ce->{presenters} = norm($row->{'PRESENTATEUR'});
-    }
+    $ce->{presenters} = $presenters if $presenters;
 
-    if( $row->{'SYNOPSIS/CONCEPT'} ){
-      $ce->{description} = norm($row->{'SYNOPSIS/CONCEPT'});
-    }
+    $ce->{description} = $description if $description;
 
     $dsh->AddProgramme( $ce );
   }
@@ -170,21 +153,9 @@ sub ParseDate {
 
   if( $text =~ /^\d\d\/\d\d\/\d\d\d\d/ ){
     ( $day , $month , $year ) = ( $text =~ /^(\d\d)\/(\d\d)\/(\d\d\d\d)/ );
-  } else {
-    $day = undef;
   }
 
-  my $date = DateTime->new( year   => $year,
-                            month  => $month,
-                            day    => $day,
-                            hour   => 0,
-                            minute => 0,
-                            second => 0,
-                            nanosecond => 0,
-                            time_zone => 'Europe/Paris',
-  );
-
-  return $date->ymd("-");
+  return sprintf( "%04d-%02d-%02d", $year, $month, $day );
 }
 
 1;
