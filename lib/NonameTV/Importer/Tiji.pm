@@ -14,6 +14,7 @@ Features:
 use utf8;
 
 use DateTime;
+use Encode;
 use Text::CSV;
 use Data::Dumper;
 use File::Temp qw/tempfile/;
@@ -98,9 +99,11 @@ sub ImportContentFile {
     # Title
     my $title = $row->{'TITRE ORIGINAL'};
     next if not $title;
+    $title = decode( "iso-8859-1", $title );
 
     # Subtitle
     my $subtitle = $row->{'SOUS-TITRE / THEME'};
+    $subtitle = decode( "iso-8859-1", $subtitle );
 
     # Genre
     my $genre = $row->{'FORMAT'};
@@ -113,6 +116,7 @@ sub ImportContentFile {
 
     # Description
     my $description = $row->{'SYNOPSIS/CONCEPT'};
+    $description = decode( "iso-8859-1", $description );
 
     progress( "Tiji: $xmltvid: $time - $title" );
 
