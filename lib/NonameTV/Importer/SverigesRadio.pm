@@ -94,7 +94,13 @@ sub ImportContent {
     $e->{start_dt}->set_time_zone( "UTC" );
 
     $e->{stop_dt}->set_time_zone( "UTC" );
-    
+
+    # The stop-time for programmes is one day off if the
+    # program ends on midnight.
+    if( $e->{stop_dt} < $e->{start_dt} ) {
+	$e->{stop_dt}->add( days => 1 );
+    }
+
     $e->{start_time} = $e->{start_dt}->ymd('-') . " " . 
         $e->{start_dt}->hms(':');
     delete $e->{start_dt};
@@ -107,7 +113,7 @@ sub ImportContent {
     next if $e->{start_time} eq $e->{end_time};
 
     $e->{channel_id} = $chd->{id};
-    
+
     $ds->AddProgrammeRaw( $e );
   }
 
