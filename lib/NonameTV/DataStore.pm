@@ -280,14 +280,17 @@ sub AddProgramme {
     return;
   }
 
+  my $first_programme = defined $self->{last_prog} ? 0 : 1;
+
   $self->AddLastProgramme( $data->{start_time} );
 
   $self->{last_start} = $data->{start_time};
   $self->{last_title} = $data->{title};
 
-  if ( $data->{title} eq 'end-of-transmission' ) {
+  if ( $data->{title} eq 'end-of-transmission' and not $first_programme ) {
 
-    # We have already added all the necessary info with the call to
+    # If this is not the first programme in the batch, then
+    # we have already added all the necessary info with the call to
     # AddLastProgramme. Do not add an explicit entry for end-of-transmission
     # since this might collide with the start of tomorrows shows.
     return;
