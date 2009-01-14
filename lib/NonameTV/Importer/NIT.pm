@@ -52,11 +52,108 @@ sub ImportContentFile {
   my $dsh = $self->{datastorehelper};
   my $ds = $self->{datastore};
 
-  if( $file =~ /\.xml$/i ){
-    $self->ImportXML( $file, $channel_id, $xmltvid );
+  if( $file =~ /\.txt$/i ){
+    $self->ImportTXT( $file, $channel_id, $xmltvid );
   } elsif( $file =~ /\.doc$/i ){
     $self->ImportDOC( $file, $channel_id, $xmltvid );
   }
+
+  return;
+}
+
+sub ImportTXT
+{
+  my $self = shift;
+  my( $file, $channel_id, $xmltvid ) = @_;
+
+  my $dsh = $self->{datastorehelper};
+  my $ds = $self->{datastore};
+
+  return if( $file !~ /\.txt$/i );
+
+  progress( "NIT TXT: $xmltvid: Processing $file" );
+
+  open(TXTFILE, $file);
+  my @lines = <TXTFILE>;
+
+  my $currdate = "x";
+  my $date = undef;
+  my @ces;
+  my $description;
+
+  foreach my $text (@lines){
+
+    $text =~ s/\n//;
+
+#print "$text\n";
+
+    if( isDate( $text ) ){ # the line with the date in format 'Friday 1st August 2008'
+
+      $date = ParseDate( $text );
+
+      if( $date ) {
+
+        if( $date ne $currdate ) {
+
+          if( $currdate ne "x" ){
+            # save last day if we have it in memory
+            FlushDayData( $xmltvid, $dsh , @ces );
+            $dsh->EndBatch( 1 );
+          }
+
+          my $batch_id = "${xmltvid}_" . $date;
+          $dsh->StartBatch( $batch_id, $channel_id );
+          $dsh->StartDate( $date , "00:00" );
+          $currdate = $date;
+
+          progress("NIT TXT: $xmltvid: Date is $date");
+        }
+      }
+
+      # empty last day array
+      undef @ces;
+      undef $description;
+
+    } elsif( isShow( $text ) ) {
+
+      my( $time, $title, $genre ) = ParseShow( $text );
+
+      my $ce = {
+        channel_id => $channel_id,
+        start_time => $time,
+        title => norm($title),
+      };
+
+      if( $genre ){
+
+        my($program_type, $category ) = $ds->LookupCat( "NIT", $genre );
+        AddCategory( $ce, $program_type, $category );
+
+        $ce->{description} = $genre;
+      }
+
+      # add the programme to the array
+      # as we have to add description later
+      push( @ces , $ce );
+
+    } else {
+
+      # the last element is the one to which
+      # this description belongs to
+      my $element = $ces[$#ces];
+
+      # remove ' - ' from the start
+      $text =~ s/^\s*-\s*//;
+      $element->{description} .= $text;
+    }
+  }
+
+  # save last day if we have it in memory
+  FlushDayData( $xmltvid, $dsh , @ces );
+
+  $dsh->EndBatch( 1 );
+
+  close(TXTFILE);
 
   return;
 }
@@ -71,13 +168,13 @@ sub ImportDOC
   
   return if( $file !~ /\.doc$/i );
 
-  progress( "NIT: $xmltvid: Processing $file" );
+  progress( "NIT DOC: $xmltvid: Processing $file" );
   
   my $doc;
   $doc = Wordfile2Xml( $file );
 
   if( not defined( $doc ) ) {
-    error( "NIT $xmltvid: $file: Failed to parse" );
+    error( "NIT DOC $xmltvid: $file: Failed to parse" );
     return;
   }
 
@@ -91,7 +188,7 @@ sub ImportDOC
   my $ns = $doc->find( "//div" );
   
   if( $ns->size() == 0 ) {
-    error( "NIT $xmltvid: $file: No divs found." ) ;
+    error( "NIT DOC $xmltvid: $file: No divs found." ) ;
     return;
   }
 
@@ -116,8 +213,6 @@ sub ImportDOC
 
       if( $date ) {
 
-        progress("NIT: $xmltvid: Date is $date");
-
         if( $date ne $currdate ) {
 
           if( $currdate ne "x" ){
@@ -130,6 +225,8 @@ sub ImportDOC
           $dsh->StartBatch( $batch_id, $channel_id );
           $dsh->StartDate( $date , "00:00" ); 
           $currdate = $date;
+
+          progress("NIT DOC: $xmltvid: Date is $date");
         }
       }
 
@@ -175,7 +272,7 @@ sub ImportDOC
   FlushDayData( $xmltvid, $dsh , @ces );
 
   $dsh->EndBatch( 1 );
-    
+
   return;
 }
 
@@ -196,7 +293,7 @@ sub isDate {
   my ( $text ) = @_;
 
   # format 'PETAK, 5. prosinca 2008.'
-  if( $text =~ /^(ponedjeljak|utorak|srijeda|Četvrtak|petak|subota|nedjelja)\,*\s*\d+\.*\s*(sijecnja|veljace|ozujka|travnja|svibnja|lipnja|srpnja|kolovoza|rujna|listopada|studenog\a*|prosinca)\s+\d+\.*$/i ){
+  if( $text =~ /^(ponedjeljak|utorak|srijeda|Četvrtak|petak|subota|nedjelja)\,*\s*\d+\.*\s*(sijeÃ¨a|veljace|ozujka|travnja|svibnja|lipnja|srpnja|kolovoza|rujna|listopada|studenog\a*|prosinca)\s+\d+\.*$/i ){
     return 1;
   }
 

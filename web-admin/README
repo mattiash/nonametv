@@ -1,0 +1,15 @@
+
+Installation
+------------
+
+Unpack the nonametv-web.tar wherever you want.
+
+Edit your httpd server settings and add an alias or virtual server
+that you will use for accessing the NonameTV web pages.
+
+Copy config.php.dist to config.php.
+
+Edit the config.php file that you can find in the directory
+where you have unpacked the nonametv-web. Change the settings to meet
+your site setup.
+

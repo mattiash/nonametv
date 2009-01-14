@@ -151,6 +151,10 @@ sub ImportContentFile {
       }
     }
 
+    if( $ce->{subtitle} ){
+      #$ce->{title} .= " - " . $ce->{subtitle};
+    }
+
     if( $row->{'Synopsis'} ){
       $ce->{description} = $row->{'Synopsis'};
     }

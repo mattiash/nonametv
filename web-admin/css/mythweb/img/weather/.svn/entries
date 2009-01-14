@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wc-entries
+   xmlns="svn:">
+<entry
+   name=""
+   url="https://sol.holmlund.se/svn/nonametv-web/trunk/css/mythweb/img/weather"
+   kind="dir"
+   repos="https://sol.holmlund.se/svn"
+   schedule="add"
+   revision="0"/>
+<entry
+   name="mcloudy.png"
+   kind="file"
+   schedule="add"/>
+<entry
+   name="sunny.png"
+   kind="file"
+   schedule="add"/>
+<entry
+   name="cloudy.png"
+   kind="file"
+   schedule="add"/>
+<entry
+   name="pcloudy.png"
+   kind="file"
+   schedule="add"/>
+<entry
+   name="unknown.png"
+   kind="file"
+   schedule="add"/>
+<entry
+   name="rainsnow.png"
+   kind="file"
+   schedule="add"/>
+<entry
+   name="fair.png"
+   kind="file"
+   schedule="add"/>
+<entry
+   name="lshowers.png"
+   kind="file"
+   schedule="add"/>
+<entry
+   name="snowshow.png"
+   kind="file"
+   schedule="add"/>
+<entry
+   name="thunshowers.png"
+   kind="file"
+   schedule="add"/>
+<entry
+   name="showers.png"
+   kind="file"
+   schedule="add"/>
+<entry
+   name="fog.png"
+   kind="file"
+   schedule="add"/>
+<entry
+   name="flurries.png"
+   kind="file"
+   schedule="add"/>
+</wc-entries>

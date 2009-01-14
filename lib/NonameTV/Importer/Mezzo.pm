@@ -261,18 +261,16 @@ sub UpdateFiles {
 
       my $dt = $today->clone->add( months => $month );
 
-      my $filename = "Mezzo_Schedule_" . $dt->month_name . "_" . $dt->strftime( '%y' ) . ".xls";
+      my ( $filename, $url );
 
-      my $url = $self->{UrlRoot} . "/" . $filename;
+      $filename = "Mezzo_Schedule_" . $dt->month_name . "_" . $dt->strftime( '%y' ) . ".xls";
+      $url = $self->{UrlRoot} . "/" . $filename;
       progress("Mezzo: Fetching xls file from $url");
-
       ftp_get( $url, $self->{FileStore} . '/' .  $xmltvid . '/' . $filename );
 
-      my $filename = "Mezzo_Schedule_" . $dt->month_name . "_" . $dt->strftime( '%Y' ) . ".xls";
-
-      my $url = $self->{UrlRoot} . "/" . $filename;
+      $filename = "Mezzo_Schedule_" . $dt->month_name . "_" . $dt->strftime( '%Y' ) . ".xls";
+      $url = $self->{UrlRoot} . "/" . $filename;
       progress("Mezzo: Fetching xls file from $url");
-
       ftp_get( $url, $self->{FileStore} . '/' .  $xmltvid . '/' . $filename );
     }
   }

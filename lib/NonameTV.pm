@@ -630,7 +630,7 @@ sub MonthNumber {
     @months_1 = qw/sij vel ozu tra svi lip srp kol ruj lis stu pro/;
     @months_2 = qw/sijecanj veljaca ozujak travanj svibanj lipanj srpanj kolovoz rujan listopad studeni prosinac/;
     @months_3 = qw/sijecnja veljace ozujka travnja svibnja lipnja srpnja kolovoza rujna listopada studenoga prosinca/;
-    @months_4 = qw/sijecnja veljace ozujka travnja svibnja lipnja srpnja kolovoza rujna listopada studenog prosinca/;
+    @months_4 = qw/sijeÃ¨a veljace ozujka travnja svibnja lipnja srpnja kolovoza rujna listopada studenog prosinca/;
     @months_5 = qw/siječnja veljace ozujka travnja svibnja lipnja srpnja kolovoza rujna listopada studenog prosinca/;
   } elsif( $lang =~ /^sr$/ ){
     @months_1 = qw/jan feb mar apr maj jun jul aug sep okt nov dec/;
@@ -647,7 +647,7 @@ sub MonthNumber {
   } elsif( $lang =~ /^fr$/ ){
     @months_1 = qw/jan fav mar avr mai jui jul aou sep oct nov dec/;
     @months_2 = qw/JANVIER favrier mars avril mai juin juillet aout septembre octobre novembre DÉCEMBRE/;
-    @months_3 = qw/1 2 3 4 5 6 7 8 9 10 11 12/;
+    @months_3 = qw/janvier favrier mars avril mai juin juillet aout septembre octobre novembre DÉCEMBRE/;
     @months_4 = qw/1 2 3 4 5 6 7 8 9 10 11 12/;
     @months_5 = qw/1 2 3 4 5 6 7 8 9 10 11 12/;
   }
