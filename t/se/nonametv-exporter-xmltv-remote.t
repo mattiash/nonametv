@@ -18,7 +18,6 @@ my @roots = qw%
   http://tv.swedb.se/xmltv
   http://xmltv1.tvsajten.com/xmltv
   http://xmltv2.tvsajten.com/xmltv
-  http://xmltv3.tvsajten.com/xmltv
   http://xmltv.tvsajten.com/xmltv
     %;    
 
