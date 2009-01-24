@@ -3,7 +3,7 @@ Installing NonameTV Admin Tool
 
 1. Copy the configuration file examples/config.php to config.php
 2. Edit the config.php
-3. Point one of the home/alias of your web server to this directory (example in examples/nonametv-http.conf)
+3. Point one of the home/alias of your web server to this directory (example in examples/httpd-nonametv.conf)
 4. Restart your web server
 5. Go to the web address specified in your http home/alias
 

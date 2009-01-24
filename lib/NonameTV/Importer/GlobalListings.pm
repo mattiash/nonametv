@@ -66,7 +66,6 @@ sub ImportContentFile
   my( $file, $chd ) = @_;
 
 #return if( $chd->{xmltvid} !~ /ngcro\.tv\.gonix\.net/ );
-#return if( $chd->{xmltvid} !~ /discsci\.tv\.gonix\.net/ );
 
   defined( $chd->{sched_lang} ) or die "You must specify the language used for this channel (sched_lang)";
   if( $chd->{sched_lang} !~ /^en$/ and $chd->{sched_lang} !~ /^se$/ and $chd->{sched_lang} !~ /^hr$/ ){
