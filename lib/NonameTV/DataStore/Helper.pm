@@ -154,7 +154,7 @@ sub StartDate
 {
   my $self = shift;
   my( $date, $time ) = @_;
-  
+
   if( scalar( @{$self->{programs}} ) > 0 ) {
     $self->CommitPrograms();
   }

@@ -212,8 +212,12 @@ sub isDate
 {
   my ( $text ) = @_;
 
+#print ">$text<\n";
+
   # the format is 'Monday, 1 July 2008'
   if( $text =~ /^\S+\,\s*\d+\s+\S+\s+\d+$/ ){
+    return 1;
+  } elsif( $text =~ /^\S+\s+\d+\s+\S+\s+\d+$/ ){
     return 1;
   }
 
@@ -272,8 +276,14 @@ sub ParseDate
 {
   my ( $dinfo ) = @_;
 
+  my( $dayname, $day, $monthname, $year );
+
   # the format is 'Monday, 1 July 2008'
-  my( $dayname, $day, $monthname, $year ) = ( $dinfo =~ /^(\S+)\,\s*(\d+)\s+(\S+)\s+(\d+)$/ );
+  if( $dinfo =~ /^\S+\,\s*\d+\s+\S+\s+\d+$/ ){
+    ( $dayname, $day, $monthname, $year ) = ( $dinfo =~ /^(\S+)\,\s*(\d+)\s+(\S+)\s+(\d+)$/ );
+  } elsif( $dinfo =~ /^\S+\s+\d+\s+\S+\s+\d+$/ ){
+    ( $dayname, $day, $monthname, $year ) = ( $dinfo =~ /^(\S+)\s+(\d+)\s+(\S+)\s+(\d+)$/ );
+  }
 
   return undef if( ! $year );
 
