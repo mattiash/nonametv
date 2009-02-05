@@ -18,10 +18,8 @@ use utf8;
 
 use POSIX;
 use DateTime;
-use XML::LibXML;
-#use Text::Capitalize qw/capitalize_title/;
 
-use NonameTV qw/MyGet Wordfile2Xml Htmlfile2Xml norm AddCategory MonthNumber/;
+use NonameTV qw/MyGet Wordfile2Xml norm AddCategory MonthNumber/;
 use NonameTV::DataStore::Helper;
 use NonameTV::Log qw/progress error/;
 
@@ -53,16 +51,33 @@ sub ImportContentFile
   my $channel_id = $chd->{id};
   my $dsh = $self->{datastorehelper};
   my $ds = $self->{datastore};
+
+  if( $file =~ /\.doc$/i ){
+    $self->ImportDOC( $file, $channel_id, $xmltvid );
+  } elsif( $file =~ /noname$/i ){
+    $self->ImportTXT( $file, $channel_id, $xmltvid );
+  }
+
+  return;
+}
+
+sub ImportDOC
+{
+  my $self = shift;
+  my( $file, $channel_id, $xmltvid ) = @_;
   
+  my $dsh = $self->{datastorehelper};
+  my $ds = $self->{datastore};
+
   return if( $file !~ /\.doc$/i );
 
-  progress( "Z1: $xmltvid: Processing $file" );
+  progress( "Z1 DOC: $xmltvid: Processing $file" );
   
   my $doc;
   $doc = Wordfile2Xml( $file );
 
   if( not defined( $doc ) ) {
-    error( "Z1 $xmltvid: $file: Failed to parse" );
+    error( "Z1 DOC $xmltvid: $file: Failed to parse" );
     return;
   }
 
@@ -76,7 +91,7 @@ sub ImportContentFile
   my $ns = $doc->find( "//div" );
   
   if( $ns->size() == 0 ) {
-    error( "Z1 $xmltvid: $file: No divs found." ) ;
+    error( "Z1 DOC $xmltvid: $file: No divs found." ) ;
     return;
   }
 
@@ -95,7 +110,7 @@ sub ImportContentFile
 
       if( $date ) {
 
-        progress("Z1: $xmltvid: Date is $date");
+        progress("Z1 DOC: $xmltvid: Date is $date");
 
         if( $date ne $currdate ) {
 
@@ -118,10 +133,10 @@ sub ImportContentFile
 
       my( $time, $title, $genre, $ep_no, $ep_se ) = ParseShow( $text );
 
-      progress("Z1: $xmltvid: $time - $title");
+      progress("Z1 DOC: $xmltvid: $time - $title");
 
       my $ce = {
-        channel_id => $chd->{id},
+        channel_id => $channel_id,
         start_time => $time,
         title => norm($title),
       };
@@ -149,11 +164,90 @@ sub ImportContentFile
   return;
 }
 
+
+sub ImportTXT
+{
+  my $self = shift;
+  my( $file, $channel_id, $xmltvid ) = @_;
+  
+  my $dsh = $self->{datastorehelper};
+  my $ds = $self->{datastore};
+
+  progress( "Z1 TXT: $xmltvid: Processing $file" );
+
+  open(HTMLFILE, $file);
+  my @lines = <HTMLFILE>;
+  close(HTMLFILE);
+
+  my $date;
+  my $currdate = "x";
+
+  foreach my $text (@lines){
+
+    $text = norm( $text );
+#print ">$text<\n";
+
+    if( isDate( $text ) ){
+
+      $date = ParseDate( $text );
+
+      if( $date ne $currdate ) {
+        if( $currdate ne "x" ) {
+          $dsh->EndBatch( 1 );
+        }
+
+        my $batch_id = $xmltvid . "_" . $date;
+        $dsh->StartBatch( $batch_id , $channel_id );
+        $dsh->StartDate( $date , "06:00" );
+        $currdate = $date;
+
+        progress("Z1 TXT: $xmltvid: Date is: $date");
+      }
+    } elsif( isShow( $text ) ) {
+
+      my( $time, $title, $genre, $ep_no, $ep_se ) = ParseShow( $text );
+
+      progress("Z1 TXT: $xmltvid: $time - $title");
+
+      my $ce = {
+        channel_id => $channel_id,
+        start_time => $time,
+        title => norm($title),
+      };
+
+      if( $genre ){
+        my($program_type, $category ) = $ds->LookupCat( 'Z1', $genre );
+        AddCategory( $ce, $program_type, $category );
+      }
+
+      if( $ep_no and $ep_se ){
+        $ce->{episode} = sprintf( "%d . %d .", $ep_se-1, $ep_no-1 );
+      } elsif( $ep_no ){
+        $ce->{episode} = sprintf( ". %d .", $ep_no-1 );
+      }
+
+      $dsh->AddProgramme( $ce );
+
+    } else {
+        # skip
+    }
+  }
+
+  $dsh->EndBatch( 1 );
+
+  return;
+}
+  
 sub isDate {
   my ( $text ) = @_;
 
   # format 'ÈTVRTAK  23.10.2008.'
   if( $text =~ /^(ponedjeljak|utorak|srijeda|ČETVRTAK|petak|subota|nedjelja)\s+\d+\.\s*\d+\.\s*\d+\.*$/i ){
+    return 1;
+  }
+
+  # format 'SRIJEDU 21.1.2009.'
+  if( $text =~ /^(ponedjeljak|utorak|srijedu|ÈETVRTAK|petak|subotu|nedjelju)\s+\d+\.\s*\d+\.\s*\d+\.*$/i ){
     return 1;
   }
 
@@ -163,7 +257,17 @@ sub isDate {
 sub ParseDate {
   my( $text ) = @_;
 
-  my( $dayname, $day, $month, $year ) = ( $text =~ /^(\S+)\s+(\d+)\.\s*(\d+)\.\s*(\d+)\.*$/ );
+  my( $dayname, $day, $month, $year );
+
+  # format 'ÈTVRTAK  23.10.2008.'
+  if( $text =~ /^(ponedjeljak|utorak|srijeda|ČETVRTAK|petak|subota|nedjelja)\s+\d+\.\s*\d+\.\s*\d+\.*$/i ){
+    ( $dayname, $day, $month, $year ) = ( $text =~ /^(\S+)\s+(\d+)\.\s*(\d+)\.\s*(\d+)\.*$/ );
+  }
+
+  # format 'SRIJEDU 21.1.2009.'
+  if( $text =~ /^(ponedjeljak|utorak|srijedu|ÈETVRTAK|petak|subotu|nedjelju)\s+\d+\.\s*\d+\.\s*\d+\.*$/i ){
+    ( $dayname, $day, $month, $year ) = ( $text =~ /^(\S+)\s+(\d+)\.\s*(\d+)\.\s*(\d+)\.*$/i );
+  }
 
   $year += 2000 if $year lt 100;
 

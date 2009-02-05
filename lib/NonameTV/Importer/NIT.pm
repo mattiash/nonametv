@@ -75,6 +75,7 @@ sub ImportTXT
 
   open(TXTFILE, $file);
   my @lines = <TXTFILE>;
+  close(TXTFILE);
 
   my $currdate = "x";
   my $date = undef;
@@ -152,8 +153,6 @@ sub ImportTXT
   FlushDayData( $xmltvid, $dsh , @ces );
 
   $dsh->EndBatch( 1 );
-
-  close(TXTFILE);
 
   return;
 }
@@ -297,15 +296,27 @@ sub isDate {
     return 1;
   }
 
+  # format 'Srijeda,  11. 02. 2009.'
+  if( $text =~ /^(ponedjeljak|utorak|srijeda|ÃTVRTAK|petak|subota|nedjelja)\,*\s*\d+\.\s*\d+\.\s*\d+\.\s*$/i ){
+    return 1;
+  }
+
   return 0;
 }
 
 sub ParseDate {
   my( $text ) = @_;
 
-  my( $dayname, $day, $monthname, $year ) = ( $text =~ /^(\S+)\,*\s*(\d+)\.*\s*(\S+)\s+(\d+)\.*$/ );
+  my( $dayname, $day, $monthname, $month, $year );
 
-  my $month = MonthNumber( $monthname, "hr" );
+  if( $text =~ /^(ponedjeljak|utorak|srijeda|Četvrtak|petak|subota|nedjelja)\,*\s*\d+\.*\s*(sijeÃ¨a|veljace|ozujka|travnja|svibnja|lipnja|srpnja|kolovoza|rujna|listopada|studenog\a*|prosinca)\s+\d+\.*$/i ){
+    ( $dayname, $day, $monthname, $year ) = ( $text =~ /^(\S+)\,*\s*(\d+)\.*\s*(\S+)\s+(\d+)\.*$/ );
+    $month = MonthNumber( $monthname, "hr" );
+  }
+
+  if( $text =~ /^(ponedjeljak|utorak|srijeda|ÃTVRTAK|petak|subota|nedjelja)\,*\s*\d+\.\s*\d+\.\s*\d+\.\s*$/i ){
+    ( $dayname, $day, $month, $year ) = ( $text =~ /^(\S+)\,*\s*(\d+)\.\s*(\d+)\.\s*(\d+)\.\s*$/ );
+  }
 
   return sprintf( '%d-%02d-%02d', $year, $month, $day );
 }
