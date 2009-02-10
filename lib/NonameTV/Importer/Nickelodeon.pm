@@ -181,7 +181,7 @@ print "$cl\n";
       my $theme = $oWkS->{Cells}[$iR][$columns{'Theme'}]->Value if $oWkS->{Cells}[$iR][$columns{'Theme'}];
       my $live = $oWkS->{Cells}[$iR][$columns{'Live'}]->Value if $oWkS->{Cells}[$iR][$columns{'Live'}];
       my $relyear = $oWkS->{Cells}[$iR][$columns{'Year Of Release'}]->Value if $oWkS->{Cells}[$iR][$columns{'Year Of Release'}];
-      my $actors = $oWkS->{Cells}[$iR][$columns{'Acrors'}]->Value if $oWkS->{Cells}[$iR][$columns{'Acrors'}];
+      my $actors = $oWkS->{Cells}[$iR][$columns{'Actors'}]->Value if $oWkS->{Cells}[$iR][$columns{'Actors'}];
       my $directors = $oWkS->{Cells}[$iR][$columns{'Director/s'}]->Value if $oWkS->{Cells}[$iR][$columns{'Director/s'}];
       my $awards = $oWkS->{Cells}[$iR][$columns{'Awards'}]->Value if $oWkS->{Cells}[$iR][$columns{'Awards'}];
       my $hisubs = $oWkS->{Cells}[$iR][$columns{'HI Subtitles'}]->Value if $oWkS->{Cells}[$iR][$columns{'HI Subtitles'}];

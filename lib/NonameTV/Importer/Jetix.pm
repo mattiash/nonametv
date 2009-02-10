@@ -58,6 +58,8 @@ sub ImportContentFile {
   my $dsh = $self->{datastorehelper};
   my $ds = $self->{datastore};
 
+#return if ( $file !~ /Jetix Feb 2009 \.xls/ );
+
   my $ft = CheckFileFormat( $file );
 
   if( $ft eq FT_FLATXLS ){
@@ -411,22 +413,23 @@ print ">$text<\n";
   my( $day2, $monthname2 );
 
   # format '28th July - 3rd August'
-  #if( $text =~ /^\s*\d+(st|nd|rd|th)\s+\S+\s*-\d+(st|nd|rd|th)\s+\S+\s*$/i ){
   if( $text =~ /^\s*\d+(st|nd|rd|th)\s+\S+\s*-\s*\d+(st|nd|rd|th)\s+\S+\s*$/i ){
-#print "f1\n";
     ( $day1, $monthname1, $day2, $monthname2 ) = ( $text =~ /^\s*(\d+)\S+\s+(\S+)\s*-\s*(\d+)\S+\s+(\S+)\s*$/ );
+  }
+
+  # format '2 Feb - 8 Feb'
+  if( $text =~ /^\s*\d+\s+\S+\s*-\s*\d+\s+\S+\s*$/i ){
+    ( $day1, $monthname1, $day2, $monthname2 ) = ( $text =~ /^\s*(\d+)\s+(\S+)\s*-\s*(\d+)\s+(\S+)\s*$/ );
   }
 
   # format '4th - 10th Aug'
   elsif( $text =~ /^\s*\d+(st|nd|rd|th)\s*-\s*\d+(st|nd|rd|th)\s+\S+\s*$/i ){
-#print "f2\n";
     ( $day1, $day2, $monthname1 ) = ( $text =~ /^\s*(\d+)\S+\s*-\s*(\d+)\S+\s+(\S+)\s*$/ );
     $monthname2 = $monthname1;
   }
 
   # format 'JETIX PLAY 7th July to 3rd Aug'
   elsif( $text =~ /^\s*JETIX PLAY\s+\d+(st|nd|rd|th)\s+\S+\s+to\s+\d+(st|nd|rd|th)\s+\S+\s*$/i ){
-#print "f3\n";
     ( $day1, $monthname1, $day2, $monthname2 ) = ( $text =~ /^\s*JETIX PLAY\s+(\d+)\S+\s+(\S+)\s+to\s+(\d+)\S+\s+(\S+)\s*$/ );
   }
 
@@ -435,7 +438,7 @@ print ">$text<\n";
 #print "DAY2: $day2\n";
 #print "MON2: $monthname2\n";
 
-  my $year = 2008;
+  my $year = 2009;
 
   my $month1 = MonthNumber( $monthname1 , 'en' );
 

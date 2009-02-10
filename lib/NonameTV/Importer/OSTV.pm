@@ -20,6 +20,7 @@ use POSIX;
 use DateTime;
 use XML::LibXML;
 use Encode qw/decode/;
+use File::Basename;
 
 use NonameTV qw/MyGet Wordfile2Xml Htmlfile2Xml norm AddCategory MonthNumber/;
 use NonameTV::DataStore::Helper;
@@ -28,6 +29,8 @@ use NonameTV::Log qw/progress error/;
 use NonameTV::Importer::BaseFile;
 
 use base 'NonameTV::Importer::BaseFile';
+
+my $lastday;
 
 sub new {
   my $proto = shift;
@@ -53,11 +56,13 @@ sub ImportContentFile
   my $channel_id = $chd->{id};
   my $dsh = $self->{datastorehelper};
   my $ds = $self->{datastore};
-  
+
+#return if( $file !~ /20090204-TV TJEDNI PROGRAM\.doc/i );
+
   return if( $file !~ /\.doc$/i );
 
   progress( "OSTV: $xmltvid: Processing $file" );
-  
+
   my $doc;
   $doc = Wordfile2Xml( $file );
 
@@ -93,7 +98,7 @@ sub ImportContentFile
 
     if( isDate( $text ) ) { # the line with the date in format 'Friday 1st August 2008'
 
-      $date = ParseDate( $text );
+      $date = ParseDate( $text, $file );
 
       if( $date ) {
 
@@ -153,6 +158,13 @@ sub ImportContentFile
 sub isDate {
   my ( $text ) = @_;
 
+#print ">$text<\n";
+
+  # format 'PONEDJELJAK'
+  if( $text =~ /^(ponedjeljak|utorak|srijeda|ČETVRTAK|petak|subota|nedjelja)$/i ){
+    return 1;
+  }
+
   # format 'PONEDJELJAK, 26.1.2009'
   if( $text =~ /^(ponedjeljak|utorak|srijeda|ČETVRTAK|petak|subota|nedjelja)\,*\s+\d+\.\d+\.\d+$/i ){
     return 1;
@@ -162,9 +174,53 @@ sub isDate {
 }
 
 sub ParseDate {
-  my( $text ) = @_;
+  my( $text, $path ) = @_;
 
-  my( $dayname, $day, $month, $year ) = ( $text =~ /^(\S+)\,*\s+(\d+)\.(\d+)\.(\d+)$/i );
+  my( $dayname, $day, $month, $year );
+
+  # format 'PONEDJELJAK'
+  if( $text =~ /^(ponedjeljak|utorak|srijeda|ČETVRTAK|petak|subota|nedjelja)$/i ){
+
+    my $filename = basename($path);
+
+    my( $fy, $fm, $fd ) = ( $filename =~ /^(\d{4})(\d{2})(\d{2})/ );
+
+    DateTime->DefaultLocale( "hr_HR" );
+
+    my $dt;
+
+    if( not defined $lastday ){
+      $dt = DateTime->new( year   => $fy,
+                           month  => $fm,
+                           day    => $fd,
+                           hour   => 0,
+                           minute => 0,
+                           second => 0,
+                           time_zone => 'Europe/Zagreb',
+      );
+
+      # start from next day
+      $dt->add( days => 1 );
+    } else {
+      $dt = $lastday;
+    }
+
+    while(1){
+
+      if( $dt->day_name eq lc( $text ) ){
+        $lastday = $dt;
+        return sprintf( '%d-%02d-%02d', $dt->year, $dt->month, $dt->day );
+      }
+
+      $dt->add( days => 1 );
+    }
+
+  }
+
+  # format 'PONEDJELJAK, 26.1.2009'
+  if( $text =~ /^(ponedjeljak|utorak|srijeda|ČETVRTAK|petak|subota|nedjelja)\,*\s+\d+\.\d+\.\d+$/i ){
+    ( $dayname, $day, $month, $year ) = ( $text =~ /^(\S+)\,*\s+(\d+)\.(\d+)\.(\d+)$/i );
+  }
 
   return sprintf( '%d-%02d-%02d', $year, $month, $day );
 }

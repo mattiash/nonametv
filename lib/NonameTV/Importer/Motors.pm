@@ -136,8 +136,11 @@ sub ImportContentFile {
 sub ParseDate {
   my( $text ) = @_;
 
+#print ">$text<\n";
+
   return undef if( ! $text );
 
+  # Format 'VENDREDI 27 FAVRIER   2009'
   if( $text =~ /\S+\s+\d\d\s\S+\s+\d\d\d\d/ ){
 
     my( $dayname, $day, $monthname, $year ) = ( $text =~ /(\S+)\s+(\d\d)\s(\S+)\s+(\d\d\d\d)/ );

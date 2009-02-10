@@ -19,6 +19,7 @@ use utf8;
 use POSIX;
 use DateTime;
 use XML::LibXML;
+use Encode;
 
 use NonameTV qw/MyGet Wordfile2Xml Htmlfile2Xml norm AddCategory MonthNumber/;
 use NonameTV::DataStore::Helper;
@@ -55,7 +56,7 @@ sub ImportContentFile {
   if( $file =~ /\.txt$/i ){
     $self->ImportTXT( $file, $channel_id, $xmltvid );
   } elsif( $file =~ /\.doc$/i ){
-    $self->ImportDOC( $file, $channel_id, $xmltvid );
+    #$self->ImportDOC( $file, $channel_id, $xmltvid );
   }
 
   return;
@@ -118,6 +119,8 @@ sub ImportTXT
     } elsif( isShow( $text ) ) {
 
       my( $time, $title, $genre ) = ParseShow( $text );
+
+      $title = decode( "iso-8859-2", $title );
 
       my $ce = {
         channel_id => $channel_id,
@@ -291,8 +294,10 @@ sub FlushDayData {
 sub isDate {
   my ( $text ) = @_;
 
+#print ">$text<\n";
+
   # format 'PETAK, 5. prosinca 2008.'
-  if( $text =~ /^(ponedjeljak|utorak|srijeda|Četvrtak|petak|subota|nedjelja)\,*\s*\d+\.*\s*(sijeÃ¨a|veljace|ozujka|travnja|svibnja|lipnja|srpnja|kolovoza|rujna|listopada|studenog\a*|prosinca)\s+\d+\.*$/i ){
+  if( $text =~ /^(ponedjeljak|utorak|srijeda|Četvrtak|petak|subota|nedjelja)\,*\s*\d+\.*\s*(siječnja|veljace|ozujka|travnja|svibnja|lipnja|srpnja|kolovoza|rujna|listopada|studenog\a*|prosinca)\s+\d+\.*$/i ){
     return 1;
   }
 
@@ -309,7 +314,7 @@ sub ParseDate {
 
   my( $dayname, $day, $monthname, $month, $year );
 
-  if( $text =~ /^(ponedjeljak|utorak|srijeda|Četvrtak|petak|subota|nedjelja)\,*\s*\d+\.*\s*(sijeÃ¨a|veljace|ozujka|travnja|svibnja|lipnja|srpnja|kolovoza|rujna|listopada|studenog\a*|prosinca)\s+\d+\.*$/i ){
+  if( $text =~ /^(ponedjeljak|utorak|srijeda|Četvrtak|petak|subota|nedjelja)\,*\s*\d+\.*\s*(siječnja|veljace|ozujka|travnja|svibnja|lipnja|srpnja|kolovoza|rujna|listopada|studenog\a*|prosinca)\s+\d+\.*$/i ){
     ( $dayname, $day, $monthname, $year ) = ( $text =~ /^(\S+)\,*\s*(\d+)\.*\s*(\S+)\s+(\d+)\.*$/ );
     $month = MonthNumber( $monthname, "hr" );
   }

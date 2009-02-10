@@ -153,12 +153,10 @@ sub ImportContentFile
 sub isDate {
   my ( $text ) = @_;
 
-  # format 'PETAK: 11. srpnja 2008.god.'
-  if( $text =~ /^(ponedjeljak|utorak|srijeda|ČETVRTAK|petak|subota|nedjelja):\s*\d+\.\s*(sijecnja|veljace|ozujka|travnja|svibnja|lipnja|srpnja|kolovoza|rujna|listopada|studenog|prosinca)\s*\d+\.\s*god\.$/i ){
-    return 1;
-  }
+#print ">$text<\n";
 
-  if( $text =~ /^(ponedjeljak|utorak|srijeda|ČETVRTAK|petak|subota|nedjelja):\s*\d+\.\s*(sijecnja|veljace|ozujka|travnja|svibnja|lipnja|srpnja|kolovoza|rujna|listopada|studenoga|prosinca)\s*\d+\.\s*god\.$/i ){
+  # format 'PETAK: 11. srpnja 2008.god.'
+  if( $text =~ /^(ponedjeljak|utorak|srijeda|ČETVRTAK|petak|subota|nedjelja):\s*\d+\.\s*(sijecnja|veljače|ozujka|travnja|svibnja|lipnja|srpnja|kolovoza|rujna|listopada|studenog\a*|prosinca)\s*\d+\.\s*god\.$/i ){
     return 1;
   }
 
@@ -168,6 +166,7 @@ sub isDate {
 sub ParseDate {
   my( $text ) = @_;
 
+print ">$text<\n";
   my( $dayname, $day, $monthname, $year ) = ( $text =~ /^(\S+):\s*(\d+)\.\s*(\S+)\s*(\d+)\.\s*god\.$/ );
 
   my $month = MonthNumber( $monthname , 'hr' );
