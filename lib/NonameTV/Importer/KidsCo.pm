@@ -83,7 +83,7 @@ sub CheckFileFormat
   # which can differ from day to day or can
   # contain the schema for the whole period
   my $oWkS = $oBook->{Worksheet}[0];
-  if( $oWkS->{Name} =~ /^CEE ME/ ){
+  if( $oWkS->{Name} =~ /^CEE/ ){
     return FT_GRIDXLS;
   }
 
@@ -277,6 +277,16 @@ sub ParsePeriod {
   # format 'CEE ME January 1 2009'
   if( $text =~ /^CEE ME (january|february|march|april|may|june|july|august|september|october|november|december)\s+\d+\s+\d+$/i ){
     ( $monthname, $day, $year ) = ( $text =~ /^CEE ME (\S+)\s+(\d+)\s+(\d+)$/ );
+  }
+
+  # format 'CEE Feb 2 2009'
+  if( $text =~ /^CEE (jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\s+\d+\s+\d+$/i ){
+    ( $monthname, $day, $year ) = ( $text =~ /^CEE (\S+)\s+(\d+)\s+(\d+)$/ );
+  }
+
+  # format 'March 2 2009'
+  if( $text =~ /^(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d+\s+\d+$/i ){
+    ( $monthname, $day, $year ) = ( $text =~ /^(\S+)\s+(\d+)\s+(\d+)$/ );
   }
 
   # format 'CEE ME Dec 1' or 'CEE ME Dec8'

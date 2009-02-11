@@ -33,7 +33,7 @@ sub new {
   my $self  = $class->SUPER::new( @_ );
   bless ($self, $class);
 
-  my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore} );
+  my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore}, "Europe/London" );
   $self->{datastorehelper} = $dsh;
 
   return $self;
@@ -125,23 +125,26 @@ sub ImportXLS
       # Time
       $oWkC = $oWkS->{Cells}[$iR][$columns{'GMT'}];
       next if( ! $oWkC );
+      next if( ! $oWkC->Value );
       my $time = ParseTime( $oWkC->Value );
       next if( ! $time );
 
       # Title
       $oWkC = $oWkS->{Cells}[$iR][$columns{'Prog Title'}];
       next if( ! $oWkC );
+      next if( ! $oWkC->Value );
       my $progtitle = $oWkC->Value;
-      next if( ! $progtitle );
 
       # EpTitle
       $oWkC = $oWkS->{Cells}[$iR][$columns{'Ep Title'}];
       next if( ! $oWkC );
+      next if( ! $oWkC->Value );
       my $eptitle = $oWkC->Value;
 
       # Prog Synopsis
       $oWkC = $oWkS->{Cells}[$iR][$columns{'Prog Synopsis'}];
       next if( ! $oWkC );
+      next if( ! $oWkC->Value );
       my $progsynopsis = $oWkC->Value;
 
       # Ep Synopsis
@@ -159,10 +162,10 @@ sub ImportXLS
       next if( ! $oWkC );
       my $rating = $oWkC->Value;
 
-      # Audio
-      $oWkC = $oWkS->{Cells}[$iR][$columns{'Audio'}];
-      next if( ! $oWkC );
-      my $audio = $oWkC->Value;
+#      # Audio
+#      $oWkC = $oWkS->{Cells}[$iR][$columns{'Audio'}];
+#      next if( ! $oWkC );
+#      my $audio = $oWkC->Value;
 
       progress( "CMusic XLS: $channel_xmltvid: $time - $eptitle" );
 
@@ -173,10 +176,12 @@ sub ImportXLS
         start_time => $time,
       };
 
-#      if( $genre ){
-#        my($program_type, $category ) = $ds->LookupCat( 'CMusic', $genre );
-#        AddCategory( $ce, $program_type, $category );
-#      }
+      $ce->{description} = $progsynopsis if $progsynopsis;
+
+      if( $genre ){
+        my($program_type, $category ) = $ds->LookupCat( 'CMusic', $genre );
+        AddCategory( $ce, $program_type, $category );
+      }
     
       $dsh->AddProgramme( $ce );
 
