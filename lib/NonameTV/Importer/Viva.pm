@@ -137,7 +137,7 @@ sub ImportGridXLS
         my $ce = {
           channel_id   => $channel_id,
           start_time   => $time,
-          title        => $title,
+          title        => norm($title),
         };
 
         $dsh->AddProgramme( $ce );
