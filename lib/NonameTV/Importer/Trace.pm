@@ -7,7 +7,7 @@ use warnings;
 
 Import data from xls files delivered via e-mail.
 
-Features:
+Channel: www.trace.tv
 
 =cut
 
