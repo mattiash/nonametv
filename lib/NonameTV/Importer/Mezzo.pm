@@ -279,7 +279,7 @@ sub UpdateFiles {
 sub ftp_get {
   my( $url, $file ) = @_;
 
-  qx[curl -S -z "$file" -o "$file" "$url"];
+  qx[curl -S -s -z "$file" -o "$file" "$url"];
 }
 
 1;

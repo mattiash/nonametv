@@ -99,7 +99,7 @@ sub ImportXLS
 
         for(my $iC = $oWkS->{MinCol} ; defined $oWkS->{MaxCol} && $iC <= $oWkS->{MaxCol} ; $iC++) {
           if( $oWkS->{Cells}[$iR][$iC] ){
-            $columns{$oWkS->{Cells}[$iR][$iC]->Value} = $iC;
+            $columns{ norm($oWkS->{Cells}[$iR][$iC]->Value) } = $iC;
 
             if( $oWkS->{Cells}[$iR][$iC]->Value =~ /CET-1/ ){
               $columns{DATE} = $iC;
@@ -117,7 +117,7 @@ sub ImportXLS
         next;
       }
 #foreach my $cl (%columns) {
-#print "$cl\n";
+#print ">$cl<\n";
 #}
 
       # Date (it is stored in the column 'CET-1'
@@ -148,10 +148,10 @@ sub ImportXLS
       $oWkC = $oWkS->{Cells}[$iR][$columns{'CET'}];
       next if( ! $oWkC );
       next if( ! $oWkC->Value );
-      my $starttime = $oWkC->Value;
+      my $time = $oWkC->Value;
 
-      if( not defined( $starttime ) ) {
-        error( "Invalid start-time '$date' '$starttime'. Skipping." );
+      if( not defined( $time ) ) {
+        error( "Invalid start-time '$date' '$time'. Skipping." );
         next;
       }
 
@@ -161,19 +161,32 @@ sub ImportXLS
       next if( ! $oWkC->Value );
       my $program = $oWkC->Value;
 
+      # SERIE
+      $oWkC = $oWkS->{Cells}[$iR][$columns{'SERIE'}];
+      next if( ! $oWkC );
+      my $serie = $oWkC->Value;
+
+      # EPISODE TITLE
+      $oWkC = $oWkS->{Cells}[$iR][$columns{'EPISODE TITLE'}];
+      next if( ! $oWkC );
+      my $episodetitle = $oWkC->Value;
+
       my( $title, $episode ) = ParseShow( $program );
 
-      progress( "NGCHD: $channel_xmltvid: $starttime - $title" );
+      progress( "NGCHD: $channel_xmltvid: $time - $title" );
 
       my $ce = {
         channel_id => $channel_id,
         title => $title,
-        start_time => $starttime,
+        start_time => $time,
       };
 
-      if( $episode ){
-        $ce->{episode} = sprintf( ". %d .", $episode-1 );
-      }
+      $ce->{subtitle} = $serie if $serie;
+      #$ce->{decription} = $program if $program;
+
+      #if( $episode ){
+        #$ce->{episode} = sprintf( ". %d .", $episode-1 );
+      #}
 
       $dsh->AddProgramme( $ce );
 
