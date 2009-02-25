@@ -112,6 +112,8 @@ sub ImportContent {
     # block of programmes.
     next if $e->{start_time} eq $e->{end_time};
 
+    $e->{title} =~ tr/\n /  /s;
+
     $e->{channel_id} = $chd->{id};
 
     $ds->AddProgrammeRaw( $e );
