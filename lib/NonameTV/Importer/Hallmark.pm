@@ -71,6 +71,9 @@ sub ImportContentFile {
       if( not %columns ){
         for(my $iC = $oWkS->{MinCol} ; defined $oWkS->{MaxCol} && $iC <= $oWkS->{MaxCol} ; $iC++) {
           $columns{norm($oWkS->{Cells}[$iR][$iC]->Value)} = $iC;
+
+          # columns alternate names
+          $columns{'Title CRO'} = $iC if( $oWkS->{Cells}[$iR][$iC]->Value =~ /Cro Title/i );
         }
         next;
       }
@@ -134,10 +137,11 @@ sub ImportContentFile {
         $ce->{subtitle} = $title;
       }
 
-      # description
-      if( $synopsis ){
-        $ce->{description} = $synopsis;
-      }
+      $ce->{description} = $synopsis if $synopsis;
+      $ce->{program_type} = $type if $type;
+      $ce->{production_date} = "$year-01-01" if $year;
+      $ce->{directors} = $director if $director;
+      $ce->{actors} = $actor if $actor;
 
       # episode
       if( $epino ){
@@ -145,30 +149,10 @@ sub ImportContentFile {
         $ce->{program_type} = 'series';
       }
 
-      # type
-      if( $type ){
-        $ce->{program_type} = $type;
-      }
-
       # genre
       if( $genre ){
-        my($program_type, $category ) = $ds->LookupCat( "Hallmark_genre", $genre );
+        my($program_type, $category ) = $ds->LookupCat( "Hallmark", $genre );
         AddCategory( $ce, $program_type, $category );
-      }
-
-      # production year
-      if( $year ){
-        $ce->{production_date} = "$year-01-01";
-      }
-
-      # directors
-      if( $director ){
-        $ce->{directors} = $director;
-      }
-
-      # actors
-      if( $actor ){
-        $ce->{actors} = $actor;
       }
 
       $ds->AddProgramme( $ce );

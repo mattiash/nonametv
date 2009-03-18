@@ -311,6 +311,7 @@ sub ImportXML
     error( "HBOAdria: $channel_xmltvid: No schedules found" ) ;
     return;
   }
+  progress( "HBOAdria: $channel_xmltvid: " . $sdbs->size() . " schedule blocks found" );
 
   # browse through ScheduleData nodes
   foreach my $sdb ($sdbs->get_nodelist)
@@ -319,22 +320,44 @@ sub ImportXML
     my @ces;
 
     my $vwsts = $sdb->findnodes( ".//vwScheduledTitle" );
+    if( $vwsts->size() == 0 ) {
+      error( "HBOAdria: $channel_xmltvid: No events found" ) ;
+      next;
+    }
+    progress( "HBOAdria: $channel_xmltvid: " . $vwsts->size() . " events found" );
+
     foreach my $vwst ($vwsts->get_nodelist)
     {
       my $scheduleid  = $vwst->findvalue( './/ScheduleId' );
+      my $countryid  = $vwst->findvalue( './/CountryId' );
+      my $scheduleday = $vwst->findvalue( './/ScheduleDay' );
       my $starttime = $vwst->findvalue( './/StartTime' );
+      my $ispremiere = $vwst->findvalue( './/IsPremiere' );
+      my $channelid = $vwst->findvalue( './/ChannelId' );
+      my $sound = $vwst->findvalue( './/Sound' );
+      my $runtime = $vwst->findvalue( './/RunTime' );
+      my $edition = $vwst->findvalue( './/Edition' );
+      my $translation = $vwst->findvalue( './/Translation' );
       my $originaltitle = $vwst->findvalue( './/OriginalTitle' );
       my $episodenumber = $vwst->findvalue( './/EpisodeNumber' );
       my $productiondate = $vwst->findvalue( './/ProductionDate' );
+      my $titleid = $vwst->findvalue( './/TitleId' );
       my $localtitle = $vwst->findvalue( './/LocalTitle' );
+      my $localseriestitle = $vwst->findvalue( './/LocalSeriesTitle' );
       my $localdirector = $vwst->findvalue( './/LocalDirector' );
       my $localcast = $vwst->findvalue( './/LocalCast' );
       my $localgenre1 = $vwst->findvalue( './/LocalGenre1' );
       my $localgenre2 = $vwst->findvalue( './/LocalGenre2' );
+      my $localcountryorigin = $vwst->findvalue( './/LocalCountryOrigin' );
+      my $localoriginallanguage = $vwst->findvalue( './/LocalOriginalLanguage' );
       my $locallogline = $vwst->findvalue( './/LocalLogLine' );
       my $localsynopsis = $vwst->findvalue( './/LocalSynopsis' );
+      my $approved = $vwst->findvalue( './/Approved' );
+      my $ishighlight = $vwst->findvalue( './/IsHighlight' );
       my $schedulingcategory = $vwst->findvalue( './/SchedulingCategory' );
+      my $packagetype = $vwst->findvalue( './/PackageType' );
       my $localrating = $vwst->findvalue( './/LocalRating' );
+      my $islaststarttime = $vwst->findvalue( './/IsLastStartTime' );
 
       my $time = ParseStartTime( $starttime );
 
@@ -342,15 +365,31 @@ sub ImportXML
       next if( ! $localtitle );
 
       my $ce = {
-               channel_id   => $channel_id,
-               title        => $localtitle,
-               start_time   => $time,
+        channel_id => $channel_id,
+        title      => $localtitle,
+        start_time => $time,
       };
 
       $ce->{subtitle} = $originaltitle if $originaltitle;
       $ce->{description} = $localsynopsis if $localsynopsis;
       $ce->{directors} = $localdirector if $localdirector;
       $ce->{actors} = $localcast if $localcast;
+      $ce->{rating} = $localrating if $localrating;
+      #$ce->{country} = $localcountryorigin if $localcountryorigin;
+      #$ce->{date} = $productiondate if $productiondate;
+      $ce->{aspect} = "4:3";
+
+      if( $sound ) {
+        $ce->{stereo} = 'mono' if( $sound =~ /MONO/ );
+        $ce->{stereo} = 'stereo' if( $sound =~ /STEREO/ );
+        $ce->{stereo} = 'dolby digital' if( $sound =~ /DOLBY_5\.1/ );
+        $ce->{stereo} = 'dolby' if( $sound =~ /DOLBY/ );
+        $ce->{stereo} = 'surround' if( $sound =~ /SURROUND/ );
+      }
+
+      if( $episodenumber ){
+        $ce->{episode} = sprintf( ". %d .", $episodenumber - 1 );
+      }
 
       if( $localgenre1 ){
         my($program_type, $category ) = $ds->LookupCat( "HBOAdria", $localgenre1 );
@@ -417,11 +456,17 @@ sub ParseStartTime
 {
   my( $starttime ) = @_;
 
-  if( $starttime !~ /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{7}\+\d{2}:\d{2}$/ ){
+#print "ParseStartTime >$starttime<\n";
+
+  # format '2009-03-10T11:20:00.0000000+01:00'
+  if( $starttime !~ /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\./ ){
     return undef;
   }
 
   my( $year, $month, $day, $hour, $min, $sec ) = ( $starttime =~ /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/ );
+if( $day eq 29 ){
+return undef;
+}
 
   my $sdt = DateTime->new( year   => $year,
                            month  => $month,
@@ -430,7 +475,7 @@ sub ParseStartTime
                            minute => $min,
                            second => $sec,
                            time_zone => 'Europe/Zagreb',
-                           );
+  );
 
   return $sdt;
 }

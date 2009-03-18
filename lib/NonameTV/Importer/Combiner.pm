@@ -209,7 +209,7 @@ $channel_data{ "hustlertvsw.tv.gonix.net" } =
       [
         {
           day => 'all',
-	  time => '2300-0600',
+	  time => '2200-0700',
         },
       ],
   };

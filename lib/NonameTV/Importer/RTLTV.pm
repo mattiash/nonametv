@@ -42,7 +42,7 @@ sub Object2Url {
   my $self = shift;
   my( $objectname, $chd ) = @_;
 
-  my $today = DateTime->today();
+  my $today = DateTime->today( time_zone => 'Europe/Zagreb' );
 
   # the url is in format 'http://www.rtl.hr/raspored/xmltv/0'
   # where '0' at the end is for today, 1 for tomorrow, etc.
@@ -55,10 +55,22 @@ sub Object2Url {
                           time_zone   => 'Europe/Zagreb',
   );
 
-  my $dur = $dt->subtract_datetime($today);
-#print "DUR " . $dur->delta_days . "\n";
+  if( $dt eq $today ){
+#print "DANAS........\n";
+  }
 
-  if( $dur->delta_days < 0 ){
+  #my $dur = $dt->subtract_datetime($today);
+  my $dur = $dt - $today;
+
+#print "OBJ $objectname\n";
+#print "DT  $dt\n";
+#print "TOD $today\n";
+#print "DUR $dur\n";
+#print "CAL " . $dur->calendar_duration . "\n";
+#print "DYS " . $dur->delta_days . "\n";
+#print "MNS " . $dur->delta_minutes . "\n";
+
+  if( $dur->is_negative ){
     progress( "RTLTV: $objectname: Skipping date in the past " . $dt->ymd() );
     return( undef, undef );
   }
@@ -89,6 +101,9 @@ sub ImportContent
   $xmldata =~ s/&scaron;//;
   $xmldata =~ s/&eacute;//;
 
+  #$xmldata =~ s/&amp;/and/;
+  #$xmldata =~ s/ \& / and /g;
+
   my $xml = XML::LibXML->new;
   my $doc;
   eval { $doc = $xml->parse_string($xmldata); };
@@ -104,6 +119,7 @@ sub ImportContent
   # Start date
   $dsh->StartDate( $date , "05:00" );
   progress("RTLTV: $chd->{xmltvid}: Date is: $date");
+#return;
 
   foreach my $sc ($ns->get_nodelist)
   {

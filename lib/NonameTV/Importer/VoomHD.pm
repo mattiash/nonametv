@@ -44,7 +44,7 @@ sub new {
 
   defined( $self->{UrlRoot} ) or die "You must specify UrlRoot";
 
-  my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore}, "America/New_York" );
+  my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore}, "Europe/London" );
   $self->{datastorehelper} = $dsh;
 
   return $self;

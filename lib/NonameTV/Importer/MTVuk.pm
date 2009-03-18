@@ -19,7 +19,7 @@ use DateTime;
 use XML::LibXML;
 use Encode qw/decode encode/;
 
-use NonameTV qw/MyGet norm/;
+use NonameTV qw/MyGet norm Html2Xml/;
 use NonameTV::DataStore::Helper;
 use NonameTV::Log qw/progress error/;
 
@@ -73,7 +73,7 @@ sub Object2Url {
   }
 
   my $day_diff = $dt->subtract_datetime( $today )->delta_days;
-  my $url = sprintf( "%s/channel/%s/schedule/%d", $self->{UrlRoot}, $chd->{grabber_info}, $day_diff + 1 );
+  my $url = sprintf( "%s/tv-guide/page/%s/%d", $self->{UrlRoot}, $chd->{grabber_info}, $day_diff );
   progress( "MTVuk: $objectname: Fetching data from $url" );
 
   return( $url, undef );
@@ -90,145 +90,44 @@ sub ImportContent {
 
   my( $date ) = ($batch_id =~ /_(.*)$/);
 
-  my @lines = split( /\n/, $$cref );
-  if( scalar(@lines) == 0 ) {
-    error( "$batch_id: No lines found." ) ;
-    return 0;
-  }
-
   $dsh->StartDate( $date, "00:00" );
 
-  my $expect = T_HEAD1;
-  my( $time, $title, $url );
-  my $description;
-  my @shows;
-  my $show;
+  my $doc = Html2Xml( $$cref );
+  if( not defined $doc ) {
+    return (undef, "Html2Xml failed" );
+  }
 
-  foreach my $text (@lines) {
+  # Find all "<div id="schedule-136306" class="teaser">"
+  my $ns = $doc->find( "//div[\@class=\"teaser\"]//." );
+  if( $ns->size() == 0 ) {
+    return (undef, "No schedules found" );
+  }
 
-#print "TEXT >$text<\n";
+  foreach my $sc ($ns->get_nodelist){
 
-    # search for the start of the schedules
-    if( $expect eq T_HEAD1 and $text =~ /<!-- start: CONTENT -->/ ){
-      $expect = T_HEAD2;
-      next;
-    }
+    my $time = $sc->findvalue( "./div[\@class=\"schedule-time\"]" );
+    next if( ! $time );
 
-    # skip the part with the links to days
-    if( $expect eq T_HEAD2 and $text =~ /<li class=\"day7\">/ ){
-      $expect = T_HEAD3;
-      next;
-    }
+    my $title = $sc->findvalue( "./div[\@class=\"tHeader\"]" );
+    next if( ! $title );
 
-    # the next <ul> is the start of the shows
-    if( $expect eq T_HEAD3 and $text =~ /<ul>/ ){
-      $expect = T_SHOW;
-      next;
-    }
+    my $description = $sc->findvalue( "./p" );
 
-    # expect the line with show time and title
-    if( $expect eq T_SHOW and $text =~ /^<li><strong>\d{2}:\d{2}/ ){
+    progress("MTVuk: $chd->{xmltvid}: $time - $title");
 
-      # if we have the previous show in the memory
-      # push it
-      if( $show ){
+    my $ce = {
+      channel_id => $chd->{id},
+      start_time => $time,
+      title => $title,
+    };
 
-        $show->{description} = $description if $description;
-        $show->{url} = $url if $url;
+    $ce->{description} = $description if $description;
 
-        push( @shows, $show );
-        undef $show;
-      }
 
-      ( $time, $url, $title ) = ParseShow( $text );
-
-      $show = {
-        channel_id => $chd->{id},
-        start_time => $time,
-        title => norm($title),
-      };
-
-      $expect = T_DESC;
-      undef $description;
-      next;
-    }
-
-    if( $expect eq T_DESC ){
-
-      # if there is no more text
-
-      $description = ParseDescription( $text );
-
-      $expect = T_SHOW;
-      next;
-    }
-
-    # this is the end of the schedules
-    if( ( $expect eq T_SHOW or $expect eq T_DESC ) and $text =~ /<\/ul>/ ){
-
-      $show->{description} = $description if $description;
-      $show->{url} = $url if $url;
-
-      push( @shows, $show );
-
-      $expect = T_STOP;
-    }
-
-  } # next line
-
-  FlushData( $chd, $dsh, @shows );
+    $dsh->AddProgramme( $ce );
+  }
 
   return 1;
-}
-
-sub FlushData {
-  my ( $chd, $dsh , @data ) = @_;
-
-    if( @data ){
-      foreach my $element (@data) {
-        next if not $element;
-        progress("MTVuk: $chd->{xmltvid}: $element->{start_time} - $element->{title}");
-        $dsh->AddProgramme( $element );
-      }
-    }
-}
-
-sub ParseShow
-{
-  my( $text ) = @_;
-
-  # the format of the line with show info is
-  # <li><strong>00:00 - <a href='http://www.mtv.co.uk/channel/mtvuk/shows'> Making The Band 4</a> <a class ='micro'  href='http://www.mtv.co.uk/channel/mtvuk/shows'></a></strong><br />
-  # or
-  # <li><strong>00:00 - Linkin Park Vs. Jay-Z</strong><br />
-
-  my( $time, $url, $title );
-
-  if( $text =~ / - <a href=\'/ ){
-    ( $time, $url, $title ) = ( $text =~ /^<li><strong>(\d{2}:\d{2}) - <a href=\'(.*)\'>\s*(.*)<\/a> <a class/ );
-  } else {
-    ( $time, $title ) = ( $text =~ /^<li><strong>(\d{2}:\d{2}) - (.*)<\/strong><br \/>/ );
-  }
-
-  # don't die on wrong encoding
-  eval{ $title = decode( "utf-8", $title ); };
-  if( $@ ne "" ){
-    error( "Failed to decode $@" );
-  }
-
-  return( $time, $url, $title );
-}
-
-sub ParseDescription
-{
-  my( $text ) = @_;
-
-  # the format of the line with the description is
-  # Potential buyer Illeana Douglas surprises WEA agent Max when she brings a Feng Shui advisor to her appointments.</li>
-
-  my( $description ) = ( $text =~ /^(.*)<\/li>/ );
-
-  return( $description );
 }
 
 1;

@@ -103,7 +103,7 @@ sub CheckFileFormat
   my $oWkS = $oBook->{Worksheet}[0];
   my $oWkC = $oWkS->{Cells}[0][0];
   if( $oWkC ){
-    if( $oWkC->Value =~ /Jetix.*EXCLUDING RUSSIA/ or $oWkC->Value =~ /Jetix Play/ ){
+    if( $oWkC->Value =~ /Jetix.*EXCLUDING RUSSIA/ or $oWkC->Value =~ /Jetix Play/ or $oWkC->Value =~ /Hungary/ ){
       return FT_GRIDXLS;
     }
   }

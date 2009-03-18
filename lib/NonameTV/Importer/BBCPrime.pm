@@ -207,6 +207,8 @@ sub create_dt {
 sub UpdateFiles {
   my( $self ) = @_;
 
+return;
+
   my $today = DateTime->today;
 
   my $filename;
