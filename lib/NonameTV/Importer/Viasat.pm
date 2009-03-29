@@ -217,7 +217,8 @@ sub extract_extra_info
        ($ltitle eq "godnatt") or
        ($ltitle eq "end") or
        ($ltitle eq "close") or
-       ($ltitle eq "pause") )               
+       ($ltitle eq "pause") or
+       ($ltitle eq "*end") )               
   {
     $ce->{title} = "end-of-transmission";
   }
