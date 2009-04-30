@@ -94,7 +94,10 @@ sub ImportContentFile {
     # get the names of the columns from the 4th row
     if( not %columns ){
       for(my $iC = $oWkS->{MinCol} ; defined $oWkS->{MaxCol} && $iC <= $oWkS->{MaxCol} ; $iC++) {
-        $columns{norm($oWkS->{Cells}[3][$iC]->Value)} = $iC;
+	my $oWkC = $oWkS->{Cells}[3][$iC];
+        next if( ! $oWkC );
+        next if( ! $oWkC->Value );
+        $columns{ $oWkC->Value } = $iC;
       }
     }
 #foreach my $cl (%columns) {

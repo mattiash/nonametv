@@ -74,6 +74,7 @@ sub ImportContentFile {
 
           # columns alternate names
           $columns{'Title CRO'} = $iC if( $oWkS->{Cells}[$iR][$iC]->Value =~ /Cro Title/i );
+          $columns{'Title CRO'} = $iC if( $oWkS->{Cells}[$iR][$iC]->Value =~ /^Title$/i );
         }
         next;
       }
@@ -104,8 +105,7 @@ sub ImportContentFile {
       my $title = $oWkC->Value if( $oWkC->Value );
 
       # CRO title - column ('Title CRO')
-      $oWkC = $oWkS->{Cells}[$iR][$columns{'Title CRO'}];
-      my $titlecro = $oWkC->Value if( $oWkC->Value );
+      my $titlecro = $oWkS->{Cells}[$iR][$columns{'Title CRO'}]->Value if $oWkS->{Cells}[$iR][$columns{'Title CRO'}];
 
       my $type = $oWkS->{Cells}[$iR][$columns{'Type'}]->Value if $oWkS->{Cells}[$iR][$columns{'Type'}];
       my $prodno = $oWkS->{Cells}[$iR][$columns{'Prod No.'}]->Value if $oWkS->{Cells}[$iR][$columns{'Prod No.'}];

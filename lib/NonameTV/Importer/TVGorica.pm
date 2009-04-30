@@ -147,7 +147,7 @@ sub isDate {
 #print ">$text<\n";
 
   # format 'TVG - SRIJEDA /25.03.2009'
-  if( $text =~ /^TVG\s*-\s*(ponedjeljak|utorak|srijeda|ČETVRTAK|petak|subota|nedjelja)\s*\/\s*\d+\.\d+\.\d+$/i ){
+  if( $text =~ /^TVG\s*-\s*(ponedjeljak|utorak|srijeda|ČETVRTAK|petak|subota|nedjelja)\s*\/*\s*\d+\.\d+\.\d+$/i ){
     return 1;
   }
 
@@ -158,7 +158,7 @@ sub ParseDate {
   my( $text ) = @_;
 
 #print ">$text<\n";
-  my( $dayname, $day, $month, $year ) = ( $text =~ /^TVG\s*-\s*(ponedjeljak|utorak|srijeda|ČETVRTAK|petak|subota|nedjelja)\s*\/\s*(\d+)\.(\d+)\.(\d+)$/i );
+  my( $dayname, $day, $month, $year ) = ( $text =~ /^TVG\s*-\s*(ponedjeljak|utorak|srijeda|ČETVRTAK|petak|subota|nedjelja)\s*\/*\s*(\d+)\.(\d+)\.(\d+)$/i );
 
   return sprintf( '%d-%02d-%02d', $year, $month, $day );
 }

@@ -22,6 +22,7 @@ use File::Temp qw/tempfile/;
 use NonameTV qw/norm AddCategory MonthNumber/;
 use NonameTV::DataStore::Helper;
 use NonameTV::Log qw/progress error/;
+use NonameTV::Config qw/ReadConfig/;
 
 use NonameTV::Importer::BaseFile;
 
@@ -32,6 +33,15 @@ sub new {
   my $class = ref($proto) || $proto;
   my $self  = $class->SUPER::new( @_ );
   bless ($self, $class);
+
+  defined( $self->{UrlRoot} ) or die "You must specify UrlRoot";
+
+  $self->{MinMonths} = 1 unless defined $self->{MinMonths};
+  $self->{MaxMonths} = 12 unless defined $self->{MaxMonths};
+
+  my $conf = ReadConfig();
+
+  $self->{FileStore} = $conf->{FileStore};
 
   my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore}, "Europe/Zagreb" );
   $self->{datastorehelper} = $dsh;
@@ -83,7 +93,7 @@ sub ImportXLS
 
     $oWkS = $oBook->{Worksheet}[$iSheet];
 
-    if( $oWkS->{Name} !~ /FROM GMT \+1 TO GMT\+2/ ){
+    if( $oWkS->{Name} !~ /^GMT \+1$/ ){
       progress("Trace XLS: $channel_xmltvid: skipping worksheet named '$oWkS->{Name}'");
       next;
     }
@@ -222,6 +232,56 @@ sub ParseTime
   }
 
   return sprintf( "%02d:%02d", $hour, $min );
+}
+
+sub UpdateFiles {
+  my( $self ) = @_;
+
+#return;
+
+  # get current month name
+  my $year = DateTime->today->strftime( '%g' );
+
+  # the url to fetch data from
+  # is in the format http://tracemovies.com/communication/EPG/INTERNATIONAL/TRACE_INTL_EPG_APR09.xls
+  # UrlRoot = http://tracemovies.com/communication/EPG/INTERNATIONAL/
+  # GrabberInfo = <empty>
+
+  foreach my $data ( @{$self->ListChannels()} ) {
+
+    my $xmltvid = $data->{xmltvid};
+
+    my $today = DateTime->today;
+
+    # do it for MaxMonths in advance
+    for(my $month=0; $month <= $self->{MaxMonths} ; $month++) {
+
+      my $dt = $today->clone->add( months => $month );
+
+      my ( $filename, $url );
+
+      # format: 'TRACE_INTL_EPG_APR09.xls'
+      $filename = "TRACE_INTL_EPG_" . uc( $dt->strftime( '%b' ) ) . uc( $dt->strftime( '%g' ) ) . ".xls";
+      $url = $self->{UrlRoot} . "/" . $filename;
+      progress("Trace: $xmltvid: Fetching xls file from $url");
+      url_get( $url, $self->{FileStore} . '/' .  $xmltvid . '/' . $filename );
+
+      # format: 'TRACE_INTL_EPG_APR_09.xls'
+      $filename = "TRACE_INTL_EPG_" . uc( $dt->strftime( '%b' ) ) . "_" . uc( $dt->strftime( '%g' ) ) . ".xls";
+      $url = $self->{UrlRoot} . "/" . $filename;
+      progress("Trace: $xmltvid: Fetching xls file from $url");
+      url_get( $url, $self->{FileStore} . '/' .  $xmltvid . '/' . $filename );
+
+    }
+  }
+}
+
+sub url_get {
+  my( $url, $file ) = @_;
+print "URL: $url\n";
+print "FILE: $file\n";
+
+  qx[curl -S -s -z "$file" -o "$file" "$url"];
 }
 
 1;

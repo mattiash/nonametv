@@ -120,7 +120,10 @@ sub ImportContent {
 
     } elsif( $text =~ /^\d{2}:\d{2}$/ ){
 
-      $time = $text;
+      my( $hour, $min ) = ( $text =~ /^(\d{2}):(\d{2})$/ );
+      $hour -= 24 if $hour gt 24;
+
+      $time = $hour . ":" . $min;
 
     } else {
 

@@ -87,6 +87,8 @@ CREATE TABLE `programs` (
   `commentators` text NOT NULL,
   `guests` text NOT NULL,
   `url` varchar(100) default NULL,
+  `image_mainpromo` varchar(100) default NULL,
+  `image_thumbnail` varchar(100) default NULL,
   PRIMARY KEY  (`channel_id`,`start_time`),
   KEY `channel_id` (`channel_id`,`start_time`),
   KEY `batch` (`batch_id`,`start_time`)

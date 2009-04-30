@@ -81,7 +81,7 @@ sub ImportXLS
 
   progress( "Mezzo: $channel_xmltvid: Processing XLS $file" );
 
-#return if ( $file !~ /Mezzo Schedule April 09/ );
+#return if ( $file !~ /grille_en2/ );
 
   my( $oBook, $oWkS, $oWkC );
   $oBook = Spreadsheet::ParseExcel::Workbook->Parse( $file );
@@ -129,6 +129,7 @@ sub ImportXLS
             $columns{'TITLE'} = $iC if( $oWkS->{Cells}[$iR][$iC]->Value =~ /^TITLES$/ );
             $columns{'TITLE'} = $iC if( $oWkS->{Cells}[$iR][$iC]->Value =~ /^TITRES$/ );
             $columns{'DESCRIPTION'} = $iC if( $oWkS->{Cells}[$iR][$iC]->Value =~ /^DESCRIPTIONS$/ );
+            $columns{'DESCRIPTION'} = $iC if( $oWkS->{Cells}[$iR][$iC]->Value =~ /^SYNOPSIS$/ );
             $columns{'YEAR'} = $iC if( $oWkS->{Cells}[$iR][$iC]->Value =~ /^ANNEES$/ );
             $columns{'GENRE'} = $iC if( $oWkS->{Cells}[$iR][$iC]->Value =~ /^GENRES$/ );
             $columns{'DIRECTOR'} = $iC if( $oWkS->{Cells}[$iR][$iC]->Value =~ /^DIRECTORS$/ );
@@ -191,28 +192,28 @@ sub ImportXLS
       my $description;
       if( $columns{'DESCRIPTION'} ){
         $oWkC = $oWkS->{Cells}[$iR][$columns{'DESCRIPTION'}];
-        $description = $oWkC->Value if $oWkC->Value;
+        $description = $oWkC->Value if ( $oWkC and $oWkC->Value );
       }
 
       # Year
       my $year;
       if( $columns{'YEAR'} ){
         $oWkC = $oWkS->{Cells}[$iR][$columns{'YEAR'}];
-        $year = $oWkC->Value if $oWkC->Value;
+        $year = $oWkC->Value if ( $oWkC and $oWkC->Value );
       }
 
       # Genre
       my $genre;
       if( $columns{'GENRE'} ){
         $oWkC = $oWkS->{Cells}[$iR][$columns{'GENRE'}];
-        $genre = $oWkC->Value if $oWkC->Value;
+        $genre = $oWkC->Value if ( $oWkC and $oWkC->Value );
       }
 
       # Director
       my $directors;
       if( $columns{'DIRECTOR'} ){
         $oWkC = $oWkS->{Cells}[$iR][$columns{'DIRECTOR'}];
-        $directors = $oWkC->Value if $oWkC->Value;
+        $directors = $oWkC->Value if ( $oWkC and $oWkC->Value );
       }
 
       progress( "Mezzo: $channel_xmltvid: $time - $title" );
@@ -267,6 +268,8 @@ sub ParseTime
 {
   my( $timeinfo ) = @_;
 
+#print ">$timeinfo<\n";
+
   my( $hour, $min, $sec );
 
   if( $timeinfo =~ /^\d+:\d+:\d+$/ ){ # format '11:45:00'
@@ -309,25 +312,25 @@ return;
       # format: 'Mezzo_Schedule_November_08.xls'
       $filename = "Mezzo_Schedule_" . $dt->month_name . "_" . $dt->strftime( '%y' ) . ".xls";
       $url = $self->{UrlRoot} . "/" . $filename;
-      progress("Mezzo: Fetching xls file from $url");
+      progress("Mezzo: $xmltvid: Fetching xls file from $url");
       ftp_get( $url, $self->{FileStore} . '/' .  $xmltvid . '/' . $filename );
 
       # format: 'Mezzo Schedule November_08.xls'
       $filename = "Mezzo Schedule " . $dt->month_name . "_" . $dt->strftime( '%y' ) . ".xls";
       $url = $self->{UrlRoot} . "/" . $filename;
-      progress("Mezzo: Fetching xls file from $url");
+      progress("Mezzo: $xmltvid: Fetching xls file from $url");
       ftp_get( $url, $self->{FileStore} . '/' .  $xmltvid . '/' . $filename );
 
       # format: 'Mezzo_Schedule_November_2008.xls'
       $filename = "Mezzo_Schedule_" . $dt->month_name . "_" . $dt->strftime( '%Y' ) . ".xls";
       $url = $self->{UrlRoot} . "/" . $filename;
-      progress("Mezzo: Fetching xls file from $url");
+      progress("Mezzo: $xmltvid: Fetching xls file from $url");
       ftp_get( $url, $self->{FileStore} . '/' .  $xmltvid . '/' . $filename );
 
       # format: 'Mezzo Schedule November_2008.xls'
       $filename = "Mezzo Schedule " . $dt->month_name . "_" . $dt->strftime( '%Y' ) . ".xls";
       $url = $self->{UrlRoot} . "/" . $filename;
-      progress("Mezzo: Fetching xls file from $url");
+      progress("Mezzo: $xmltvid: Fetching xls file from $url");
       ftp_get( $url, $self->{FileStore} . '/' .  $xmltvid . '/' . $filename );
     }
   }

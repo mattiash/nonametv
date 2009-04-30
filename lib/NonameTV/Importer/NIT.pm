@@ -56,7 +56,7 @@ sub ImportContentFile {
   if( $file =~ /\.txt$/i ){
     $self->ImportTXT( $file, $channel_id, $xmltvid );
   } elsif( $file =~ /\.doc$/i ){
-    #$self->ImportDOC( $file, $channel_id, $xmltvid );
+    $self->ImportDOC( $file, $channel_id, $xmltvid );
   }
 
   return;

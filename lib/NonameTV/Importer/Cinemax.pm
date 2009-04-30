@@ -44,7 +44,7 @@ sub new {
 
   $self->{FileStore} = $conf->{FileStore};
 
-  my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore} , "Europe/London" );
+  my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore} , "Europe/Zagreb" );
   $self->{datastorehelper} = $dsh;
 
   return $self;

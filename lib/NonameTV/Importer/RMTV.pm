@@ -75,6 +75,8 @@ sub ImportXLS
 
   progress( "RMTV: $channel_xmltvid: Processing XLS $file" );
 
+return if( $file !~ /28-03 Abril\.xls/ );
+
   my( $oBook, $oWkS, $oWkC );
   $oBook = Spreadsheet::ParseExcel::Workbook->Parse( $file );
 
@@ -93,23 +95,27 @@ sub ImportXLS
 
       my $oWkC;
 
-      # check the 1st column for the date
-      $oWkC = $oWkS->{Cells}[$iR][0];
-      if( isDate( $oWkC->Value ) ){
+      # check the 1st and 2nd column for the date
+      for( my $iC = 0 ; $iC <= 1 ; $iC++ ){
 
-        $date = ParseDate( $oWkC->Value );
+        my $oWkC = $oWkS->{Cells}[$iR][$iC];
 
-        if( $date ne $currdate ) {
-          if( $currdate ne "x" ) {
-            $dsh->EndBatch( 1 );
+        if( isDate( $oWkC->Value ) ){
+
+          $date = ParseDate( $oWkC->Value );
+
+          if( $date ne $currdate ) {
+            if( $currdate ne "x" ) {
+              $dsh->EndBatch( 1 );
+            }
+
+            my $batch_id = $channel_xmltvid . "_" . $date;
+            $dsh->StartBatch( $batch_id , $channel_id );
+            $dsh->StartDate( $date , "00:00" );
+            $currdate = $date;
+
+            progress("RMTV: $channel_xmltvid: Date is: $date");
           }
-
-          my $batch_id = $channel_xmltvid . "_" . $date;
-          $dsh->StartBatch( $batch_id , $channel_id );
-          $dsh->StartDate( $date , "00:00" );
-          $currdate = $date;
-
-          progress("RMTV: $channel_xmltvid: Date is: $date");
         }
       }
 
@@ -173,8 +179,15 @@ sub ImportXLS
 sub isDate {
   my( $text ) = @_;
 
+#print "isDate: $text\n";
+
   # the format is 'Saturday, 29th November 2008'
+  # or 'Saturday, 11th Abril 2009'
   if( $text =~ /^(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\,*\s*\d+(st|nd|rd|th)\s+(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d+$/i ){
+    return 1;
+  }
+
+  if( $text =~ /^(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\,*\s*\d+(st|nd|rd|th)\s+(january|february|marzo|abril|may|june|july|august|september|october|november|december)\s+\d+$/i ){
     return 1;
   }
 
@@ -186,13 +199,25 @@ sub ParseDate {
   my( $text ) = @_;
 
   # the format is 'Saturday, 29th November 2008'
+  # or 'Saturday, 11th Abril 2009'
   my( $dayname, $day, $sufix, $monthname, $year ) = ( $text =~ /^(\S+)\,*\s*(\d+)(st|nd|rd|th)\s+(\S+)\s+(\d+)$/ );
+#print "DN $dayname\n";
+#print "DY $day\n";
+#print "MN $monthname\n";
+#print "YR $year\n";
 
   $dayname =~ s/\,//;
 
   $year += 2000 if $year lt 100;
 
-  my( $month ) = MonthNumber( $monthname, "en" );
+  my $month;
+
+  $month = MonthNumber( $monthname, "en" );
+#print "MONTH $month\n";
+
+  $month = 3 if( ! $month and ( $monthname =~ /Marzo/ ) );
+  $month = 4 if( ! $month and ( $monthname =~ /Abril/ ) );
+print "MONTH $month\n";
 
   return sprintf( '%d-%02d-%02d', $year, $month, $day );
 }

@@ -21,6 +21,7 @@ use HTML::TableExtract;
 use HTML::Parse;
 use HTML::FormatText;
 use XML::LibXML;
+use Spreadsheet::ParseExcel;
 
 use NonameTV qw/MyGet norm AddCategory/;
 use NonameTV::DataStore::Helper;
@@ -62,8 +63,12 @@ sub ImportContentFile
   my $dsh = $self->{datastorehelper};
   my $ds = $self->{datastore};
 
+#return if( $file !~ /Cinemax_Raspored_04-09_CRO\.XLS/i );
+
   if( $file =~ /\.xml$/i ){
     $self->ImportXML( $file, $channel_id, $channel_xmltvid );
+  } elsif( $file =~ /\.xls$/i ){
+    $self->ImportXLS( $file, $channel_id, $channel_xmltvid );
   } elsif( $file =~ /\.html$/i ){
     $self->ImportHTML( $file, $channel_id, $channel_xmltvid );
   }
@@ -286,6 +291,160 @@ sub ImportHTML
   return 1;
 }
 
+sub ImportXLS
+{
+  my $self = shift;
+  my( $file, $channel_id, $channel_xmltvid ) = @_;
+
+  my $dsh = $self->{datastorehelper};
+  my $ds = $self->{datastore};
+
+  my %columns = ();
+  my $date;
+  my $currdate = "x";
+
+  progress( "HBOAdria XLS: $channel_xmltvid: Processing XLS $file" );
+
+
+  my $oBook = Spreadsheet::ParseExcel::Workbook->Parse( $file );
+
+  if( not defined( $oBook ) ) {
+    error( "HBOAdria XLS: $file: Failed to parse xls" );
+    return;
+  }
+
+  for(my $iSheet=0; $iSheet < $oBook->{SheetCount} ; $iSheet++){
+
+    my $oWkS = $oBook->{Worksheet}[$iSheet];
+    progress("HBOAdria XLS: $channel_xmltvid: processing worksheet named '$oWkS->{Name}'");
+
+    # browse through rows
+    # schedules are starting after that
+    # valid schedule row must have date, time and title set
+    for(my $iR = $oWkS->{MinRow} ; defined $oWkS->{MaxRow} && $iR <= $oWkS->{MaxRow} ; $iR++) {
+
+      # get the names of the columns from the 1st row
+      if( not %columns ){
+
+        for(my $iC = $oWkS->{MinCol} ; defined $oWkS->{MaxCol} && $iC <= $oWkS->{MaxCol} ; $iC++) {
+          $columns{$oWkS->{Cells}[$iR][$iC]->Value} = $iC;
+        }
+#foreach my $cl (%columns) {
+#print "$cl\n";
+#}
+
+        if( not defined $columns{'Date'} ){
+          %columns = ();
+        }
+
+        next;
+      }
+
+      my $oWkC;
+
+      # Date
+      $oWkC = $oWkS->{Cells}[$iR][$columns{'Date'}];
+      if( $oWkC->Value ){
+
+        $date = ParseDate( $oWkC->Value );
+
+        if( $date ne $currdate ) {
+          if( $currdate ne "x" ) {
+            $dsh->EndBatch( 1 );
+          }
+
+          my $batch_id = $channel_xmltvid . "_" . $date;
+          $dsh->StartBatch( $batch_id , $channel_id );
+          $dsh->StartDate( $date , "06:00" );
+          $currdate = $date;
+
+          progress("HBOAdria XLS: $channel_xmltvid: Date is: $date");
+        }
+      }
+
+      # Time
+      $oWkC = $oWkS->{Cells}[$iR][$columns{'Time'}];
+      next if( ! $oWkC );
+      next if( ! $oWkC->Value );
+      my $time = $oWkC->Value;
+
+      # Croatian Title
+      $oWkC = $oWkS->{Cells}[$iR][$columns{'Croatian Title'}];
+      next if( ! $oWkC );
+      next if( ! $oWkC->Value );
+      my $crotitle = $oWkC->Value;
+
+      # Original Title
+      $oWkC = $oWkS->{Cells}[$iR][$columns{'Original Title'}];
+      next if( ! $oWkC );
+      next if( ! $oWkC->Value );
+      my $origtitle = $oWkC->Value;
+
+      # Genre
+      $oWkC = $oWkS->{Cells}[$iR][$columns{'Genre'}];
+      next if( ! $oWkC );
+      next if( ! $oWkC->Value );
+      my $genre = $oWkC->Value;
+
+      # Country Origin
+      $oWkC = $oWkS->{Cells}[$iR][$columns{'Country Origin'}];
+      next if( ! $oWkC );
+      next if( ! $oWkC->Value );
+      my $country = $oWkC->Value;
+
+      # Production Year
+      $oWkC = $oWkS->{Cells}[$iR][$columns{'Year'}];
+      next if( ! $oWkC );
+      next if( ! $oWkC->Value );
+      my $prodyear = $oWkC->Value;
+
+      # Run Time
+      $oWkC = $oWkS->{Cells}[$iR][$columns{'Run Time'}];
+      next if( ! $oWkC );
+      next if( ! $oWkC->Value );
+      my $runtime = $oWkC->Value;
+
+      # Director
+      $oWkC = $oWkS->{Cells}[$iR][$columns{'Director'}];
+      next if( ! $oWkC );
+      next if( ! $oWkC->Value );
+      my $directors = $oWkC->Value;
+
+      # Actors
+      $oWkC = $oWkS->{Cells}[$iR][$columns{'Cast1'}];
+      next if( ! $oWkC );
+      next if( ! $oWkC->Value );
+      my $actors = $oWkC->Value;
+
+      progress( "HBOAdria XLS: $channel_xmltvid: $time - $origtitle" );
+
+      my $ce = {
+        channel_id => $channel_id,
+        title => $crotitle || $origtitle,
+        subtitle => $origtitle,
+        start_time => $time,
+      };
+
+      if( $genre ){
+        my($program_type, $category ) = $ds->LookupCat( 'HBOAdria', $genre );
+        AddCategory( $ce, $program_type, $category );
+      }
+
+      if( defined( $prodyear ) and ($prodyear =~ /(\d\d\d\d)/) )
+      {
+        $ce->{production_date} = "$1-01-01";
+      }
+
+      $ce->{directors} = $directors if $directors;
+      $ce->{actors} = $actors if $actors;
+
+      $dsh->AddProgramme( $ce );
+
+    } # next row
+  } # next sheet
+
+}
+
 sub ImportXML
 {
   my $self = shift;
@@ -354,6 +513,16 @@ sub ImportXML
       my $localsynopsis = $vwst->findvalue( './/LocalSynopsis' );
       my $approved = $vwst->findvalue( './/Approved' );
       my $ishighlight = $vwst->findvalue( './/IsHighlight' );
+
+      my $mainpromoimage = $vwst->findvalue( './/MainPromoImage' );
+      my $widethumbnailimage = $vwst->findvalue( './/WideThumbnailImage' );
+      my $halfpromoimage = $vwst->findvalue( './/HalfPromoImage' );
+      my $thirdpromoimage = $vwst->findvalue( './/ThirdPromoImage' );
+      my $thumbnailimage = $vwst->findvalue( './/ThumbnailImage' );
+      my $galleryimage1 = $vwst->findvalue( './/GalleryImage1' );
+      my $galleryimage2 = $vwst->findvalue( './/GalleryImage2' );
+      my $galleryimage3 = $vwst->findvalue( './/GalleryImage3' );
+
       my $schedulingcategory = $vwst->findvalue( './/SchedulingCategory' );
       my $packagetype = $vwst->findvalue( './/PackageType' );
       my $localrating = $vwst->findvalue( './/LocalRating' );
@@ -375,8 +544,8 @@ sub ImportXML
       $ce->{directors} = $localdirector if $localdirector;
       $ce->{actors} = $localcast if $localcast;
       $ce->{rating} = $localrating if $localrating;
-      #$ce->{country} = $localcountryorigin if $localcountryorigin;
-      #$ce->{date} = $productiondate if $productiondate;
+      $ce->{country} = $localcountryorigin if $localcountryorigin;
+      $ce->{date} = $productiondate if $productiondate;
       $ce->{aspect} = "4:3";
 
       if( $sound ) {
@@ -406,6 +575,8 @@ sub ImportXML
 
     FlushData( $dsh, $channel_id, $channel_xmltvid, @ces );
   }
+
+  return 1;
 }
 
 sub bytime {
@@ -452,21 +623,51 @@ sub FlushData {
   }
 }
 
+sub ParseDate
+{
+  my( $text ) = @_;
+
+  my( $month, $day, $year );
+
+  # format: '4-1-09'
+  if( $text =~ /^\d+-\d+-\d+$/ ){
+    ( $month, $day, $year ) = ( $text =~ /^(\d+)-(\d+)-(\d+)$/ );
+  }
+
+  $year += 2000 if $year < 100;
+
+  return sprintf( "%04d-%02d-%02d", $year, $month, $day );
+}
+
 sub ParseStartTime
 {
   my( $starttime ) = @_;
 
 #print "ParseStartTime >$starttime<\n";
 
+  my( $year, $month, $day, $hour, $min, $sec, $ampm );
+
   # format '2009-03-10T11:20:00.0000000+01:00'
-  if( $starttime !~ /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\./ ){
-    return undef;
+  if( $starttime =~ /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\./ ){
+    ( $year, $month, $day, $hour, $min, $sec ) = ( $starttime =~ /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/ );
+
+  # format '4/10/2009 8:55:00 PM'
+  } elsif( $starttime =~ /^\d+\/\d+\/\d+\s+\d+:\d+:\d+\s+(AM|PM)$/i ){
+    ( $month, $day, $year, $hour, $min, $sec, $ampm ) = ( $starttime =~ /^(\d+)\/(\d+)\/(\d+)\s+(\d+):(\d+):(\d+)\s+(AM|PM)$/ );
+
+    $hour += 12 if( $ampm =~ /^PM$/i );
+    if( $hour >= 24 ){
+      $hour -= 24;
+      $day += 1;
+    }
   }
 
-  my( $year, $month, $day, $hour, $min, $sec ) = ( $starttime =~ /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/ );
-if( $day eq 29 ){
-return undef;
-}
+#print "D: $day\n";
+#print "M: $month\n";
+#print "Y: $year\n";
+#print "h: $hour\n";
+#print "m: $min\n";
+#print "s: $sec\n";
 
   my $sdt = DateTime->new( year   => $year,
                            month  => $month,

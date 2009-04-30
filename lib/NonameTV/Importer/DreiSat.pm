@@ -37,6 +37,8 @@ sub Object2Url {
   my $self = shift;
   my( $objectname, $chd ) = @_;
 
+return( undef, undef ) if ( $objectname =~ /3sat\.tv\.gonix\.net_2009-14/ );
+
   my( $year, $week ) = ( $objectname =~ /(\d+)-(\d+)$/ );
  
   my $url = sprintf( "%s/3Sat_%04d%02d.XML", $self->{UrlRoot}, $year, $week );
@@ -147,7 +149,6 @@ sub ImportContent
 
     # moderation
     my $moderation = $sc->findvalue( './programm//moderation' );
-#print "moderation: $moderation\n";
 
     # there can be more than one broadcast times
     # so we have to find each 'ausstrahlung'

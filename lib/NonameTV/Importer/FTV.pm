@@ -63,6 +63,8 @@ sub ImportContentFile
   my $dsh = $self->{datastorehelper};
   my $ds = $self->{datastore};
 
+#return if( $channel_xmltvid !~ /fmen\.tv\.gonix\.net/ );
+
   if( $file =~ /\.xls$/i ){
     $self->ImportXLS( $file, $channel_id, $channel_xmltvid );
   }
@@ -78,7 +80,7 @@ sub ImportXLS
   my $dsh = $self->{datastorehelper};
   my $ds = $self->{datastore};
 
-  if( $file !~ /HOTBIRD/i and $file !~ /FTV-HD/i ){
+  if( $file !~ /HOTBIRD/i and $file !~ /FTV-HD/i and $file !~ /F-MEN/i ){
     progress( "FTV: $channel_xmltvid: Skipping file $file" );
     return 1;
   }

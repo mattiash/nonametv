@@ -52,6 +52,8 @@ sub ImportContentFile
   my $dsh = $self->{datastorehelper};
   my $ds = $self->{datastore};
 
+#return if ( $file !~ /20090407104828-noname/ );
+
   if( $file =~ /\.doc$/i ){
     $self->ImportDOC( $file, $channel_id, $xmltvid );
   } elsif( $file =~ /noname$/i ){
@@ -203,7 +205,7 @@ sub ImportTXT
 
         progress("Z1 TXT: $xmltvid: Date is: $date");
       }
-    } elsif( isShow( $text ) ) {
+    } elsif( $date and isShow( $text ) ) {
 
       my( $time, $title, $genre, $ep_no, $ep_se ) = ParseShow( $text );
 

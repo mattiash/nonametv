@@ -44,9 +44,9 @@ sub FetchDataFromSite
 
   my $url;
 
-  if( $xmltvid =~ /^nova.tv.gonix.net$/i ){
+  if( $xmltvid =~ /^nova\.tv\.gonix\.net$/i or $xmltvid =~ /^cwtest3\.tv\.gonix\.net$/i ){
     $url = "http://www.novatv.hr/xml/" . $year . $month . $day . ".xml";
-  } elsif( $xmltvid =~ /^novamini.tv.gonix.net$/i ){
+  } elsif( $xmltvid =~ /^novamini\.tv\.gonix\.net$/i ){
     $url = "http://www.mojamini.tv/xml/" . $year . $month . $day . ".xml";
   } else {
     $url = $self->{UrlRoot} . "/" . $year . $month . $day . ".xml";

@@ -79,11 +79,11 @@ sub ImportContentFile
 
     last if $type eq 'eof';
 
-print "--------------------------------------------------------------------\n";
-print "type: $type\n";
-print "arg: $arg\n";
-print "param: $param\n";
-print "--------------------------------------------------------------------\n";
+#print "--------------------------------------------------------------------\n";
+#print "type: $type\n";
+#print "arg: $arg\n";
+#print "param: $param\n";
+#print "--------------------------------------------------------------------\n";
 
     if( ( $type eq 'control' ) and ( $arg eq 'par' ) ){
       $textfull = 1;
@@ -117,15 +117,16 @@ print "--------------------------------------------------------------------\n";
       #my $cod = Locale::Recode->new( from => 'ISO-8859-2' , to => 'UTF-8' );
       #$cod->recode( $text );
 
-print "TEXT: $text\n";
+#print "TEXT: $text\n";
 
       if( $text eq "" ) {
         # blank line
       }
       elsif( isDate( $text ) ) { # the token with the date in format 'MONDAY 12.4.'
-print "DATE\n";
+#print "DATE\n";
 
         $date = ParseDate( $text );
+#print "DATE $date\n";
 
         if( defined $date ) {
 
@@ -178,6 +179,11 @@ sub isDate {
     return 1;
   }
 
+  # format 'Ponedel'nik, 27 aprelja'
+  if( $text =~ /^\s*(Ponedel'nik|Vtornik|Sreda|Chetverg|Pjatnica|Subbota|Voskresen'e),\s+\d+\s+(aprelja)$/i ){
+    return 1;
+  }
+
   return 0;
 }
 
@@ -195,11 +201,27 @@ sub isShow {
 sub ParseDate {
   my( $text ) = @_;
 
+  my( $dayname, $monthname, $day );
+  my $month;
+
   # format 'Wednesday, August 13'
-  my( $dayname, $monthname, $day ) = ( $text =~ /^\s*(\S+),\s*(\S+),*\s*(\d+)$/ );
+  if( $text =~ /^\s*(monday|tuesday|wednesday|thursday|friday|saturday|sunday),\s*\S+,*\s*\d+$/i ){
+    ( $dayname, $monthname, $day ) = ( $text =~ /^\s*(\S+),\s*(\S+),*\s*(\d+)$/ );
+    $month = MonthNumber( $monthname , "en" );
+  }
+
+  # format 'Ponedel'nik, 27 aprelja'
+  if( $text =~ /^\s*(Ponedel'nik|Vtornik|Sreda|Chetverg|Pjatnica|Subbota|Voskresen'e),\s+\d+\s+(aprelja)$/i ){
+    ( $dayname, $day, $monthname ) = ( $text =~ /^\s*(\S+),\s+(\d+)\s+(\S+)/ );
+    $month = MonthNumber( $monthname , "ru" );
+  }
+
+#print "$dayname\n";
+#print "$day\n";
+#print "$monthname\n";
+#print "$month\n";
 
   my $year = DateTime->today->year();
-  my $month = MonthNumber( $monthname , "en" );
 
   my $dt = DateTime->new( year   => $year,
                           month  => $month,
