@@ -76,13 +76,41 @@ sub AddFile #( $xmltvid, $filename, $cref )
   my( $oldmd5, $ts ) = $self->GetFileMeta( $xmltvid, $filename );
 
   my $newmd5 = md5_hex( $$cref );
-  if( not defined( $oldmd5 ) or ($oldmd5 ne $newmd5 ) ) {
+  if( not defined( $oldmd5 ) ) {
     my $fullname = "$dir/$filename";
     open( OUT, "> $fullname" ) or die "Failed to write to $fullname";
     print OUT $$cref;
     close( OUT );
     
     $self->AddFileMeta( $xmltvid, $filename, $newmd5 );
+  }
+  elsif( $oldmd5 ne $newmd5 ) {
+    # Same filename but different content. Make up a new filename.
+    my( $base, $ext ) = ($filename =~ /^(.*)(\..*?)$/);
+    if( not defined $ext ) {
+      $base = $filename;
+      $ext = "";
+    }
+
+    my $nextmd5;
+    my $nextfilename;
+
+    for( my $c=1; $c<100; $c++ ) {
+      $nextfilename = "$base-$c$ext";
+      ( $nextmd5 ) = $self->GetFileMeta( $xmltvid, $nextfilename );
+      if( (not defined( $nextmd5 )) or ($nextmd5 eq $newmd5) ) {
+	last;
+      }
+    }
+
+    if( not defined( $nextmd5 ) ) {
+      my $fullname = "$dir/$nextfilename";
+      open( OUT, "> $fullname" ) or die "Failed to write to $fullname";
+      print OUT $$cref;
+      close( OUT );
+      
+      $self->AddFileMeta( $xmltvid, $nextfilename, $newmd5 );
+    }
   }
   else {
 #    print "Duplicate file skipped.\n";
