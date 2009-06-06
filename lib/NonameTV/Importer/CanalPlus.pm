@@ -143,6 +143,8 @@ sub ImportContent
       return 0;
     } 
 
+    my $title = $sc->findvalue( './Program/@Title' );
+
     my $start = $self->create_dt( $sc->findvalue( './@CalendarDate' ) );
     if( not defined $start )
     {
@@ -167,6 +169,11 @@ sub ImportContent
 
     if( ($length eq "") or ($length == 0) )
     {
+      if( not defined $next_start ) {
+	w "Neither next_start nor length for " . $start->ymd() . " " . 
+	    $start->hms() . " " . $title;
+	next;
+      }
       $end = $next_start;
     }
     else
@@ -183,7 +190,6 @@ sub ImportContent
       }
     }
 
-    my $title = $sc->findvalue( './Program/@Title' );
     my $series_title = $sc->findvalue( './Program/@SeriesTitle' );
     my $org_title = $sc->findvalue( './Program/@OriginalTitle' );
     my $desc  = $sc->findvalue( './Program/@LongSynopsis' );
@@ -203,7 +209,7 @@ sub ImportContent
     my $series = $sc->findvalue( './Program/@Series' );
 
     if( $series and ($series_title eq "") ) {
-      w "Series without SeriesTitle: $title";
+#      w "Series without SeriesTitle: $title";
     }
  
     my $production_year = $sc->findvalue( './Program/@ProductionYear' );
