@@ -5,8 +5,6 @@ use strict;
 use Digest::MD5 qw/md5_hex/;
 use Encode qw(encode_utf8 is_utf8);
 
-use LWP::UserAgent;
-
 use NonameTV::Log qw/w/;
 
 =pod
@@ -79,14 +77,21 @@ sub new {
       $self->{$key} = ($_[1])->{$key};
   }
 
-  my $ua = LWP::UserAgent->new( agent => $self->{useragent}, 
-				cookie_jar => {} );
+  eval {
+    require WWW::Mechanize;
+    $self->{ua} = WWW::Mechanize->new();
+  };
+
+  if( not defined $self->{ua} ) {
+    require LWP::UserAgent;
+    $self->{ua} = LWP::UserAgent->new( cookie_jar => {} );
+  }
+
+  $self->{ua}->agent( $self->{useragent} );
 
   if( not defined $self->{credentials} ) {
     $self->{credentials} = {};
   }
-
-  $self->{ua} = $ua;
 
   if( not -d $self->{basedir} ) {
       mkdir( $self->{basedir} ) or
@@ -269,6 +274,12 @@ sub GetUrl {
   else {
     return (undef, $res->status_line);
   }
+}
+
+sub UserAgent {
+  my $self = shift;
+
+  return $self->{ua};
 }
 
 =pod
