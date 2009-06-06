@@ -100,6 +100,10 @@ sub ImportContent
 
     my $desc = $pgm->findvalue( 'ShowSynopsis' );
     
+    if( $title =~ /r slut f.*r idag/ ) {
+      $title = "end-of-transmission";
+    }
+
 # Should we store url and image in the database?
 #          my $url = $pgm->findvalue( 'ShowUrl' );
 #          $url = URI->new($url)->abs('http://www.mtve.com/')
