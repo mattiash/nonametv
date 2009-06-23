@@ -27,9 +27,10 @@ sub new {
     my $self  = $class->SUPER::new( @_ );
     bless ($self, $class);
 
-
     defined( $self->{UrlRoot} ) or die "You must specify UrlRoot";
     defined( $self->{LoginUrl} ) or die "You must specify LoginUrl";
+    defined( $self->{Username} ) or die "You must specify Username";
+    defined( $self->{Password} ) or die "You must specify Password";
 
     $self->{datastore}->{SILENCE_END_START_OVERLAP} = 1;
     return $self;
@@ -38,11 +39,24 @@ sub new {
 sub InitiateDownload {
   my $self = shift;
 
-  # Do the login. This will set a cookie that will be transferred on all
-  # subsequent page-requests.
-  my( $dataref, $error ) = $self->{cc}->GetUrl( $self->{LoginUrl} );
-  
-  return $error;
+  my $mech = $self->{cc}->UserAgent();
+
+  $mech->get($self->{LoginUrl});
+
+  $mech->submit_form(
+      with_fields => { 
+	'ctl00$body$loginControl$UserName' => $self->{Username},
+	'ctl00$body$loginControl$Password' => $self->{Password},
+      },
+      button => 'ctl00$body$loginControl$LoginButton',
+  );
+
+  if( $mech->content =~ /<TTSTVR/ ) {
+    return undef;
+  }
+  else {
+    return "Login failed";
+  }
 }
 
 sub Object2Url {
@@ -63,6 +77,11 @@ sub FilterContent {
 
   if( $$cref eq "" ) {
     return (undef, "No data found." );
+  }
+
+  if( $$cref !~ /^\s*<\?xml/ ) {
+    # This happens when we try to fetch data for yesterday.
+    return (undef, "Data is not xml.");
   }
 
   my $doc = ParseXml( $cref );
@@ -150,11 +169,14 @@ sub ImportContent {
     my $ce = {
       channel_id  => $chd->{id},
       start_time  => ParseDateTime( $start ),
-      end_time    => ParseDateTime( $end ),
       title       => norm( $title ),
       description => norm( "$intro $description" ),
       url         => $url,
     };
+
+    if( $end ne "" ) {
+	$ce->{end_time} = ParseDateTime( $end );
+    }
 
     if( $subtitle ne "" ) {
       $ce->{subtitle} = norm( $subtitle );
