@@ -52,6 +52,8 @@ sub ImportContentFile
   my $dsh = $self->{datastorehelper};
   my $ds = $self->{datastore};
 
+#return if ( $xmltvid !~ /^bebetvhd\./ );
+
   if( ( $file !~ /EN_bebe/i ) and $file !~ /\.doc/ ) {
     progress( "BebeTV: $xmltvid: Skipping unknown file $file" );
     return;
@@ -80,14 +82,14 @@ sub ImportContentFile
     return;
   }
 
-  my $currdate = undef;
+  my $currdate = "x";
   my $date = undef;
 
   foreach my $div ($ns->get_nodelist) {
 
     my( $text ) = norm( $div->findvalue( '.' ) );
 
-    #print "> $text\n";
+#print ">$text<\n";
 
     if( $text eq "" ) {
       # blank line
@@ -97,9 +99,8 @@ sub ImportContentFile
       $date = ParseDate( $text );
 
       if( defined $date ) {
-        progress("BebeTV: $xmltvid: Date is $date");
 
-        if( defined $currdate ){
+        if( $currdate ne "x" ){
           $dsh->EndBatch( 1 )
         }
 
@@ -107,11 +108,30 @@ sub ImportContentFile
         $dsh->StartBatch( $batch_id, $channel_id );
         $dsh->StartDate( $date, "00:00" ); 
         $currdate = $date;
+
+        progress("BebeTV: $xmltvid: Date is $date");
       }
+
     }
     elsif( isShow( $text ) ) { # the line with show in format '2008.05.26 0:15 Title'
 
-      my( $time, $title, $episinfo, $duration ) = ParseShow( $text );
+      my( $time, $title, $episinfo, $duration );
+
+      ( $date, $time, $title, $episinfo, $duration ) = ParseShow( $text );
+
+      if( $date ne $currdate ) {
+
+        if( $currdate ne "x" ){
+          $dsh->EndBatch( 1 );
+        }
+
+        my $batch_id = "${xmltvid}_" . $date;
+        $dsh->StartBatch( $batch_id, $channel_id );
+        $dsh->StartDate( $date, "00:00" ); 
+        $currdate = $date;
+
+        progress("BebeTV: $xmltvid: Date is $date");
+      }
 
       progress("BebeTV: $xmltvid: $time - $title");
 
@@ -183,12 +203,12 @@ sub isShow {
 sub ParseShow {
   my( $text ) = @_;
 
-  my( $hour, $min, $sec, $string );
+  my( $year, $month, $day, $hour, $min, $sec, $string );
 
   if( $text =~ /^\d+\.\d+\.\d+\.*\s+\d+:\d+\s+.*$/ ){
-    ( $hour, $min, $string ) = ( $text =~ /^\d+\.\d+\.\d+\.*\s+(\d+):(\d+)\s+(.*)$/ );
+    ( $year, $month, $day, $hour, $min, $string ) = ( $text =~ /^(\d+)\.(\d+)\.(\d+)\.*\s+(\d+):(\d+)\s+(.*)$/ );
   } elsif( $text =~ /^\d+\.\d+\.\d+\.*\s+\d+:\d+:\d+\s+.*$/ ){
-    ( $hour, $min, $sec, $string ) = ( $text =~ /^\d+\.\d+\.\d+\.*\s+(\d+):(\d+):(\d+)\s+(.*)$/ );
+    ( $year, $month, $day, $hour, $min, $sec, $string ) = ( $text =~ /^(\d+)\.(\d+)\.(\d+)\.*\s+(\d+):(\d+):(\d+)\s+(.*)$/ );
   }
 
   my( $title, $episode, $duration );
@@ -200,9 +220,10 @@ sub ParseShow {
     $title = $string;
   }
 
+  my $date = sprintf( "%04d-%02d-%02d", $year, $month, $day );
   my $time = sprintf( "%02d:%02d", $hour, $min );
 
-  return( $time , $title , $episode , $duration );
+  return( $date, $time , $title , $episode , $duration );
 }
 
 1;

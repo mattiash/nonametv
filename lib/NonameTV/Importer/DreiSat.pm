@@ -37,7 +37,7 @@ sub Object2Url {
   my $self = shift;
   my( $objectname, $chd ) = @_;
 
-return( undef, undef ) if ( $objectname =~ /3sat\.tv\.gonix\.net_2009-14/ );
+#return( undef, undef ) if ( $objectname =~ /3sat\.tv\.gonix\.net_2009-14/ );
 
   my( $year, $week ) = ( $objectname =~ /(\d+)-(\d+)$/ );
  

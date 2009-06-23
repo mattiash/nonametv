@@ -66,7 +66,6 @@ sub ImportContentFile {
 
     my $oWkS = $oBook->{Worksheet}[$iSheet];
 
-print "SHEET $oWkS->{Name}\n";
     if( $oWkS->{Name} !~ /PE FEED/ ){
       progress( "CNBCEuro: $chd->{xmltvid}: Skipping worksheet: $oWkS->{Name}" );
       next;
@@ -95,15 +94,16 @@ print "SHEET $oWkS->{Name}\n";
         }
       }
 
-print "1\n";
       # the date information
       # is in the 2nd row
       my $oWkC = $oWkS->{Cells}[1][$iC];
       next if( ! $oWkC );
+      next if( ! $oWkC->Value );
       my $dateinfo = $oWkC->Value;
-print "DATEINFo $dateinfo\n";
+print "DATEINFO $dateinfo\n";
 
       $date = ParseDate( $dateinfo );
+      next if( ! $date );
 print "DATUM: $date\n";
 
       if( $date ) {
@@ -131,7 +131,7 @@ print "DATUM: $date\n";
         next if( ! $oWkC );
         my $text = $oWkC->Value;
         next if( ! $text );
-print ">$iC $iR $text<\n";
+#print ">$iC $iR $text<\n";
 
         # if this is the first line of the title
         # then read the time from the $coltime
@@ -210,17 +210,14 @@ sub ParseDate
 
   my( $day, $monthname );
 
-print "DATEINFO: >$text<\n";
+#print ">$text<\n";
 
   # format '7th July'
-  if( $text =~ /^\d+(st|nd|rd|th)\s+\S+$/ ){
-print "OK format\n";
-    ( $day, $monthname ) = ( $text =~ /^(\d+)\S+\s+(\S+)$/ );
+  if( $text =~ /^\d+(st|nd|rd|th)\s+\S+\s*$/ ){
+    ( $day, $monthname ) = ( $text =~ /^(\d+)\S+\s+(\S+)\s*$/ );
   } else {
     return undef;
   }
-print "DAY: $day\n";
-print "MON: $monthname\n";
 
   return undef if( ! $day );
 

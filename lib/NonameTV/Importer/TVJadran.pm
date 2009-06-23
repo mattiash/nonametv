@@ -35,6 +35,7 @@ use base 'NonameTV::Importer::BaseFile';
    FT_SCHEMAXLS  => 1,  # monthly schema in xls
    FT_SCHEMADOC  => 2,  # monthly schema in doc
    FT_SCHEDULE   => 3,  # daily schedule in doc
+   FT_TEXT       => 4,  # schedule in text
 };
 
 sub new {
@@ -62,14 +63,18 @@ sub ImportContentFile {
   my $dsh = $self->{datastorehelper};
   my $ds = $self->{datastore};
 
+#return if ( $file !~ /20090521222410-noname/ );
+
   my $ft = CheckFileFormat( $file );
 
   if( $ft eq FT_SCHEMADOC ){
     $self->ImportSchemaDOC( $file, $channel_id, $xmltvid );
   } elsif( $ft eq FT_SCHEDULE ){
     $self->ImportSchedule( $file, $channel_id, $xmltvid );
+  } elsif( $ft eq FT_TEXT ){
+    $self->ImportTXT( $file, $channel_id, $xmltvid );
   } else {
-    error( "Jetix: $xmltvid: $ft file format of $file" );
+    error( "TVJadran: $xmltvid: $ft file format of $file" );
   }
 
   return;
@@ -78,6 +83,10 @@ sub ImportContentFile {
 sub CheckFileFormat
 {
   my( $file ) = @_;
+
+  if( $file =~ /noname$/ ){
+    return FT_TEXT;
+  }
 
   # check if the file contains 'PROGRAMSKA SHEMA TELEVIZIJE JADRAN'
   my $doc = Wordfile2Xml( $file );
@@ -415,6 +424,79 @@ sub ImportSchedule
 
   $dsh->EndBatch( 1 );
     
+  return;
+}
+
+sub ImportTXT
+{
+  my $self = shift;
+  my( $file, $channel_id, $xmltvid ) = @_;
+
+  my $dsh = $self->{datastorehelper};
+  my $ds = $self->{datastore};
+
+  progress( "Z1 TXT: $xmltvid: Processing $file" );
+
+  open(HTMLFILE, $file);
+  my @lines = <HTMLFILE>;
+  close(HTMLFILE);
+
+  my $date;
+  my $currdate = "x";
+
+  foreach my $text (@lines){
+
+    $text = norm( $text );
+print ">$text<\n";
+
+    if( isDate( $text ) ){
+
+      $date = ParseDate( $text );
+
+      if( $date ne $currdate ) {
+        if( $currdate ne "x" ) {
+          $dsh->EndBatch( 1 );
+        }
+
+        my $batch_id = $xmltvid . "_" . $date;
+        $dsh->StartBatch( $batch_id , $channel_id );
+        $dsh->StartDate( $date , "06:00" );
+        $currdate = $date;
+
+        progress("Z1 TXT: $xmltvid: Date is: $date");
+      }
+    } elsif( $date and isShow( $text ) ) {
+
+      my( $time, $title, $genre, $ep_no, $ep_se ) = ParseShow( $text );
+
+      progress("Z1 TXT: $xmltvid: $time - $title");
+
+      my $ce = {
+        channel_id => $channel_id,
+        start_time => $time,
+        title => norm($title),
+      };
+
+      if( $genre ){
+        my($program_type, $category ) = $ds->LookupCat( 'Z1', $genre );
+        AddCategory( $ce, $program_type, $category );
+      }
+
+      if( $ep_no and $ep_se ){
+        $ce->{episode} = sprintf( "%d . %d .", $ep_se-1, $ep_no-1 );
+      } elsif( $ep_no ){
+        $ce->{episode} = sprintf( ". %d .", $ep_no-1 );
+      }
+
+      $dsh->AddProgramme( $ce );
+
+    } else {
+      #skip
+    }
+  }
+
+  $dsh->EndBatch( 1 );
+
   return;
 }
 

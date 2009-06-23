@@ -64,13 +64,14 @@ sub ImportContentFile
   my $ds = $self->{datastore};
 
 #return if( $file !~ /Cinemax_Raspored_04-09_CRO\.XLS/i );
+#return if( $channel_xmltvid !~ /hboco/i );
 
   if( $file =~ /\.xml$/i ){
     $self->ImportXML( $file, $channel_id, $channel_xmltvid );
   } elsif( $file =~ /\.xls$/i ){
-    $self->ImportXLS( $file, $channel_id, $channel_xmltvid );
+    #$self->ImportXLS( $file, $channel_id, $channel_xmltvid );
   } elsif( $file =~ /\.html$/i ){
-    $self->ImportHTML( $file, $channel_id, $channel_xmltvid );
+    #$self->ImportHTML( $file, $channel_id, $channel_xmltvid );
   }
 
   return;
@@ -464,11 +465,21 @@ sub ImportXML
     return;
   }
 
-  # find 'ScheduleData' blocks
-  my $sdbs = $doc->findnodes( "//ScheduleData" );
+  # find 'ScheduleData' or 'AdminWebsiteData' blocks
+  # HBO Adria and HBO Comedy comes with 'ScheduleData'
+  # Cinemax comes with 'ScheduleData'
+  my $sdbs;
+  progress( "HBOAdria: $channel_xmltvid: Trying format with 'ScheduleDate' blocks" ) ;
+  $sdbs = $doc->findnodes( "//ScheduleData" );
   if( $sdbs->size() == 0 ) {
-    error( "HBOAdria: $channel_xmltvid: No schedules found" ) ;
-    return;
+    error( "HBOAdria: $channel_xmltvid: No 'ScheduleData' blocks found" ) ;
+
+    progress( "HBOAdria: $channel_xmltvid: Trying format with 'AdminWebsiteData' blocks" ) ;
+    $sdbs = $doc->findnodes( "//AdminWebsiteData" );
+    if( $sdbs->size() == 0 ) {
+      error( "HBOAdria: $channel_xmltvid: No 'AdminWebsiteData' blocks found" ) ;
+      return;
+    }
   }
   progress( "HBOAdria: $channel_xmltvid: " . $sdbs->size() . " schedule blocks found" );
 
@@ -478,10 +489,21 @@ sub ImportXML
 
     my @ces;
 
-    my $vwsts = $sdb->findnodes( ".//vwScheduledTitle" );
+    # find 'vwScheduledTitle' or 'sp_GetFullProgram' events
+    # HBO Adria and HBO Comedy comes with 'vwScheduledTitle'
+    # Cinemax comes with 'sp_GetFullProgram'
+    my $vwsts;
+    progress( "HBOAdria: $channel_xmltvid: Searching for 'vwScheduledTitle' events" ) ;
+    $vwsts = $sdb->findnodes( ".//vwScheduledTitle" );
     if( $vwsts->size() == 0 ) {
-      error( "HBOAdria: $channel_xmltvid: No events found" ) ;
-      next;
+      error( "HBOAdria: $channel_xmltvid: No 'vwScheduledTitle' events found" ) ;
+
+      progress( "HBOAdria: $channel_xmltvid: Searching for 'sp_GetFullProgram' events" ) ;
+      $vwsts = $sdb->findnodes( ".//sp_GetFullProgram" );
+      if( $vwsts->size() == 0 ) {
+        error( "HBOAdria: $channel_xmltvid: No 'sp_GetFullProgram' events found" ) ;
+        next;
+      }
     }
     progress( "HBOAdria: $channel_xmltvid: " . $vwsts->size() . " events found" );
 
@@ -515,13 +537,17 @@ sub ImportXML
       my $ishighlight = $vwst->findvalue( './/IsHighlight' );
 
       my $mainpromoimage = $vwst->findvalue( './/MainPromoImage' );
-      my $widethumbnailimage = $vwst->findvalue( './/WideThumbnailImage' );
-      my $halfpromoimage = $vwst->findvalue( './/HalfPromoImage' );
-      my $thirdpromoimage = $vwst->findvalue( './/ThirdPromoImage' );
+      #my $widethumbnailimage = $vwst->findvalue( './/WideThumbnailImage' );
+      #my $halfpromoimage = $vwst->findvalue( './/HalfPromoImage' );
+      #my $thirdpromoimage = $vwst->findvalue( './/ThirdPromoImage' );
       my $thumbnailimage = $vwst->findvalue( './/ThumbnailImage' );
-      my $galleryimage1 = $vwst->findvalue( './/GalleryImage1' );
-      my $galleryimage2 = $vwst->findvalue( './/GalleryImage2' );
-      my $galleryimage3 = $vwst->findvalue( './/GalleryImage3' );
+      #my $galleryimage1 = $vwst->findvalue( './/GalleryImage1' );
+      #my $galleryimage2 = $vwst->findvalue( './/GalleryImage2' );
+      #my $galleryimage3 = $vwst->findvalue( './/GalleryImage3' );
+
+      my $imagebig = $vwst->findvalue( './/BigImage' );
+      my $imagenormal = $vwst->findvalue( './/NormalImage' );
+      my $imageicon = $vwst->findvalue( './/IconImage' );
 
       my $schedulingcategory = $vwst->findvalue( './/SchedulingCategory' );
       my $packagetype = $vwst->findvalue( './/PackageType' );
@@ -535,20 +561,20 @@ sub ImportXML
 
       my $ce = {
         channel_id => $channel_id,
-        title      => $localtitle,
+        title      => norm($localtitle),
         start_time => $time,
       };
 
-      $ce->{subtitle} = $originaltitle if $originaltitle;
-      $ce->{description} = $localsynopsis if $localsynopsis;
-      $ce->{directors} = $localdirector if $localdirector;
-      $ce->{actors} = $localcast if $localcast;
-      $ce->{rating} = $localrating if $localrating;
-      $ce->{country} = $localcountryorigin if $localcountryorigin;
-      $ce->{date} = $productiondate if $productiondate;
+      $ce->{subtitle} = $originaltitle if ( $originaltitle =~ /\S/ );
+      $ce->{description} = $localsynopsis if ( $localsynopsis =~ /\S/ );
+      $ce->{directors} = $localdirector if ( $localdirector =~ /\S/ );
+      $ce->{actors} = $localcast if ( $localcast =~ /\S/ );
+      $ce->{rating} = $localrating if ( $localrating =~ /\S/ );
+#      $ce->{country} = $localcountryorigin if ( $localcountryorigin =~ /\S/ );
+#      $ce->{date} = $productiondate if ( $productiondate =~ /\S/ );
       $ce->{aspect} = "4:3";
 
-      if( $sound ) {
+      if( $sound =~ /\S/ ) {
         $ce->{stereo} = 'mono' if( $sound =~ /MONO/ );
         $ce->{stereo} = 'stereo' if( $sound =~ /STEREO/ );
         $ce->{stereo} = 'dolby digital' if( $sound =~ /DOLBY_5\.1/ );
@@ -556,23 +582,30 @@ sub ImportXML
         $ce->{stereo} = 'surround' if( $sound =~ /SURROUND/ );
       }
 
-      if( $episodenumber ){
+      if( $episodenumber gt 0 ){
         $ce->{episode} = sprintf( ". %d .", $episodenumber - 1 );
       }
 
-      if( $localgenre1 ){
+      if( $localgenre1 =~ /\S/ ){
         my($program_type, $category ) = $ds->LookupCat( "HBOAdria", $localgenre1 );
         AddCategory( $ce, $program_type, $category );
       }
 
-      if( $localgenre2 ){
+      if( $localgenre2 =~ /\S/ ){
         my($program_type, $category ) = $ds->LookupCat( "HBOAdria", $localgenre2 );
         AddCategory( $ce, $program_type, $category );
       }
 
+      $ce->{url_image_main} = $mainpromoimage if ( $mainpromoimage =~ /\S/ );
+      $ce->{url_image_thumbnail} = $thumbnailimage if ( $thumbnailimage =~ /\S/ );
+      $ce->{url_image_main} = $imagebig if ( $imagebig =~ /\S/ );
+      $ce->{url_image_thumbnail} = $imagenormal if ( $imagenormal =~ /\S/ );
+      $ce->{url_image_icon} = $imageicon if ( $imageicon =~ /\S/ );
+
       push( @ces , $ce );
     }
 
+    progress("HBOAdria: $channel_xmltvid: Populating database with " . @ces . " events" );
     FlushData( $dsh, $channel_id, $channel_xmltvid, @ces );
   }
 
@@ -615,7 +648,7 @@ sub FlushData {
         progress("HBOAdria: $xmltvid: Date is $date");
       }
 
-      progress("HBOAdria: $xmltvid: $ce->{start_time} - $ce->{subtitle}");
+      progress("HBOAdria: $xmltvid: $ce->{start_time} - $ce->{title}");
 
       $dsh->AddProgramme( $ce );
     }

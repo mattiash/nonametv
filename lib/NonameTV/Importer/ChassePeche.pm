@@ -177,7 +177,7 @@ sub isDate {
 #print ">$text<\n";
 
   # format 'jeudi 2 Avril 2009', 'mercredi 1er Avril 2009'
-  if( $text =~ /^(lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche)\s+\d+(er)*\s+(Avril)\s+\d+$/i ){
+  if( $text =~ /^(lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche)\s+\d+(er)*\s+(Avril|Mai|Juin)\s+\d+$/i ){
     return 1;
   }
 
@@ -187,9 +187,11 @@ sub isDate {
 sub ParseDate {
   my( $text ) = @_;
 
+  # format 'jeudi 2 Avril 2009', 'mercredi 1er Avril 2009'
   my( $dayname, $day, $monthname, $year ) = ( $text =~ /^(\S+)\s+(\d+)\S*\s+(\S+)\s+(\d+)$/ );
 
   my $month = MonthNumber( $monthname , 'fr' );
+#print "$month\n";
 
   return sprintf( '%04d-%02d-%02d', $year, $month, $day );
 }
