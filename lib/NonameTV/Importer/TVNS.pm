@@ -61,6 +61,8 @@ sub ImportContentFile
 
   return if( $file !~ /\.doc$/i );
 
+#return if( $file !~ /18\.JUL 2009/i );
+
   progress( "TVNS: $xmltvid: Processing $file" );
   
   my $doc;
@@ -107,8 +109,10 @@ sub ImportContentFile
 #print ">$text<\n";
 
     if( isHeader( $text ) ){ # the header in format 'PRVI PROGRAM RTV ZA 7. OKTOBAR 2008. - UTORAK'
+#print "HEADER\n";
 
       if( $text =~ /$chd->{grabber_info}/i ){
+#print "ST_OKSECT\n";
 
         $state = ST_OKSECT;
         progress("TVNS: $xmltvid: Processing section '$text'");
@@ -170,7 +174,7 @@ sub isHeader {
   my ( $text ) = @_;
 
   # format 'PRVI PROGRAM RTV ZA 7. OKTOBAR 2008. - UTORAK'
-  if( $text =~ /\d+\.\s+(januar|februar|mart|april|maj|jun|juli|august|septembar|oktobar|novembar|decembar)\s+\d+/i ){
+  if( $text =~ /\d+\.\s+(januar|februar|mart|april|maj|jun|jul|juli|august|septembar|oktobar|novembar|decembar)\s+\d+/i ){
     return 1;
   }
 

@@ -32,6 +32,12 @@ use NonameTV::Importer::BaseFile;
 
 use base 'NonameTV::Importer::BaseFile';
 
+use constant {
+  FT_UNKNOWN      => 0,  # unknown
+  FT_XML_HBOADRIA => 1,  # HBOAdria xml file
+  FT_XML_CINEMAX  => 2,  # Cinemax xml file
+};
+
 sub new {
   my $proto = shift;
   my $class = ref($proto) || $proto;
@@ -67,20 +73,62 @@ sub ImportContentFile
 #return if( $channel_xmltvid !~ /hboco/i );
 
   if( $file =~ /\.xml$/i ){
-    $self->ImportXML( $file, $channel_id, $channel_xmltvid );
+    my $ft = CheckFileFormat( $file );
+    if( $ft eq FT_XML_HBOADRIA ){
+      $self->ImportXML_HBOAdria( $file, $chd );
+    } elsif( $ft eq FT_XML_CINEMAX ){
+      $self->ImportXML_Cinemax( $file, $chd );
+    }
   } elsif( $file =~ /\.xls$/i ){
-    #$self->ImportXLS( $file, $channel_id, $channel_xmltvid );
+    #$self->ImportXLS( $file, $chd );
   } elsif( $file =~ /\.html$/i ){
-    #$self->ImportHTML( $file, $channel_id, $channel_xmltvid );
+    #$self->ImportHTML( $file, $chd );
   }
 
   return;
 }
 
+sub CheckFileFormat
+{
+  my( $file ) = @_;
+
+  # Only process .xml files.
+  return if( $file !~ /\.xml$/i );
+
+  # find 'ScheduleData' or 'AdminWebsiteData' blocks
+  # HBO Adria and HBO Comedy come with 'ScheduleData'
+  # Cinemax and Cinemax2 come with 'AdminWebsiteData'
+
+  my $doc;
+  my $xml = XML::LibXML->new;
+  eval { $doc = $xml->parse_file($file); };
+
+  if( not defined( $doc ) ) {
+    error( "HBOAdria: Failed to parse xml file $file" );
+    return FT_UNKNOWN;
+  }
+
+  my $sdbs;
+
+  $sdbs = $doc->findnodes( "//ScheduleData" );
+  if( $sdbs->size() gt 0 ) {
+    progress( "HBOAdria: HBOAdria XML format recognized in $file" );
+    return FT_XML_HBOADRIA;
+  }
+
+  $sdbs = $doc->findnodes( "//AdminWebsiteData" );
+  if( $sdbs->size() gt 0 ) {
+    progress( "HBOAdria: Cinemax XML format recognized in $file" );
+    return FT_XML_CINEMAX;
+  }
+
+  return FT_UNKNOWN;
+}
+
 sub ImportHTML
 {
   my $self = shift;
-  my( $file, $channel_id, $channel_xmltvid ) = @_;
+  my( $file, $chd ) = @_;
 
   my $dsh = $self->{datastorehelper};
   my $ds = $self->{datastore};
@@ -158,11 +206,11 @@ sub ImportHTML
     if ( $content ) {
       $stereo = $content;
 
-      $stereo = 'mono' if( $stereo =~ /MONO/ );
-      $stereo = 'stereo' if( $stereo =~ /STEREO/ );
-      $stereo = 'dolby digital' if( $stereo =~ /DOLBY_5\.1/ );
-      $stereo = 'dolby' if( $stereo =~ /DOLBY/ );
-      $stereo = 'surround' if( $stereo =~ /SURROUND/ );
+      $stereo = 'mono' if( $stereo =~ /MONO/i );
+      $stereo = 'stereo' if( $stereo =~ /STEREO/i );
+      $stereo = 'dolby digital' if( $stereo =~ /DOLBY_5\.1/i );
+      $stereo = 'dolby' if( $stereo =~ /DOLBY/i );
+      $stereo = 'surround' if( $stereo =~ /SURROUND/i );
 
       #progress("HBOAdria: stereo is $stereo");
     }
@@ -267,10 +315,10 @@ sub ImportHTML
 
     if( defined $nowday ){
 
-      progress("HBOAdria: $channel_xmltvid: $start_dt - $title ($stereo,$rating)");
+      progress("HBOAdria: $chd->{xmltvid}: $start_dt - $title ($stereo,$rating)");
 
       my $ce = {
-               channel_id   => $channel_id,
+               channel_id   => $chd->{id},
                title        => $title,
                start_time   => $start_dt->ymd("-") . " " . $start_dt->hms(":"),
                end_time     => $end_dt->ymd("-") . " " . $end_dt->hms(":"),
@@ -295,7 +343,7 @@ sub ImportHTML
 sub ImportXLS
 {
   my $self = shift;
-  my( $file, $channel_id, $channel_xmltvid ) = @_;
+  my( $file, $chd ) = @_;
 
   my $dsh = $self->{datastorehelper};
   my $ds = $self->{datastore};
@@ -304,7 +352,7 @@ sub ImportXLS
   my $date;
   my $currdate = "x";
 
-  progress( "HBOAdria XLS: $channel_xmltvid: Processing XLS $file" );
+  progress( "HBOAdria XLS: $chd->{xmltvid}: Processing XLS $file" );
 
 
   my $oBook = Spreadsheet::ParseExcel::Workbook->Parse( $file );
@@ -317,7 +365,7 @@ sub ImportXLS
   for(my $iSheet=0; $iSheet < $oBook->{SheetCount} ; $iSheet++){
 
     my $oWkS = $oBook->{Worksheet}[$iSheet];
-    progress("HBOAdria XLS: $channel_xmltvid: processing worksheet named '$oWkS->{Name}'");
+    progress("HBOAdria XLS: $chd->{xmltvid}: processing worksheet named '$oWkS->{Name}'");
 
     # browse through rows
     # schedules are starting after that
@@ -354,12 +402,12 @@ sub ImportXLS
             $dsh->EndBatch( 1 );
           }
 
-          my $batch_id = $channel_xmltvid . "_" . $date;
-          $dsh->StartBatch( $batch_id , $channel_id );
+          my $batch_id = $chd->{xmltvid} . "_" . $date;
+          $dsh->StartBatch( $batch_id , $chd->{id} );
           $dsh->StartDate( $date , "06:00" );
           $currdate = $date;
 
-          progress("HBOAdria XLS: $channel_xmltvid: Date is: $date");
+          progress("HBOAdria XLS: $chd->{xmltvid}: Date is: $date");
         }
       }
 
@@ -417,10 +465,10 @@ sub ImportXLS
       next if( ! $oWkC->Value );
       my $actors = $oWkC->Value;
 
-      progress( "HBOAdria XLS: $channel_xmltvid: $time - $origtitle" );
+      progress( "HBOAdria XLS: $chd->{xmltvid}: $time - $origtitle" );
 
       my $ce = {
-        channel_id => $channel_id,
+        channel_id => $chd->{id},
         title => $crotitle || $origtitle,
         subtitle => $origtitle,
         start_time => $time,
@@ -446,42 +494,32 @@ sub ImportXLS
 
 }
 
-sub ImportXML
+sub ImportXML_HBOAdria
 {
   my $self = shift;
-  my( $file, $channel_id, $channel_xmltvid ) = @_;
+  my( $file, $chd ) = @_;
 
   my $dsh = $self->{datastorehelper};
   my $ds = $self->{datastore};
 
-  progress( "HBOAdria: $channel_xmltvid: Processing XML $file" );
+  progress( "HBOAdria: $chd->{xmltvid}: Processing XML $file" );
 
   my $doc;
   my $xml = XML::LibXML->new;
   eval { $doc = $xml->parse_file($file); };
 
   if( not defined( $doc ) ) {
-    error( "HBOAdria: $channel_xmltvid: Failed to parse xml file $file" );
+    error( "HBOAdria: $chd->{xmltvid}: Failed to parse xml file $file" );
     return;
   }
 
-  # find 'ScheduleData' or 'AdminWebsiteData' blocks
-  # HBO Adria and HBO Comedy comes with 'ScheduleData'
-  # Cinemax comes with 'ScheduleData'
-  my $sdbs;
-  progress( "HBOAdria: $channel_xmltvid: Trying format with 'ScheduleDate' blocks" ) ;
-  $sdbs = $doc->findnodes( "//ScheduleData" );
+  # find 'ScheduleData' blocks
+  my $sdbs = $doc->findnodes( "//ScheduleData" );
   if( $sdbs->size() == 0 ) {
-    error( "HBOAdria: $channel_xmltvid: No 'ScheduleData' blocks found" ) ;
-
-    progress( "HBOAdria: $channel_xmltvid: Trying format with 'AdminWebsiteData' blocks" ) ;
-    $sdbs = $doc->findnodes( "//AdminWebsiteData" );
-    if( $sdbs->size() == 0 ) {
-      error( "HBOAdria: $channel_xmltvid: No 'AdminWebsiteData' blocks found" ) ;
-      return;
-    }
+    error( "HBOAdria: $chd->{xmltvid}: No 'ScheduleData' blocks found" ) ;
+    return 0;
   }
-  progress( "HBOAdria: $channel_xmltvid: " . $sdbs->size() . " schedule blocks found" );
+  progress( "HBOAdria: $chd->{xmltvid}: " . $sdbs->size() . " schedule blocks found" );
 
   # browse through ScheduleData nodes
   foreach my $sdb ($sdbs->get_nodelist)
@@ -489,23 +527,13 @@ sub ImportXML
 
     my @ces;
 
-    # find 'vwScheduledTitle' or 'sp_GetFullProgram' events
-    # HBO Adria and HBO Comedy comes with 'vwScheduledTitle'
-    # Cinemax comes with 'sp_GetFullProgram'
-    my $vwsts;
-    progress( "HBOAdria: $channel_xmltvid: Searching for 'vwScheduledTitle' events" ) ;
-    $vwsts = $sdb->findnodes( ".//vwScheduledTitle" );
+    # find 'vwScheduledTitle' events
+    my $vwsts = $sdb->findnodes( ".//vwScheduledTitle" );
     if( $vwsts->size() == 0 ) {
-      error( "HBOAdria: $channel_xmltvid: No 'vwScheduledTitle' events found" ) ;
-
-      progress( "HBOAdria: $channel_xmltvid: Searching for 'sp_GetFullProgram' events" ) ;
-      $vwsts = $sdb->findnodes( ".//sp_GetFullProgram" );
-      if( $vwsts->size() == 0 ) {
-        error( "HBOAdria: $channel_xmltvid: No 'sp_GetFullProgram' events found" ) ;
-        next;
-      }
+      error( "HBOAdria: $chd->{xmltvid}: No 'vwScheduledTitle' events found" ) ;
+      next;
     }
-    progress( "HBOAdria: $channel_xmltvid: " . $vwsts->size() . " events found" );
+    progress( "HBOAdria: $chd->{xmltvid}: " . $vwsts->size() . " events found" );
 
     foreach my $vwst ($vwsts->get_nodelist)
     {
@@ -537,17 +565,13 @@ sub ImportXML
       my $ishighlight = $vwst->findvalue( './/IsHighlight' );
 
       my $mainpromoimage = $vwst->findvalue( './/MainPromoImage' );
-      #my $widethumbnailimage = $vwst->findvalue( './/WideThumbnailImage' );
-      #my $halfpromoimage = $vwst->findvalue( './/HalfPromoImage' );
-      #my $thirdpromoimage = $vwst->findvalue( './/ThirdPromoImage' );
+      my $widethumbnailimage = $vwst->findvalue( './/WideThumbnailImage' );
+      my $halfpromoimage = $vwst->findvalue( './/HalfPromoImage' );
+      my $thirdpromoimage = $vwst->findvalue( './/ThirdPromoImage' );
       my $thumbnailimage = $vwst->findvalue( './/ThumbnailImage' );
-      #my $galleryimage1 = $vwst->findvalue( './/GalleryImage1' );
-      #my $galleryimage2 = $vwst->findvalue( './/GalleryImage2' );
-      #my $galleryimage3 = $vwst->findvalue( './/GalleryImage3' );
-
-      my $imagebig = $vwst->findvalue( './/BigImage' );
-      my $imagenormal = $vwst->findvalue( './/NormalImage' );
-      my $imageicon = $vwst->findvalue( './/IconImage' );
+      my $galleryimage1 = $vwst->findvalue( './/GalleryImage1' );
+      my $galleryimage2 = $vwst->findvalue( './/GalleryImage2' );
+      my $galleryimage3 = $vwst->findvalue( './/GalleryImage3' );
 
       my $schedulingcategory = $vwst->findvalue( './/SchedulingCategory' );
       my $packagetype = $vwst->findvalue( './/PackageType' );
@@ -560,7 +584,7 @@ sub ImportXML
       next if( ! $localtitle );
 
       my $ce = {
-        channel_id => $channel_id,
+        channel_id => $chd->{id},
         title      => norm($localtitle),
         start_time => $time,
       };
@@ -570,8 +594,141 @@ sub ImportXML
       $ce->{directors} = $localdirector if ( $localdirector =~ /\S/ );
       $ce->{actors} = $localcast if ( $localcast =~ /\S/ );
       $ce->{rating} = $localrating if ( $localrating =~ /\S/ );
-#      $ce->{country} = $localcountryorigin if ( $localcountryorigin =~ /\S/ );
-#      $ce->{date} = $productiondate if ( $productiondate =~ /\S/ );
+      #$ce->{country} = $localcountryorigin if ( $localcountryorigin =~ /\S/ );
+      #$ce->{date} = $productiondate if ( $productiondate =~ /\S/ );
+      $ce->{aspect} = "4:3";
+
+      if( $sound =~ /\S/ ) {
+        $ce->{stereo} = 'mono' if( $sound =~ /MONO/i );
+        $ce->{stereo} = 'stereo' if( $sound =~ /STEREO/i );
+        $ce->{stereo} = 'dolby digital' if( $sound =~ /DOLBY_5\.1/i );
+        $ce->{stereo} = 'dolby' if( $sound =~ /DOLBY/i );
+        $ce->{stereo} = 'surround' if( $sound =~ /SURROUND/i );
+      }
+
+      if( $episodenumber gt 0 ){
+        $ce->{episode} = sprintf( ". %d .", $episodenumber - 1 );
+      }
+
+      if( $localgenre1 =~ /\S/ ){
+        my($program_type, $category ) = $ds->LookupCat( "HBOAdria", $localgenre1 );
+        AddCategory( $ce, $program_type, $category );
+      }
+
+      if( $localgenre2 =~ /\S/ ){
+        my($program_type, $category ) = $ds->LookupCat( "HBOAdria", $localgenre2 );
+        AddCategory( $ce, $program_type, $category );
+      }
+
+      $ce->{url_image_main} = $mainpromoimage if ( $mainpromoimage =~ /\S/ );
+      $ce->{url_image_thumbnail} = $thumbnailimage if ( $thumbnailimage =~ /\S/ );
+      $ce->{url_image_icon} = $halfpromoimage if ( $halfpromoimage =~ /\S/ );
+
+      push( @ces , $ce );
+    }
+
+    progress("HBOAdria: $chd->{xmltvid}: Populating database with " . @ces . " events" );
+    FlushData( $dsh, $chd->{id}, $chd->{xmltvid}, @ces );
+  }
+
+  return 1;
+}
+
+sub ImportXML_Cinemax
+{
+  my $self = shift;
+  my( $file, $chd ) = @_;
+
+  my $dsh = $self->{datastorehelper};
+  my $ds = $self->{datastore};
+
+  progress( "HBOAdria: $chd->{xmltvid}: Processing XML $file" );
+
+  my $doc;
+  my $xml = XML::LibXML->new;
+  eval { $doc = $xml->parse_file($file); };
+
+  if( not defined( $doc ) ) {
+    error( "HBOAdria: $chd->{xmltvid}: Failed to parse xml file $file" );
+    return;
+  }
+
+  # find 'AdminWebsiteData' blocks
+  my $sdbs = $doc->findnodes( "//AdminWebsiteData" );
+  if( $sdbs->size() == 0 ) {
+    error( "HBOAdria: $chd->{xmltvid}: No 'AdminWebsiteData' blocks found" ) ;
+    return 0;
+  }
+  progress( "HBOAdria: $chd->{xmltvid}: " . $sdbs->size() . " schedule blocks found" );
+
+  # browse through ScheduleData nodes
+  foreach my $sdb ($sdbs->get_nodelist)
+  {
+
+    my @ces;
+
+    # find 'sp_GetFullProgram' events
+    my $vwsts = $sdb->findnodes( ".//sp_GetFullProgram" );
+    if( $vwsts->size() == 0 ) {
+      error( "HBOAdria: $chd->{xmltvid}: No 'sp_GetFullProgram' events found" ) ;
+      next;
+    }
+    progress( "HBOAdria: $chd->{xmltvid}: " . $vwsts->size() . " events found" );
+
+    foreach my $vwst ($vwsts->get_nodelist)
+    {
+      my $scheduleid  = $vwst->findvalue( './/ScheduleId' );
+      my $countryid  = $vwst->findvalue( './/CountryId' );
+      my $scheduleday = $vwst->findvalue( './/ScheduleDay' );
+      my $starttime = $vwst->findvalue( './/StartTime' );
+      my $ispremiere = $vwst->findvalue( './/IsPremiere' );
+      my $channelid = $vwst->findvalue( './/ChannelId' );
+      my $sound = $vwst->findvalue( './/Sound' );
+      my $runtime = $vwst->findvalue( './/RunTime' );
+      my $edition = $vwst->findvalue( './/Edition' );
+      my $translation = $vwst->findvalue( './/Translation' );
+      my $originaltitle = $vwst->findvalue( './/OriginalTitle' );
+      my $episodenumber = $vwst->findvalue( './/EpisodeNumber' );
+      my $productiondate = $vwst->findvalue( './/ProductionDate' );
+      my $titleid = $vwst->findvalue( './/TitleId' );
+      my $localtitle = $vwst->findvalue( './/LocalTitle' );
+      my $localdirector = $vwst->findvalue( './/LocalDirector' );
+      my $localcast = $vwst->findvalue( './/LocalCast' );
+      my $localgenre1 = $vwst->findvalue( './/LocalGenre1' );
+      my $localgenre2 = $vwst->findvalue( './/LocalGenre2' );
+      my $localcountryorigin = $vwst->findvalue( './/LocalCountryOrigin' );
+      my $localoriginallanguage = $vwst->findvalue( './/LocalOriginalLanguage' );
+      my $locallogline = $vwst->findvalue( './/LocalLogLine' );
+      my $approved = $vwst->findvalue( './/Approved' );
+      my $ishighlight = $vwst->findvalue( './/IsHighlight' );
+
+      my $imagebig = $vwst->findvalue( './/BigImage' );
+      my $imagenormal = $vwst->findvalue( './/NormalImage' );
+      my $imageicon = $vwst->findvalue( './/IconImage' );
+
+      my $islaststarttime = $vwst->findvalue( './/IsLastStartTime' );
+
+      # ChannelId should match the
+      next if( $chd->{grabber_info} ne $channelid );
+
+      my $time = ParseStartTime( $starttime );
+
+      next if( ! $time );
+      next if( ! $localtitle );
+
+      my $ce = {
+        channel_id => $chd->{id},
+        title      => norm($localtitle),
+        start_time => $time,
+      };
+
+      $ce->{subtitle} = $originaltitle if ( $originaltitle =~ /\S/ );
+      $ce->{description} = $locallogline if ( $locallogline =~ /\S/ );
+      $ce->{directors} = $localdirector if ( $localdirector =~ /\S/ );
+      $ce->{actors} = $localcast if ( $localcast =~ /\S/ );
+      #$ce->{rating} = $localrating if ( $localrating =~ /\S/ );
+      #$ce->{country} = $localcountryorigin if ( $localcountryorigin =~ /\S/ );
+      #$ce->{date} = $productiondate if ( $productiondate =~ /\S/ );
       $ce->{aspect} = "4:3";
 
       if( $sound =~ /\S/ ) {
@@ -596,8 +753,6 @@ sub ImportXML
         AddCategory( $ce, $program_type, $category );
       }
 
-      $ce->{url_image_main} = $mainpromoimage if ( $mainpromoimage =~ /\S/ );
-      $ce->{url_image_thumbnail} = $thumbnailimage if ( $thumbnailimage =~ /\S/ );
       $ce->{url_image_main} = $imagebig if ( $imagebig =~ /\S/ );
       $ce->{url_image_thumbnail} = $imagenormal if ( $imagenormal =~ /\S/ );
       $ce->{url_image_icon} = $imageicon if ( $imageicon =~ /\S/ );
@@ -605,8 +760,8 @@ sub ImportXML
       push( @ces , $ce );
     }
 
-    progress("HBOAdria: $channel_xmltvid: Populating database with " . @ces . " events" );
-    FlushData( $dsh, $channel_id, $channel_xmltvid, @ces );
+    progress("HBOAdria: $chd->{xmltvid}: Populating database with " . @ces . " events" );
+    FlushData( $dsh, $chd->{id}, $chd->{xmltvid}, @ces );
   }
 
   return 1;

@@ -174,10 +174,10 @@ sub FlushDayData {
 sub isDate {
   my ( $text ) = @_;
 
-#print ">$text<\n";
+print ">$text<\n";
 
   # format 'jeudi 2 Avril 2009', 'mercredi 1er Avril 2009'
-  if( $text =~ /^(lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche)\s+\d+(er)*\s+(Avril|Mai|Juin)\s+\d+$/i ){
+  if( $text =~ /^(lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche)\s+\d+(er)*\s+(Avril|Mai|Juin|Juillet|Août)\s+\d+$/i ){
     return 1;
   }
 
@@ -189,6 +189,10 @@ sub ParseDate {
 
   # format 'jeudi 2 Avril 2009', 'mercredi 1er Avril 2009'
   my( $dayname, $day, $monthname, $year ) = ( $text =~ /^(\S+)\s+(\d+)\S*\s+(\S+)\s+(\d+)$/ );
+#print "$dayname\n";
+#print "$day\n";
+#print "$monthname\n";
+#print "$year\n";
 
   my $month = MonthNumber( $monthname , 'fr' );
 #print "$month\n";

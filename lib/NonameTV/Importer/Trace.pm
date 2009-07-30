@@ -60,6 +60,8 @@ sub ImportContentFile {
   my $dsh = $self->{datastorehelper};
   my $ds = $self->{datastore};
 
+#return if( $file !~ /AUGUST/ );
+
   if( $file =~ /\.xls$/i ){
     $self->ImportXLS( $file, $channel_id, $channel_xmltvid );
   }
@@ -209,9 +211,17 @@ sub ParseDate
   my( $text ) = @_;
 
   return undef if not $text;
+#print ">$text<\n";
+
+  my( $day, $month, $year );
 
   # Format 'DD/MM/YY'
-  my( $day, $month, $year ) = ( $text =~ /^(\d+)\/(\d+)\/(\d+)$/ );
+  if( $text =~ /^(\d+)\/(\d+)\/(\d+)$/ ){
+    ( $day, $month, $year ) = ( $text =~ /^(\d+)\/(\d+)\/(\d+)$/ );
+  # Format 'MM-DD-YY'
+  } elsif( $text =~ /^(\d+)-(\d+)-(\d+)$/ ){
+    ( $month, $day, $year ) = ( $text =~ /^(\d+)-(\d+)-(\d+)$/ );
+  }
 
   $year += 2000 if $year < 100;
 
@@ -272,14 +282,26 @@ sub UpdateFiles {
       progress("Trace: $xmltvid: Fetching xls file from $url");
       url_get( $url, $self->{FileStore} . '/' .  $xmltvid . '/' . $filename );
 
+      # format: 'TRACE_INTL_EPG_APRIL09.xls'
+      $filename = "TRACE_INTL_EPG_" . uc( $dt->strftime( '%B' ) ) . uc( $dt->strftime( '%g' ) ) . ".xls";
+      $url = $self->{UrlRoot} . "/" . $filename;
+      progress("Trace: $xmltvid: Fetching xls file from $url");
+      url_get( $url, $self->{FileStore} . '/' .  $xmltvid . '/' . $filename );
+
+      # format: 'TRACE_INTL_EPG_APRIL_09.xls'
+      $filename = "TRACE_INTL_EPG_" . uc( $dt->strftime( '%B' ) ) . "_" . uc( $dt->strftime( '%g' ) ) . ".xls";
+      $url = $self->{UrlRoot} . "/" . $filename;
+      progress("Trace: $xmltvid: Fetching xls file from $url");
+      url_get( $url, $self->{FileStore} . '/' .  $xmltvid . '/' . $filename );
+
     }
   }
 }
 
 sub url_get {
   my( $url, $file ) = @_;
-print "URL: $url\n";
-print "FILE: $file\n";
+#print "URL: $url\n";
+#print "FILE: $file\n";
 
   qx[curl -S -s -z "$file" -o "$file" "$url"];
 }

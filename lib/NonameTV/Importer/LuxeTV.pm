@@ -33,7 +33,7 @@ sub new {
   bless ($self, $class);
 
 
-  my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore}, "Europe/London" );
+  my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore}, "Europe/Zagreb" );
   $self->{datastorehelper} = $dsh;
 
   return $self;
@@ -51,6 +51,9 @@ sub ImportContentFile {
   my $ds = $self->{datastore};
 
   return if( $file !~ /\.csv$/i );
+
+#return if( $file !~ /130709/ );
+
   if( $file =~ /FR\.csv$/i ){
     progress( "LuxeTV: $xmltvid: Skipping $file" );
     return;
@@ -156,7 +159,8 @@ sub ImportContentFile {
     }
 
     if( $row->{'Synopsis'} ){
-      $ce->{description} = $row->{'Synopsis'};
+      #$ce->{description} = $row->{'Episode'} . "\n\n" if $row->{'Episode'};
+      $ce->{description} .= $row->{'Synopsis'};
     }
 
     if( $row->{'Genre'} ) {

@@ -78,13 +78,13 @@ sub ImportContentFile {
     # data layout in the sheet:
     # - all data for one month are in one sheet
     # - every day takes 2 columns - odd column = time, even column = title
-    # - 5th row contains day names and dates (in even columns)
-    # - schedules start from 6th row
+    # - 6th row contains day names and dates (in even columns)
+    # - schedules start from 7th row
 
     for(my $iC = 0; defined $oWkS->{MaxCol} && $iC <= $oWkS->{MaxCol} ; $iC+=2) {
 
-      # dateinfo (dayname and date) is in the 5th row
-      $oWkC = $oWkS->{Cells}[4][$iC];
+      # dateinfo (dayname and date) is in the 6th row
+      $oWkC = $oWkS->{Cells}[5][$iC];
       if( $oWkC ){
         $dateinfo = $oWkC->Value;
       }

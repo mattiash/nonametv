@@ -179,6 +179,8 @@ sub ImportContent
       # attributes
       my $attribute = $as->getElementsByTagName( 'attribute' );
 
+      progress("DreiSat: $chd->{xmltvid}: $starttime - $title");
+
       my $ce = {
         channel_id  => $chd->{id},
         start_time  => $starttime->ymd("-") . " " . $starttime->hms(":"),
@@ -237,14 +239,21 @@ sub create_dt
 {
   my $self = shift;
   my( $str ) = @_;
-  
+
   my( $date, $time ) = split( 'T', $str );
   if( not defined $time )
   {
     return undef;
   }
-  my( $year, $month, $day ) = ( $date =~ /(\d{4})\.(\d{2})\.(\d{2})/ );
-  
+
+  my( $year, $month, $day );
+
+  if( $date =~ /(\d{4})\.(\d{2})\.(\d{2})/ ){
+    ( $year, $month, $day ) = ( $date =~ /(\d{4})\.(\d{2})\.(\d{2})/ );
+  } elsif( $date =~ /(\d{2})\.(\d{2})\.(\d{4})/ ){
+    ( $day, $month, $year ) = ( $date =~ /(\d{2})\.(\d{2})\.(\d{4})/ );
+  }
+
   my( $hour, $minute, $second ) = ( $time =~ /(\d{2}):(\d{2}):(\d{2})/ );
   
   if( $second > 59 ) {

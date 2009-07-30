@@ -58,7 +58,8 @@ sub ImportContentFile {
   my $dsh = $self->{datastorehelper};
   my $ds = $self->{datastore};
 
-#return if ( $file !~ /Jetix Feb 2009 \.xls/ );
+#print "FILE: $file\n";
+#return if ( $file !~ /Jetix\.July09/ );
 
   my $ft = CheckFileFormat( $file );
 
@@ -101,8 +102,11 @@ sub CheckFileFormat
   # which can differ from day to day or can
   # contain the schema for the whole period
   my $oWkS = $oBook->{Worksheet}[0];
+  if( $oWkS->{Name} =~ /Highlights/i ){
+    $oWkS = $oBook->{Worksheet}[1];
+  }
   my $oWkC = $oWkS->{Cells}[0][0];
-  if( $oWkC ){
+  if( $oWkC and $oWkC->Value ){
     if( $oWkC->Value =~ /Jetix.*EXCLUDING RUSSIA/ or $oWkC->Value =~ /Jetix Play/ or $oWkC->Value =~ /Hungary/ ){
       return FT_GRIDXLS;
     }
@@ -151,9 +155,8 @@ sub ImportFlatXLS
 
             # the name of the column 'GMT Time'
             # is sometimes '0 Time'
-            if( $oWkS->{Cells}[$iR][$iC]->Value =~ /0 Time/ ){
-              $columns{'GMT Time'} = $iC;
-            }
+            $columns{'GMT Time'} = $iC if( $oWkS->{Cells}[$iR][$iC]->Value =~ /0 Time/ );
+            $columns{'GMT Time'} = $iC if( $oWkS->{Cells}[$iR][$iC]->Value =~ /-1 Time/ );
           }
         }
 #foreach my $cl (%columns) {
@@ -265,6 +268,8 @@ sub ImportGridXLS
   for(my $iSheet=0; $iSheet < $oBook->{SheetCount} ; $iSheet++) {
 
     my $oWkS = $oBook->{Worksheet}[$iSheet];
+    next if( $oWkS->{Name} =~ /Highlights/i );
+
     progress( "Jetix GridXLS: $xmltvid: Processing worksheet: $oWkS->{Name}" );
 
     ( $firstdate, $lastdate ) = ParsePeriod( $oWkS->{Name} );

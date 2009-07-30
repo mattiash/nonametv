@@ -94,7 +94,7 @@ sub ImportContentFile {
 
       if( $date ne $currdate ){
 
-        progress("ZoneRomantica: Date is $date");
+        progress("ZoneRomantica: $xmltvid: Date is $date");
 
         if( $currdate ne "x" ) {
           $dsh->EndBatch( 1 );
@@ -111,25 +111,31 @@ sub ImportContentFile {
       next if( ! $oWkC );
       my $time = $oWkC->Value if( $oWkC->Value );
 
-      # slot - column 'Slot'
-      $oWkC = $oWkS->{Cells}[$iR][$columns{'Slot'}];
-      next if( ! $oWkC );
-      my $slot = $oWkC->Value if( $oWkC->Value );
-
       # title - column 'Title'
       $oWkC = $oWkS->{Cells}[$iR][$columns{'Title'}];
       next if( ! $oWkC );
       my $title = $oWkC->Value if( $oWkC->Value );
 
+      # slot - column 'Slot'
+      my $slot;
+      $oWkC = $oWkS->{Cells}[$iR][$columns{'Slot'}] if $columns{'Slot'};
+      if( $oWkC ){
+        $slot = $oWkC->Value if( $oWkC->Value );
+      }
+
       # episode_title - column 'Episode Title'
-      $oWkC = $oWkS->{Cells}[$iR][$columns{'Episode Title'}];
-      next if( ! $oWkC );
-      my $episode_title = $oWkC->Value if( $oWkC->Value );
+      my $episode_title;
+      $oWkC = $oWkS->{Cells}[$iR][$columns{'Episode Title'}] if $columns{'Episode Title'};
+      if( $oWkC ){
+        $episode_title = $oWkC->Value if( $oWkC->Value );
+      }
 
       # episode_number - column 'Episode number'
-      $oWkC = $oWkS->{Cells}[$iR][$columns{'Episode number'}];
-      next if( ! $oWkC );
-      my $episode_number = $oWkC->Value if( $oWkC->Value );
+      my $episode_number;
+      $oWkC = $oWkS->{Cells}[$iR][$columns{'Episode number'}] if $columns{'Episode number'};
+      if( $oWkC ){
+        $episode_number = $oWkC->Value if( $oWkC->Value );
+      }
 
       progress("ZoneRomantica: $xmltvid: $time - $title");
 

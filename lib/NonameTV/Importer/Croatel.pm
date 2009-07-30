@@ -19,6 +19,7 @@ use utf8;
 
 use DateTime;
 use Spreadsheet::ParseExcel;
+use RTF::Tokenizer;
 
 use NonameTV::DataStore::Helper;
 use NonameTV::Log qw/progress error/;
@@ -45,9 +46,29 @@ sub ImportContentFile {
   my $self = shift;
   my( $file, $chd ) = @_;
 
-  my $showtime = undef;
-  my $title = undef;
-  my $descr  = undef;
+  $self->{fileerror} = 0;
+
+return if ( $file =~ /Croatian/i );
+return if ( $file !~ /EPG/i );
+
+  my $channel_id = $chd->{id};
+  my $channel_xmltvid = $chd->{xmltvid};
+  my $dsh = $self->{datastorehelper};
+  my $ds = $self->{datastore};
+
+  if( $file =~ /\.xls$/i ){
+    $self->ImportXLS( $file, $chd );
+  } elsif( $file =~ /\.rtf$/i ){
+    #$self->ImportRTF( $file, $chd );
+  }
+
+  return;
+}
+
+sub ImportXLS {
+  my $self = shift;
+  my( $file, $chd ) = @_;
+
   my $currdate;
   my $today = DateTime->today();
 
@@ -83,55 +104,61 @@ sub ImportContentFile {
       # skip the days in the past
       my $past = DateTime->compare( $date, $today );
       if( $past < 0 ){
-        progress("Croatel: $chd->{xmltvid}: Skipping date $date");
+        progress("Croatel: $chd->{xmltvid}: Skipping date " . $date->ymd("-") );
         next;
-      } else {
-        progress("Croatel: $chd->{xmltvid}: Processing date $date");
       }
     }
 
-    $dsh->EndBatch( 1 ) if defined $currdate;
+    $dsh->EndBatch( 1 ) if $currdate;
 
     my $batch_id = "${xmltvid}_" . $date->ymd("-");
     $dsh->StartBatch( $batch_id, $channel_id );
     $dsh->StartDate( $date->ymd("-") , "05:00" );
     $currdate = $date;
 
+    progress("Croatel: $chd->{xmltvid}: Processing date " . $date->ymd("-") );
+
     for(my $iR = $oWkS->{MinRow} ; defined $oWkS->{MaxRow} && $iR <= $oWkS->{MaxRow} ; $iR++) {
 
       # the show start time is in row1
       my $oWkC = $oWkS->{Cells}[$iR][1];
-      next if not $oWkC;
-      $showtime = $oWkC->Value;
-      next if ( $showtime !~ /^(\d+)\:(\d+)$/ );
+      next if ( ! $oWkC );
+      next if ( ! $oWkC->Value );
+      my $showtime = $oWkC->Value;
+print "$showtime\n" if $showtime;
+      if ( $showtime =~ /^(\d+):(\d+)$/ ){
+print "1\n";
+      } elsif ( $showtime =~ /^(\d+):(\d+):(\d+)$/ ){
+print "2\n";
+      } else {
+print "3\n";
+        next;
+      }
 
       # the show title is in row2
       $oWkC = $oWkS->{Cells}[$iR][2];
-      next if not $oWkC;
-      $title = $oWkC->Value;
+      next if ( ! $oWkC );
+      next if ( ! $oWkC->Value );
+      my $title = $oWkC->Value;
+print "$title\n";
+      next if ( ! $title );
 
       # the show description is in row3
       $oWkC = $oWkS->{Cells}[$iR][3];
-      if( $oWkC ){
-        $descr = $oWkC->Value;
-      }
+      my $descr = $oWkC->Value if ( $oWkC and $oWkC->Value );
+print "$descr\n" if $descr;
 
-      my $starttime = create_dt( $date , $showtime );
-
-      progress("Croatel: $chd->{xmltvid}: $starttime - $title");
+      progress("Croatel: $chd->{xmltvid}: $showtime - $title");
 
       my $ce = {
         channel_id   => $chd->{id},
-        start_time => $starttime->hms(":"),
-        title => norm($title),
-        description => norm($descr),
+        start_time => $showtime,
+        title => $title,
       };
 
-      $dsh->AddProgramme( $ce );
+      $ce->{description} = $descr if $descr;
 
-      $showtime = undef;
-      $title = undef;
-      $descr = undef;
+      $dsh->AddProgramme( $ce );
 
     } # next row
 
@@ -140,6 +167,74 @@ sub ImportContentFile {
   $dsh->EndBatch( 1 );
 
   return;
+}
+
+sub ImportRTF {
+  my $self = shift;
+  my( $file, $chd ) = @_;
+
+  progress( "OTV: Processing $file" );
+
+  $self->{fileerror} = 0;
+
+  my $xmltvid=$chd->{xmltvid};
+  my $channel_id = $chd->{id};
+  my $dsh = $self->{datastorehelper};
+  my $ds = $self->{datastore};
+
+  my $tokenizer = RTF::Tokenizer->new( file => $file );
+
+  if( not defined( $tokenizer ) ) {
+    error( "OTV $file: Failed to parse" );
+    return;
+  }
+
+  my $text = '';
+  my $textfull = 0;
+  my $date;
+  my $currdate = undef;
+  my $title;
+  my $havedatetime = 0;
+
+  while( my ( $type, $arg, $param ) = $tokenizer->get_token( ) ){
+
+    last if $type eq 'eof';
+
+#print "--------------------------------------------------------------------\n";
+#print "type: $type\n";
+#print "arg: $arg\n";
+#print "param: $param\n";
+#print "--------------------------------------------------------------------\n";
+
+    if( ( $type eq 'control' ) and ( $arg eq 'par' ) ){
+      $textfull = 1;
+    } elsif( ( $type eq 'control' ) and ( $arg eq '\'' ) ){
+
+#      $text .= chr(0x0160) if( $param eq '8a' ); # veliko S
+#      $text .= chr(0x017D) if( $param eq '8e' ); # veliko Z
+#      $text .= chr(0x0161) if( $param eq '9a' ); # malo s
+#      $text .= chr(0x017E) if( $param eq '9e' ); # malo z
+
+#      $text .= chr(0x0106) if( $param eq 'c6' ); # veliko mekano C
+#      $text .= chr(0x010C) if( $param eq 'c8' ); # veliko tvrdo C
+#      $text .= chr(0x0107) if( $param eq 'e6' ); # malo mekano c
+#      $text .= chr(0x010D) if( $param eq 'e8' ); # malo tvrdo c
+#      $text .= chr(0x0110) if( $param eq 'd0' ); # veliko dj
+#      $text .= chr(0x0111) if( $param eq 'f0' ); # malo dj
+
+    } elsif( $type eq 'text' ){
+      if( $arg =~ /^\d\d\:\d\d$/ ){
+        $text = $arg;
+        $textfull = 1;
+      } else {
+        $text .= $arg;
+      }
+    }
+
+    if( $textfull ){
+print "TEXT: $text\n";
+    }
+  }
 }
 
 sub ParseDate
