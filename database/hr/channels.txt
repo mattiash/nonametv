@@ -113,7 +113,7 @@
 160,"XXX Xtreme",xxxxtreme.tv.gonix.net,TEST,Hustler,0,,1,,,,0,
 161,"Body in Balance",bibeurope.tv.gonix.net,TEST,,0,,1,,,,0,http://www.bodyinbalance.tv/
 162,JimJam,jimjam.tv.gonix.net,TEST,,0,,1,,,,0,http://www.it.jimjam.tv/
-163,"FootSchool TV",footschooltv.tv.gonix.net,SPORT,FSTV,0,,1,,,en,0,http://www.footschooltv.com/
+163,"FootSchool TV",footschooltv.tv.gonix.net,SPORT,FSTV,1,,1,,,en,0,http://www.footschooltv.com/
 164,"FREE-X TV",freextv.tv.gonix.net,ADULT,FreeXTV,1,,1,,,,0,http://www.free-xtv.com/
 165,"FREE-X TV2",freextv2.tv.gonix.net,ADULT,FreeXTV,1,,1,,,,0,http://www.free-xtv.com/
 166,"X-Dream TV",xdreamtv.tv.gonix.net,ADULT,FreeXTV,1,,1,,,,0,http://www.inxworld.com/
@@ -124,7 +124,7 @@
 171,"Eurosport 2",eurosport2.tv.gonix.net,SPORT,Eurosport,1,Eurosport2,1,sport,Sports,en,0,http://www.eurosport.com
 172,"Eurosport News",eurosportnews.tv.gonix.net,SPORT,TVGrabXX,1,tv_grab_it;eurosportnews.skytv.it,1,,,,0,
 173,"Eurosport HD",eurosporthd.tv.gonix.net,TEST,,0,,1,,,,0,
-174,"Fashion TV HD",ftvhd.tv.gonix.net,MISC,FTV,1,,1,,,en,0,http://www.ftv.com/
+174,"Fashion TV HD",ftvhd.tv.gonix.net,MISC,FTV,0,,1,,,en,0,http://www.ftv.com/
 175,"Perviy kanal",c1r.tv.gonix.net,MISC,C1R,0,,1,,,,0,
 176,m1,m1hu.tv.gonix.net,MISC,Port,1,n_events_1.xml,1,,,hu,0,http://www.mtv.hu/
 177,m2,m2hu.tv.gonix.net,MISC,Port,1,n_events_2.xml,1,,,hu,0,http://www.mtv.hu/
@@ -220,7 +220,7 @@
 267,"Trace Sports",tracesports.tv.gonix.net,TEST,,0,,1,,,en,0,
 268,"Arirang World",arirangworld.tv.gonix.net,TEST,,0,,1,,,en,0,http://www.arirang.co.kr/
 269,"Dubrovacka Televizija",dutv.tv.gonix.net,TEST,,0,,1,,,hr,0,http://www.dutv.hr/
-270,F-Men,fmen.tv.gonix.net,MISC,FTV,1,,1,,,en,0,http://www.ftv.com/
+270,F-Men,fmen.tv.gonix.net,MISC,FTV,0,,1,,,en,0,http://www.ftv.com/
 271,"Bebe TV HD",bebetvhd.tv.gonix.net,CHILD,BebeTV,0,,1,,,en,0,http://www.bebetv.tv/
 272,"Cakovecka TV",cktv.tv.gonix.net,HRV,Phazer,1,cakovec.hr/weekly_cakovec.hr_tvprofil.net.xml,1,,,hr,0,http://www.cktv.hr/
 273,"RaiSat Cinema",raisatcinema.tv.gonix.net,TEST,TVGrabXX---,0,tv_grab_it;cinema.raisat.it---,1,,,it,0,

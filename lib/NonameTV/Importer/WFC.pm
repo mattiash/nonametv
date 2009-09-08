@@ -63,7 +63,7 @@ sub ImportContentFile {
   my $ft = CheckFileFormat( $file );
 
   if( $ft eq FT_SCHEMAXLS ){
-    $self->ImportSchemaXLS( $file, $channel_id, $xmltvid );
+    #$self->ImportSchemaXLS( $file, $channel_id, $xmltvid );
   } elsif( $ft eq FT_DAILYXLS ){
     $self->ImportDailyXLS( $file, $channel_id, $xmltvid );
   } else {
@@ -84,6 +84,11 @@ sub CheckFileFormat
 
   # check if the file name is in format '18 December 2008.xls'
   if( $file =~ /\/\d+\s+(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d+\.xls$/i ){
+    return FT_DAILYXLS;
+  }
+
+  # check if the file name is in format 'September 01.xls'
+  if( $file =~ /(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d+\.xls$/i ){
     return FT_DAILYXLS;
   }
 
@@ -200,6 +205,9 @@ sub ImportDailyXLS
     progress("WFC DailyXLS: $xmltvid: processing worksheet named '$oWkS->{Name}'");
 
     my $date = ParseDate( $oWkS->{Name} );
+    if( ! $date ){
+      $date = ParseDate( $file );
+    }
     progress("WFC DailyXLS: $xmltvid: Date is: $date");
 
     my $batch_id = $xmltvid . "_" . $date;
@@ -226,6 +234,7 @@ sub ImportDailyXLS
       next if( ! $oWkC );
       next if( ! $oWkC->Value );
       my $time = ParseTime( $oWkC->Value );
+      next if( ! $time );
 
       # column 3 - duration
       $oWkC = $oWkS->{Cells}[$iR][3];
@@ -240,6 +249,8 @@ sub ImportDailyXLS
         title => $title,
         start_time => $time,
       };
+
+      $ce->{title_id} = $progid if $progid;
 
       $dsh->AddProgramme( $ce );
     }
@@ -377,8 +388,28 @@ sub isDate {
 sub ParseDate {
   my( $text ) = @_;
 
+print ">$text<\n";
+
+  my( $day, $monthname, $year );
+
   # format '22 December 2008'
-  my( $day, $monthname, $year ) = ( $text =~ /^(\d+)\s+(\S+)\s+(\d+)$/ );
+  if( $text =~ /^\d+\s+\S+\s+\d+$/ ){
+    ( $day, $monthname, $year ) = ( $text =~ /^(\d+)\s+(\S+)\s+(\d+)$/ );
+print "1\n";
+  # format '/home/gonix/xmltv-data/wfc.tv.gonix.net/06 September 2009.xls'
+  } elsif( $text =~ /^\/.*\/\d+\s+\S+\s+\d+\.xls$/ ){
+    ( $day, $monthname, $year ) = ( $text =~ /^\/.*\/(\d+)\s+(\S+)\s+(\d+)\.xls$/ );
+print "2\n";
+
+  # format '/home/gonix/xmltv-data/wfc.tv.gonix.net/September 01.xls'
+  } elsif( $text =~ /^\/.*\/\S+\s+\d+\.xls$/ ){
+    ( $monthname, $day ) = ( $text =~ /^\/.*\/(\S+)\s+(\d+)\.xls$/ );
+    $year = DateTime->today->year();
+print "3\n";
+
+  } else {
+    return undef;
+  }
 
   $year += 2000 if $year lt 100;
 
@@ -390,8 +421,16 @@ sub ParseDate {
 sub ParseTime {
   my( $text ) = @_;
 
+print "ParseTime >$text<\n";
+
   # format '01:11:39:09'
-  my( $hour, $min, $sec, $frame ) = ( $text =~ /^(\d+):(\d+):(\d+):(\d+)$/ );
+  my( $hour, $min, $sec, $frame );
+
+  if( $text =~ /^\d+:\d+:\d+:\d+$/ ){
+    ( $hour, $min, $sec, $frame ) = ( $text =~ /^(\d+):(\d+):(\d+):(\d+)$/ );
+  } else {
+    return undef;
+  }
 
   return sprintf( '%02d:%02d:%02d', $hour, $min, $sec );
 }

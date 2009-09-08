@@ -589,6 +589,8 @@ sub ImportXML_HBOAdria
         start_time => $time,
       };
 
+      $ce->{schedule_id} = $scheduleid if ( $scheduleid =~ /\S/ );
+      $ce->{title_id} = $titleid if ( $titleid =~ /\S/ );
       $ce->{subtitle} = $originaltitle if ( $originaltitle =~ /\S/ );
       $ce->{description} = $localsynopsis if ( $localsynopsis =~ /\S/ );
       $ce->{directors} = $localdirector if ( $localdirector =~ /\S/ );
