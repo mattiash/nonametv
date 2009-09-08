@@ -82,3 +82,29 @@ programdetails,prgcommentators,Commentators,en
 programdetails,prgcommentators,Komentatori,hr
 programdetails,prgguests,Guests,en
 programdetails,prgguests,Gosti,hr
+listepgservers,name,Name,en
+listepgservers,description,Description,en
+listepgservers,name,Ime,hr
+listepgservers,description,Opis,hr
+listepgservers,title,"EPG servers",en
+listepgservers,title,"EPG serveri",hr
+listnetworks,title,"Networks on server",en
+listnetworks,title,"Mreže na serveru",hr
+listnetworks,name,Name,en
+listnetworks,description,Description,en
+listnetworks,name,Ime,hr
+listnetworks,description,Opis,hr
+listepgservers,active,Active,en
+listepgservers,active,Aktivan,hr
+listnetworks,active,Active,en
+listnetworks,active,Aktivna,hr
+viewepg,title,Title,en
+viewepg,title,Naslov,hr
+viewepg,name,Name,en
+viewepg,name,Ime,hr
+viewepg,description,Description,en
+viewepg,description,Opis,hr
+programdetails,nowon,"Trenutno na",hr
+programdetails,nowon,"Now on",en
+programdetails,starttime,"Vrijeme početka",hr
+programdetails,starttime,"Start time",en

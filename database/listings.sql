@@ -30,6 +30,7 @@ DROP TABLE IF EXISTS `channelgroups`;
 CREATE TABLE `channelgroups` (
   `abr` varchar(24) character set latin1 NOT NULL,
   `display_name` varchar(100) character set latin1 NOT NULL,
+  `position` tinyint(10) unsigned NOT NULL,
   `sortby` varchar(32) NOT NULL,
   `hidden` tinyint(1) NOT NULL default '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -47,33 +48,19 @@ CREATE TABLE `files` (
   PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-DROP TABLE IF EXISTS `jobs`;
-CREATE TABLE `jobs` (
-  `id` int(11) NOT NULL auto_increment,
-  `type` varchar(50) NOT NULL,
-  `name` varchar(50) NOT NULL,
-  `starttime` datetime NOT NULL,
-  `duration` int(11) NOT NULL,
-  `lastok` datetime default NULL,
-  `lastfail` datetime default NULL,
-  `message` text NOT NULL,
-  `success` tinyint(1) NOT NULL,
-  `deleteafter` datetime NOT NULL,
-  PRIMARY KEY  (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
 DROP TABLE IF EXISTS `programs`;
 CREATE TABLE `programs` (
   `category` varchar(100) NOT NULL default '',
   `channel_id` int(11) NOT NULL default '0',
   `start_time` datetime NOT NULL default '0000-00-00 00:00:00',
   `end_time` datetime default '0000-00-00 00:00:00',
+  `program_id` varchar(100) NOT NULL,
   `title` varchar(100) NOT NULL default '',
   `subtitle` mediumtext,
   `description` mediumtext,
   `batch_id` int(11) NOT NULL default '0',
   `program_type` varchar(20) default '',
-  `episode` varchar(30) default NULL,
+  `episode` varchar(20) default NULL,
   `production_date` date default NULL,
   `aspect` enum('unknown','4:3','16:9') NOT NULL default 'unknown',
   `stereo` varchar(40) NOT NULL,

@@ -29,12 +29,18 @@ use NonameTV::Importer::BaseFile;
 
 use base 'NonameTV::Importer::BaseFile';
 
+# File types
+use constant {
+  FT_UNKNOWN  => 0,  # unknown
+  FT_FLATXLS  => 1,  # flat xls file
+  FT_GRIDXLS  => 2,  # xls file with grid
+};
+
 sub new {
   my $proto = shift;
   my $class = ref($proto) || $proto;
   my $self  = $class->SUPER::new( @_ );
   bless ($self, $class);
-
 
   my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore} );
   $self->{datastorehelper} = $dsh;
@@ -53,14 +59,50 @@ sub ImportContentFile {
   my $dsh = $self->{datastorehelper};
   my $ds = $self->{datastore};
 
-  if( $file =~ /\.xls$/i ){
-    $self->ImportXLS( $file, $channel_id, $channel_xmltvid );
+  my $ft = CheckFileFormat( $file );
+
+  if( $ft eq FT_FLATXLS ){
+    $self->ImportFlatXLS( $file, $channel_id, $channel_xmltvid );
+  } elsif( $ft eq FT_GRIDXLS ){
+    $self->ImportGridXLS( $file, $channel_id, $channel_xmltvid );
   }
 
   return;
 }
 
-sub ImportXLS
+sub CheckFileFormat
+{
+  my( $file ) = @_;
+
+  # Only process .xls files.
+  return if( $file !~ /\.xls$/i );
+
+  my $oBook = Spreadsheet::ParseExcel::Workbook->Parse( $file );
+  return FT_UNKNOWN if( ! $oBook );
+
+  # the content of this cell shoul be 'PROGRAM/ EmisiA3n'
+  if( $oBook->{SheetCount} eq 1 ){
+    my $oWkS = $oBook->{Worksheet}[0];
+    my $oWkC = $oWkS->{Cells}[5][7];
+    if( $oWkC ){
+      return FT_FLATXLS if( $oWkC->Value =~ /^PROGRAM\/ Emisión $/ );
+    }
+  }
+
+  # check the content of the cell[0][3]
+  if( $oBook->{SheetCount} gt 1 ){
+    my $oWkS = $oBook->{Worksheet}[1];
+    my $oWkC = $oWkS->{Cells}[0][3];
+    if( $oWkC ){
+      return FT_GRIDXLS if( $oWkC->Value =~ /^NATIONAL GEOGRAPHIC CHANNEL HD$/ );
+    }
+  }
+
+  return FT_UNKNOWN;
+}
+
+
+sub ImportFlatXLS
 {
   my $self = shift;
   my( $file, $channel_id, $channel_xmltvid ) = @_;
@@ -72,20 +114,20 @@ sub ImportXLS
   my $date;
   my $currdate = "x";
 
-  progress( "NGCHD: $channel_xmltvid: Processing $file" );
+  progress( "NGCHD Flat XLS: $channel_xmltvid: Processing $file" );
 
   my( $oBook, $oWkS, $oWkC );
   $oBook = Spreadsheet::ParseExcel::Workbook->Parse( $file );
 
   if( not defined( $oBook ) ) {
-    error( "NGCHD: $file: Failed to parse xls" );
+    error( "NGCHD Flat XLS: $file: Failed to parse xls" );
     return;
   }
 
   for(my $iSheet=0; $iSheet < $oBook->{SheetCount} ; $iSheet++) {
 
     $oWkS = $oBook->{Worksheet}[$iSheet];
-    progress("NGCHD: $channel_xmltvid: processing worksheet named '$oWkS->{Name}'");
+    progress("NGCHD Flat XLS: $channel_xmltvid: processing worksheet named '$oWkS->{Name}'");
 
     # read the rows with data
     for(my $iR = $oWkS->{MinRow} ; defined $oWkS->{MaxRow} && $iR <= $oWkS->{MaxRow} ; $iR++) {
@@ -138,7 +180,7 @@ sub ImportXLS
           $dsh->StartDate( $date , "08:00" );
           $currdate = $date;
 
-          progress("NGCHD: $channel_xmltvid: Date is: $date");
+          progress("NGCHD Flat XLS: $channel_xmltvid: Date is: $date");
         }
 
         next;
@@ -173,7 +215,7 @@ sub ImportXLS
 
       my( $title, $episode ) = ParseShow( $program );
 
-      progress( "NGCHD: $channel_xmltvid: $time - $title" );
+      progress( "NGCHD Flat XLS: $channel_xmltvid: $time - $title" );
 
       my $ce = {
         channel_id => $channel_id,
@@ -195,6 +237,98 @@ sub ImportXLS
     %columns = ();
 
   } # next worksheet
+
+  $dsh->EndBatch( 1 );
+
+  return;
+}
+
+sub ImportGridXLS
+{
+  my $self = shift;
+  my( $file, $channel_id, $channel_xmltvid ) = @_;
+
+  my $dsh = $self->{datastorehelper};
+  my $ds = $self->{datastore};
+
+  my $coltime = 1;
+  my $currdate = "x";
+
+  progress( "NGCHD Grid XLS: $channel_xmltvid: Processing $file" );
+
+  my( $oBook, $oWkS, $oWkC );
+  $oBook = Spreadsheet::ParseExcel::Workbook->Parse( $file );
+
+  if( not defined( $oBook ) ) {
+    error( "NGCHD Grid XLS: $file: Failed to parse xls" );
+    return;
+  }
+
+  for(my $iSheet=0; $iSheet < $oBook->{SheetCount} ; $iSheet++) {
+
+    $oWkS = $oBook->{Worksheet}[$iSheet];
+
+    if( $oWkS->{Name} =~ /^Hoja/ ){
+	progress("NGCHD Grid XLS: $channel_xmltvid: skipping worksheet named '$oWkS->{Name}'");
+	next;
+    }
+
+    progress("NGCHD Grid XLS: $channel_xmltvid: processing worksheet named '$oWkS->{Name}'");
+
+    # read the columns from 4 to 10
+    for(my $iC = 3 ; $iC <= 9 ; $iC++) {
+
+      # get the date from the row 5
+      $oWkC = $oWkS->{Cells}[4][$iC];
+      next if( ! $oWkC );
+      next if( ! $oWkC->Value );
+      my( $month, $day, $year ) = ( $oWkC->Value =~ /^(\d+)-(\d+)-(\d+)$/ );
+      $year += 2000 if $year < 100;
+      my $date = sprintf( "%04d-%02d-%02d", $year, $month, $day );
+
+      if( $date ne $currdate ) {
+        if( $currdate ne "x" ) {
+          $dsh->EndBatch( 1 );
+        }
+
+        my $batch_id = $channel_xmltvid . "_" . $date;
+        $dsh->StartBatch( $batch_id , $channel_id );
+        $dsh->StartDate( $date , "08:00" );
+        $currdate = $date;
+
+        progress("NGCHD Grid XLS: $channel_xmltvid: Date is: $date");
+      }
+
+      # read the rows starting from 6
+      for(my $iR = 5 ; defined $oWkS->{MaxRow} && $iR <= $oWkS->{MaxRow} ; $iR++) {
+
+        # get the title from the current column
+        $oWkC = $oWkS->{Cells}[$iR][$iC];
+        next if( ! $oWkC );
+        next if( ! $oWkC->Value );
+        my $title = $oWkC->Value;
+
+        # get the title from the column $coltime
+        $oWkC = $oWkS->{Cells}[$iR][$coltime];
+        next if( ! $oWkC );
+        next if( ! $oWkC->Value );
+        my $time = $oWkC->Value;
+
+        progress( "NGCHD Grid XLS: $channel_xmltvid: $time - $title" );
+
+        my $ce = {
+          channel_id => $channel_id,
+          title => $title,
+          start_time => $time,
+        };
+
+        $dsh->AddProgramme( $ce );
+
+      } # next row
+
+    } # next column
+
+  } # next sheet
 
   $dsh->EndBatch( 1 );
 

@@ -17,7 +17,7 @@ use utf8;
 use POSIX;
 use DateTime;
 use XML::LibXML;
-#use Text::Capitalize qw/capitalize_title/;
+use Spreadsheet::ParseExcel;
 
 use NonameTV qw/MyGet Wordfile2Xml Htmlfile2Xml norm AddCategory/;
 use NonameTV::DataStore::Helper;
@@ -52,12 +52,30 @@ sub ImportContentFile
   my $dsh = $self->{datastorehelper};
   my $ds = $self->{datastore};
 
-#return if ( $xmltvid !~ /^bebetvhd\./ );
+#return if ( $file !~ /xls$/i );
 
-  if( ( $file !~ /EN_bebe/i ) and $file !~ /\.doc/ ) {
-    progress( "BebeTV: $xmltvid: Skipping unknown file $file" );
-    return;
+  if( $file =~ /\.doc$/i ){
+    $self->ImportDOC( $file, $chd );
+  } elsif( $file =~ /\.xls$/i ){
+    $self->ImportXLS( $file, $chd );
+  } else {
+    error( "BebeTV: $xmltvid: $file: Unknown file format" );
   }
+
+  return;
+}
+
+sub ImportDOC
+{
+  my $self = shift;
+  my( $file, $chd ) = @_;
+
+  my $xmltvid=$chd->{xmltvid};
+  my $channel_id = $chd->{id};
+  my $dsh = $self->{datastorehelper};
+  my $ds = $self->{datastore};
+
+  return if( $file !~ /\.doc$/i );
 
   progress( "BebeTV: $xmltvid: Processing $file" );
   
@@ -65,7 +83,7 @@ sub ImportContentFile
   $doc = Wordfile2Xml( $file );
 
   if( not defined( $doc ) ) {
-    error( "BebeTV $file: Failed to parse" );
+    error( "BebeTV: $xmltvid: $file: Failed to parse" );
     return;
   }
 
@@ -78,7 +96,7 @@ sub ImportContentFile
   # Find all paragraphs.
   my $ns = $doc->find( "//div" );
   if( $ns->size() == 0 ) {
-    error( "BebeTV $file: No divs found." ) ;
+    error( "BebeTV: $xmltvid: $file: No divs found." ) ;
     return;
   }
 
@@ -170,6 +188,102 @@ sub ImportContentFile
   return;
 }
 
+
+sub ImportXLS
+{
+  my $self = shift;
+  my( $file, $chd ) = @_;
+
+  my $xmltvid=$chd->{xmltvid};
+  my $channel_id = $chd->{id};
+  my $dsh = $self->{datastorehelper};
+  my $ds = $self->{datastore};
+
+  return if( $file !~ /\.xls$/i );
+
+  progress( "BebeTV: $xmltvid: Processing $file" );
+
+  my $oBook = Spreadsheet::ParseExcel::Workbook->Parse( $file );
+
+  my $coldate = 0;
+  my $coltime = 1;
+  my $coltitle = 2;
+  my $colsynop = 3;
+
+  # main loop
+  for(my $iSheet=0; $iSheet < $oBook->{SheetCount} ; $iSheet++){
+
+    my $oWkS = $oBook->{Worksheet}[$iSheet];
+    progress( "BebeTV: $xmltvid: Processing worksheet: $oWkS->{Name}" );
+
+    my $date;
+    my $currdate = "x";
+
+    # browse through rows
+    for(my $iR = 2 ; defined $oWkS->{MaxRow} && $iR <= $oWkS->{MaxRow} ; $iR++){
+
+      # date
+      my $oWkC = $oWkS->{Cells}[$iR][$coldate];
+      next if( ! $oWkC );
+      next if( ! $oWkC->Value );
+      $date = ParseDate( $oWkC->Value );
+      next if( ! $date );
+
+      if( $date ne $currdate ) {
+
+        if( $currdate ne "x" ){
+          $dsh->EndBatch( 1 );
+        }
+
+        my $batch_id = "${xmltvid}_" . $date;
+        $dsh->StartBatch( $batch_id, $channel_id );
+        $dsh->StartDate( $date, "00:00" );
+        $currdate = $date;
+
+        progress("BebeTV: $xmltvid: Date is $date");
+      }
+
+      # time
+      $oWkC = $oWkS->{Cells}[$iR][$coltime];
+      next if( ! $oWkC );
+      next if( ! $oWkC->Value );
+      my $time = $oWkC->Value;
+      next if( ! $time );
+
+      # title
+      $oWkC = $oWkS->{Cells}[$iR][$coltitle];
+      next if( ! $oWkC );
+      next if( ! $oWkC->Value );
+      my $title = $oWkC->Value;
+      next if( ! $title );
+
+      # synopsis
+      $oWkC = $oWkS->{Cells}[$iR][$colsynop];
+      next if( ! $oWkC );
+      next if( ! $oWkC->Value );
+      my $synopsis = $oWkC->Value;
+
+      progress("BebeTV: $xmltvid: $time - $title");
+
+      my $ce = {
+        channel_id => $chd->{id},
+        start_time => $time,
+        title => $title,
+      };
+
+      $ce->{description} = $synopsis if $synopsis;
+
+      $dsh->AddProgramme( $ce );
+
+    } # next row
+
+    $dsh->EndBatch( 1 );
+
+  } # next sheet
+
+  return;
+}
+
 sub isDate {
   my( $text ) = @_;
 
@@ -183,7 +297,15 @@ sub isDate {
 sub ParseDate {
   my( $text ) = @_;
 
-  my( $year , $month , $day , $dayname ) = ( $text =~ /(\d{4})\.(\d{2})\.(\d{2})\.*\s+(\S+)/ );
+#print ">$text<\n";
+
+  my( $year , $month , $day , $dayname );
+
+  if( $text =~ /(\d{4})\.(\d{2})\.(\d{2})\.*\s+(\S+)/ ){
+    ( $year , $month , $day , $dayname ) = ( $text =~ /(\d{4})\.(\d{2})\.(\d{2})\.*\s+(\S+)/ );
+  } elsif( $text =~ /^\d+-\d+-\d+$/ ){
+    ( $month , $day , $year ) = ( $text =~ /(\d+)-(\d+)-(\d+)/ );
+  }
   
   $year += 2000 if $year lt 100;
 

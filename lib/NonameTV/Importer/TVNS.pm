@@ -174,7 +174,7 @@ sub isHeader {
   my ( $text ) = @_;
 
   # format 'PRVI PROGRAM RTV ZA 7. OKTOBAR 2008. - UTORAK'
-  if( $text =~ /\d+\.\s+(januar|februar|mart|april|maj|jun|jul|juli|august|septembar|oktobar|novembar|decembar)\s+\d+/i ){
+  if( $text =~ /\d+\.\s+(januar|februar|mart|april|maj|jun|jul|juli|avgust|septembar|oktobar|novembar|decembar)\s+\d+/i ){
     return 1;
   }
 

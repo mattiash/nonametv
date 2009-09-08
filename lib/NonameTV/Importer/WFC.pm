@@ -200,12 +200,11 @@ sub ImportDailyXLS
     progress("WFC DailyXLS: $xmltvid: processing worksheet named '$oWkS->{Name}'");
 
     my $date = ParseDate( $oWkS->{Name} );
+    progress("WFC DailyXLS: $xmltvid: Date is: $date");
 
     my $batch_id = $xmltvid . "_" . $date;
     $dsh->StartBatch( $batch_id , $channel_id );
     $dsh->StartDate( $date , "00:00" );
-
-    progress("WFC DailyXLS: $xmltvid: Date is: $date");
 
     # read the rows with data
     for(my $iR = $oWkS->{MinRow} ; defined $oWkS->{MaxRow} && $iR <= $oWkS->{MaxRow} ; $iR++) {

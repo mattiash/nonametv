@@ -1,11 +1,12 @@
-HRV,"Hrvatski programi",id,0
-SPORT,"Sportski programi",display_name,0
-NEWS,Vijesti,display_name,0
-FILM,"Filmski programi",display_name,0
-MUSIC,"Glazbeni programi",display_name,0
-CHILD,"Programi za djecu",display_name,0
-ADULT,"Programi za odrasle",display_name,0
-DOCS,"Dokumentarni programi",display_name,0
-MISC,"Razni programi",display_name,0
-RADIO,"Radijski kanali",id,0
-TEST,"Testni kanali",id,1
+HRV,"Hrvatski programi",1,id,0
+SPORT,"Sportski programi",3,display_name,0
+NEWS,Vijesti,7,display_name,0
+FILM,"Filmski programi",2,display_name,0
+MUSIC,"Glazbeni programi",4,display_name,0
+CHILD,"Programi za djecu",5,display_name,0
+ADULT,"Programi za odrasle",8,display_name,0
+DOCS,"Dokumentarni programi",6,display_name,0
+MISC,"Razni programi",9,display_name,0
+RADIO,"Radijski kanali",100,id,0
+TEST,"Testni kanali",255,id,1
+HD,"HD programi",10,display_name,1

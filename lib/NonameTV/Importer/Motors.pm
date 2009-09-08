@@ -73,6 +73,9 @@ sub ImportContentFile {
         for(my $iC = $oWkS->{MinCol} ; defined $oWkS->{MaxCol} && $iC <= $oWkS->{MaxCol} ; $iC++) {
           $columns{$oWkS->{Cells}[$iR][$iC]->Value} = $iC;
         }
+#foreach my $col (%columns) {
+#print ">$col<\n";
+#}
         next;
       }
 
@@ -144,10 +147,15 @@ sub ParseDate {
   if( $text =~ /\S+\s+\d\d\s\S+\s+\d\d\d\d/ ){
 
     my( $dayname, $day, $monthname, $year ) = ( $text =~ /(\S+)\s+(\d\d)\s(\S+)\s+(\d\d\d\d)/ );
+#print "$dayname\n";
+#print "$day\n";
+#print "$monthname\n";
+#print "$year\n";
 
     $year += 2000 if $year lt 100;
 
     my $month = MonthNumber( $monthname, 'fr' );
+#print "$month\n";
 
     my $date = sprintf( "%04d-%02d-%02d", $year, $month, $day );
     return $date;

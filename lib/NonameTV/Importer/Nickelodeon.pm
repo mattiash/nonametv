@@ -30,6 +30,14 @@ use NonameTV::Importer::BaseFile;
 
 use base 'NonameTV::Importer::BaseFile';
 
+# File types
+use constant {
+  FT_UNKNOWN  => 0,  # unknown
+  FT_XLS1     => 1,  # flat xls file
+  FT_XLS2     => 2,  # flat xls file
+  FT_XML      => 3,  # xml file
+};
+
 sub new {
   my $proto = shift;
   my $class = ref($proto) || $proto;
@@ -53,19 +61,53 @@ sub ImportContentFile {
   my $dsh = $self->{datastorehelper};
   my $ds = $self->{datastore};
 
-  if( $file =~ /\.xml$/i ){
-    #$self->ImportXML( $file, $channel_id, $channel_xmltvid );
-  } elsif( $file =~ /\.xls$/i ){
-    $self->ImportXLS( $file, $channel_id, $channel_xmltvid );
+  my $ff = CheckFileFormat( $file );
+
+  if( $ff eq FT_XML ){
+    $self->ImportXML( $file, $chd );
+  } elsif( $ff eq FT_XLS1 ){
+    $self->ImportXLS1( $file, $chd );
+  } elsif( $ff eq FT_XLS2 ){
+    $self->ImportXLS2( $file, $chd );
+  } else {
+    error( "Nickelodeon: Unknown file format: $file" );
   }
 
   return;
 }
 
+sub CheckFileFormat
+{
+  my( $file ) = @_;
+
+  # XML file
+  return FT_XML if( $file =~ /\.xml$/i );
+
+  # XLS
+  return FT_UNKNOWN if( $file !~ /\.xls$/i );
+
+  my $oBook = Spreadsheet::ParseExcel::Workbook->Parse( $file );
+  return FT_UNKNOWN if( ! $oBook );
+
+  # if the content of the cell[2][3] is 'NICKELODEON EURO'
+  # and the content of the cell[6][1] is 'CET'
+  my $oWkS = $oBook->{Worksheet}[0];
+  my $oWkC = $oWkS->{Cells}[2][3];
+  if( $oWkC->Value =~ /NICKELODEON EURO/ ){
+    $oWkC = $oWkS->{Cells}[6][1];
+    if( $oWkC->Value =~ /CET/ ){
+      return FT_XLS2;
+    }
+  }
+
+  return FT_XLS1;
+}
+
+
 sub ImportXML
 {
   my $self = shift;
-  my( $file, $channel_id, $channel_xmltvid ) = @_;
+  my( $file, $chd ) = @_;
 
   my $dsh = $self->{datastorehelper};
   my $ds = $self->{datastore};
@@ -82,11 +124,13 @@ sub ImportXML
   return;
 }
 
-sub ImportXLS
+sub ImportXLS1
 {
   my $self = shift;
-  my( $file, $channel_id, $channel_xmltvid ) = @_;
+  my( $file, $chd ) = @_;
 
+  my $channel_id = $chd->{id};
+  my $channel_xmltvid = $chd->{xmltvid};
   my $dsh = $self->{datastorehelper};
   my $ds = $self->{datastore};
 
@@ -108,10 +152,10 @@ sub ImportXLS
 
     $oWkS = $oBook->{Worksheet}[$iSheet];
 
-    if( $oWkS->{Name} !~ /Schedule Template/ ){
-      progress("Nickelodeon XLS: $channel_xmltvid: skipping worksheet named '$oWkS->{Name}'");
-      next;
-    }
+    #if( $oWkS->{Name} !~ /xxxxxxxxxx/ ){
+    #  progress("Nickelodeon XLS: $channel_xmltvid: skipping worksheet named '$oWkS->{Name}'");
+    #  next;
+    #}
 
     progress("Nickelodeon XLS: $channel_xmltvid: processing worksheet named '$oWkS->{Name}'");
 
@@ -232,6 +276,39 @@ print "$cl\n";
   $dsh->EndBatch( 1 );
 
   return;
+}
+
+sub ImportXLS2
+{
+  my $self = shift;
+  my( $file, $chd ) = @_;
+
+  my $channel_id = $chd->{id};
+  my $channel_xmltvid = $chd->{xmltvid};
+  my $dsh = $self->{datastorehelper};
+  my $ds = $self->{datastore};
+
+  my $date;
+  my $currdate = "x";
+
+  progress( "Nickelodeon XLS2: $channel_xmltvid: Processing XLS $file" );
+
+  my( $oBook, $oWkS, $oWkC );
+  $oBook = Spreadsheet::ParseExcel::Workbook->Parse( $file );
+
+  if( not defined( $oBook ) ) {
+    error( "Nickelodeon XLS2: $file: Failed to parse xls" );
+    return;
+  }
+
+  for(my $iSheet=0; $iSheet < $oBook->{SheetCount} ; $iSheet++) {
+
+    $oWkS = $oBook->{Worksheet}[$iSheet];
+
+    progress("Nickelodeon XLS: $channel_xmltvid: processing worksheet named '$oWkS->{Name}'");
+
+  }
+
 }
 
 sub ParseDate {

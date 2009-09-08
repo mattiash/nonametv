@@ -3,6 +3,22 @@ Bleb,leisure,Entertainment,
 Bleb,news,News,
 Bleb,show,Misc,
 Bleb,social,Documentary,
+Bnet_category,"dokumentarni prog.",Documentary,
+Bnet_category,"dokumentrarni prog.",Documentary,
+Bnet_category,drama,Drama,
+Bnet_category,glazba,Music,
+Bnet_category,"glazbena drama",Music,
+Bnet_category,horor,Horror,
+Bnet_category,"horror, drama",Horror,
+Bnet_category,komedija,Comedy,
+Bnet_category,"komedija, krimi.",Comedy,
+Bnet_category,"krimi drama",Drama,
+Bnet_category,triler,Crime_Mystery,
+Bnet_category,"triler drama",Crime_Mystery,
+Bnet_category,"western komedija",Western,
+Bnet_type,film,,movie
+Bnet_type,serija,,series
+CMusic,music,Music,
 DreiSat,serie,,series
 DreiSat,spielfilm,,movie
 DreiSat_category,kinderinformation,Children,
@@ -37,6 +53,17 @@ GTVZadar,"putopisna emisija",Documentary,
 GTVZadar,serija,,series
 GTVZadar,"tv magazine",Misc,
 GTVZadar,"zabavna emisija",Misc,
+Hallmark,act,Action,
+Hallmark,adv,Adventure,
+Hallmark,bio,Biography,
+Hallmark,com,Comedy,
+Hallmark,cri,Crime_Mystery,
+Hallmark,dra,Drama,
+Hallmark,fan,Fantasy,
+Hallmark,mys,Mystery,
+Hallmark,rom,Romance,
+Hallmark,sci,SciFi_Fantasy,
+Hallmark,thr,Thriller,
 HBOAdria,"akcija,",Action,
 HBOAdria,"akcija,akcija",Action,
 HBOAdria,"akcija,animirani",Action,
@@ -47,30 +74,42 @@ HBOAdria,"akcija,pustolovni",Action,
 HBOAdria,"akcija,romantika",Romance,
 HBOAdria,"akcija,triler",Action,
 HBOAdria,"akcija,znanstvena fantastika",SciFi,
+HBOAdria,animirani,,cartoon
 HBOAdria,"animirani,",Children,cartoon
 HBOAdria,"animirani,drama",Cartoon,
 HBOAdria,"animirani,komedija",Comedy,
 HBOAdria,"animirani,obiteljski",Children,cartoon
 HBOAdria,"animirani,pustolovni",Children,cartoon
 HBOAdria,"biografija,sport",Drama,
+HBOAdria,dokumentarac,Documentary,
+HBOAdria,"dokumentarac,",Documentary,
+HBOAdria,"dokumentarac,biografija",Documentary,
+HBOAdria,drama,Drama,
 HBOAdria,"drama,",Drama,
 HBOAdria,"drama,akcija",Drama,
+HBOAdria,"drama,dokumentarac",Drama,
 HBOAdria,"drama,komedija",Drama,
 HBOAdria,"drama,kriminalistièki",Drama,
 HBOAdria,"drama,obiteljski",Drama,
 HBOAdria,"drama,romantika",Drama,
+HBOAdria,"drama,sport",Drama,
 HBOAdria,"drama,triler",Drama,
 HBOAdria,"drama,vojna drama",Drama,
 HBOAdria,"fantastika,pustolovni",Fantasy,
+HBOAdria,glazbeni,Music,
+HBOAdria,horor,Horror,
 HBOAdria,"horor,",Horror,
+HBOAdria,"horor,akcija",Horror,
 HBOAdria,"horor,drama",Horror,
 HBOAdria,"horor,komedija",Horror,
 HBOAdria,"horor,triler",Horror,
+HBOAdria,komedija,Comedy,
 HBOAdria,"komedija,",Comedy,movie
 HBOAdria,"komedija,akcija",Comedy,movie
 HBOAdria,"komedija,dokumentarac",Comedy,movie
 HBOAdria,"komedija,drama",Comedy,
 HBOAdria,"komedija,fantastika",Comedy,movie
+HBOAdria,"komedija,glazbeni",Comedy,
 HBOAdria,"komedija,kriminalistièki",Comedy,
 HBOAdria,"komedija,obiteljski",Comedy,
 HBOAdria,"komedija,pustolovni",Comedy,
@@ -88,8 +127,13 @@ HBOAdria,"pustolovni,",Adventure,movie
 HBOAdria,"pustolovni,drama",Action,
 HBOAdria,"pustolovni,komedija",Action,
 HBOAdria,"pustolovni,obiteljski",Action,
+HBOAdria,romantika,Romance,
+HBOAdria,"romantika,fantastika",Romance,
 HBOAdria,"romantika,komedija",Romance,
+HBOAdria,sport,Sports,
+HBOAdria,triler,Crime,
 HBOAdria,"triler,",Crime,
+HBOAdria,"triler,akcija",Action,
 HBOAdria,"triler,drama",Crime,
 HBOAdria,"triler,kriminalistièki",Crime,
 HBOAdria,"triler,pustolovni",Crime,
@@ -98,9 +142,11 @@ HBOAdria,"vojna drama,drama",Drama,
 HBOAdria,"znanstvena fantastika,akcija",SciFi,
 HBOAdria,"znanstvena fantastika,komedija",SciFi,
 HBOAdria,"znanstvena fantastika,pustolovni",SciFi,
+HBOAdria,"znanstvena fantastika,triler",SciFi,
 HRT,Vijesti,News,
 Hustler,magazine,Magazine,tvshow
 Hustler,movie,,movie
+Jetix,kids,Children,
 NetTV,"animirani film",Children,cartoon
 NetTV,"animirani fim",Children,cartoon
 NetTV,"crtani film",Children,cartoon
@@ -131,6 +177,11 @@ NovaTV,"reality show",Reality,
 NovaTV,serija,,series
 NovaTV,"serijski film",,series
 NovaTV,"showbiz magazin",Misc,
+NovaTV_genre,drama,Drama,
+NovaTV_genre,"dramska serija",Drama,
+NovaTV_type,film,,movie
+NovaTV_type,"informativni program",,magazine
+NovaTV_type,serija,,series
 OTV,serija,,series
 OTV,"snimka utakmice",Sport,
 Phazer,akcija,Action,
@@ -325,6 +376,10 @@ STVOsijek,"serijski film",,series
 Tiji,"dessin animé",,cartoon
 Tiji,documentaire,Documentary,
 Tiji,série,,series
+TV5Monde,cinéma,,movie
+TV5Monde,"cinéma animation",,cartoon
+TV5Monde,documentaire,Documentary,
+TV5Monde,fiction,SciFi,
 Viasat_category,miniseries,Drama,series
 Viasat_category,movie,,movie
 Viasat_category,"news/current affairs",News,

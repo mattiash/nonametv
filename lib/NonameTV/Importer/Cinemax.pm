@@ -18,6 +18,7 @@ use DateTime;
 use HTML::TableExtract;
 use HTML::Parse;
 use HTML::FormatText;
+use Encode qw/decode encode/;
 
 use NonameTV qw/MyGet norm/;
 use NonameTV::DataStore::Helper;
@@ -137,6 +138,8 @@ sub ImportHTML
     next if( ! $col );
     my $title = $col;
 
+    eval{ $title = decode( "iso-8859-2", $title ); };
+
     #
     # column 3: length
     #
@@ -184,7 +187,7 @@ sub UpdateFiles {
   my( $self ) = @_;
 
   # the url to fetch data from
-  # is in the format http://www.cinemax-tv.com/WebServices/DownloadSchedule.aspx?CountryId=ENG&Year=2008&Month=11&ChannelId=CMAX
+  # is in the format http://www.cinemax-tv.com/WebServices/DownloadSchedule.aspx?CountryId=CRO&Year=2008&Month=11&ChannelId=CMAX
   # UrlRoot = http://www.cinemax-tv.com/WebServices/DownloadSchedule.aspx
   # GrabberInfo = CMAX or CMAX2
 
@@ -201,7 +204,7 @@ sub UpdateFiles {
 
       my $filename = "Cinemax" . sprintf( "%04d%02d", $dt->year, $dt->month ) . ".html";
 
-      my $url = $self->{UrlRoot} . "/?CountryId=ENG&Year=" . $dt->year . "&Month=" . $dt->month . "&ChannelId=" . $data->{grabber_info};
+      my $url = $self->{UrlRoot} . "/?CountryId=CRO&Year=" . $dt->year . "&Month=" . $dt->month . "&ChannelId=" . $data->{grabber_info};
       progress("Cinemax: Fetching html file from $url");
 
       url_get( $url, $self->{FileStore} . '/' .  $xmltvid . '/' . $filename );

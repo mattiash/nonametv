@@ -636,8 +636,8 @@ sub MonthNumber {
     @months_5 = qw/siječnja veljace ozujka travnja svibnja lipnja srpnja kolovoza rujna listopada studenog prosinca/;
   } elsif( $lang =~ /^sr$/ ){
     @months_1 = qw/jan feb mar apr maj jun jul aug sep okt nov dec/;
-    @months_2 = qw/januar februar mart april maj jun juli august septembar oktobar novembar decembar/;
-    @months_3 = qw/januara februara marta aprila maja juna jula augusta septembra oktobra novembra decembra/;
+    @months_2 = qw/januar februar mart april maj jun juli avgust septembar oktobar novembar decembar/;
+    @months_3 = qw/januara februara marta aprila maja juna jula avgusta septembra oktobra novembra decembra/;
     @months_4 = qw/1 2 3 4 5 6 7 8 9 10 11 12/;
     @months_5 = qw/1 2 3 4 5 6 7 8 9 10 11 12/;
   } elsif( $lang =~ /^it$/ ){
@@ -649,11 +649,12 @@ sub MonthNumber {
   } elsif( $lang =~ /^fr$/ ){
     @months_1 = qw/jan fav mar avr mai jui jul aou sep oct nov dec/;
     @months_2 = qw/JANVIER FÉVRIER mars avril mai juin juillet Août septembre octobre novembre DÉCEMBRE/;
-    @months_3 = qw/janvier favrier mMARS AVRIL MAI JUIN juillet aout septembre octobre novembre DÉCEMBRE/;
+    @months_3 = qw/janvier favrier mMARS AVRIL MAI JUIN juillet AOÛT septembre octobre novembre DÉCEMBRE/;
     @months_4 = qw/1 2 3 4 5 6 7 8 9 10 11 12/;
     @months_5 = qw/1 2 3 4 5 6 7 8 9 10 11 12/;
   } elsif( $lang =~ /^ru$/ ){
-    @months_1 = qw/jan fav mar aprelja maja jui jul aou sep oct nov dec/;
+    @months_1 = qw/jan fav mar aprelja maja jui jul aou
+ sep oct nov dec/;
     @months_2 = qw/JANVIER FÉVRIER mars avril mai juin juillet aout septembre octobre novembre DÉCEMBRE/;
     @months_3 = qw/janvier favrier mars avril mai juin juillet aout septembre octobre novembre DÉCEMBRE/;
     @months_4 = qw/1 2 3 4 5 6 7 8 9 10 11 12/;
