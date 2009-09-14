@@ -20,6 +20,7 @@ use utf8;
 use DateTime;
 use Spreadsheet::ParseExcel;
 use RTF::Tokenizer;
+use DateTime::Format::Excel;
 
 use NonameTV::DataStore::Helper;
 use NonameTV::Log qw/progress error/;
@@ -124,14 +125,33 @@ sub ImportXLS {
       my $oWkC = $oWkS->{Cells}[$iR][1];
       next if ( ! $oWkC );
       next if ( ! $oWkC->Value );
-      my $showtime = $oWkC->Value;
-print "$showtime\n" if $showtime;
-      if ( $showtime =~ /^(\d+):(\d+)$/ ){
-print "1\n";
-      } elsif ( $showtime =~ /^(\d+):(\d+):(\d+)$/ ){
-print "2\n";
+      my $celltime = $oWkC->Value;
+      my $time;
+
+      if ( $celltime =~ /^(\d+):(\d+)$/ ){
+
+        my( $hours, $minutes ) = ( $celltime =~ /^(\d+):(\d+)$/ );
+        $time = sprintf( '%02d:%02d', $hours, $minutes );
+
+      } elsif ( $celltime =~ /^(\d+):(\d+):(\d+)$/ ){
+
+        my( $hours, $minutes, $seconds ) = ( $celltime =~ /^(\d+):(\d+):(\d+)$/ );
+        $time = sprintf( '%02d:%02d:%02d', $hours, $minutes, $seconds );
+
+      } elsif ( $celltime =~ /^\d+/ ){
+
+
+	my $secs = 86400 * $celltime;
+        $secs = int($secs);
+
+        my $hours = int( $secs / 3600 );
+        my $minutes = int( ( $secs - ( $hours * 3600 ) ) / 60 );
+        my $seconds = $secs - ( $hours * 3600 ) - $minutes * 60;
+
+        $time = sprintf( '%02d:%02d:%02d', $hours, $minutes, $seconds );
+
       } else {
-print "3\n";
+        error("Croatel: $chd->{xmltvid}: Incorrect time format: $celltime");
         next;
       }
 
@@ -140,19 +160,17 @@ print "3\n";
       next if ( ! $oWkC );
       next if ( ! $oWkC->Value );
       my $title = $oWkC->Value;
-print "$title\n";
       next if ( ! $title );
 
       # the show description is in row3
       $oWkC = $oWkS->{Cells}[$iR][3];
       my $descr = $oWkC->Value if ( $oWkC and $oWkC->Value );
-print "$descr\n" if $descr;
 
-      progress("Croatel: $chd->{xmltvid}: $showtime - $title");
+      progress("Croatel: $chd->{xmltvid}: $time - $title");
 
       my $ce = {
         channel_id   => $chd->{id},
-        start_time => $showtime,
+        start_time => $time,
         title => $title,
       };
 

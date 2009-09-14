@@ -19,6 +19,9 @@ use utf8;
 use POSIX;
 use DateTime;
 use Encode;
+use Spreadsheet::ParseExcel;
+use DateTime::Format::Excel;
+
 
 use NonameTV qw/MyGet Wordfile2Xml Htmlfile2Xml norm AddCategory/;
 use NonameTV::DataStore::Helper;
@@ -52,10 +55,29 @@ sub ImportContentFile
   my $channel_id = $chd->{id};
   my $dsh = $self->{datastorehelper};
   my $ds = $self->{datastore};
+
+  if( $file =~ /\.txt$/i ){
+    $self->ImportXML( $file, $chd );
+  } elsif( $file =~ /\.xls$/i ){
+    $self->ImportXLS( $file, $chd );
+  }
+
+  return;
+}
+
+sub ImportTXT
+{
+  my $self = shift;
+  my( $file, $chd ) = @_;
+
+  my $xmltvid = $chd->{xmltvid};
+  my $channel_id = $chd->{id};
+  my $dsh = $self->{datastorehelper};
+  my $ds = $self->{datastore};
   
   return if( $file !~ /\.txt$/i );
 
-  progress( "MTVAdria: $xmltvid: Processing $file" );
+  progress( "MTVAdria TXT: $xmltvid: Processing $file" );
   
   open(TXTFILE, $file);
   my @lines = <TXTFILE>;
@@ -75,7 +97,7 @@ sub ImportContentFile
 
       if( $date ) {
 
-        progress("MTVAdria: $xmltvid: Date is $date");
+        progress("MTVAdria TXT: $xmltvid: Date is $date");
 
         if( $date ne $currdate ) {
 
@@ -102,7 +124,7 @@ sub ImportContentFile
       next if not $time;
       next if not $title;
 
-      progress("MTVAdria: $xmltvid: $time - $title");
+      progress("MTVAdria TXT: $xmltvid: $time - $title");
 
       my $ce = {
         channel_id => $chd->{id},
@@ -124,11 +146,124 @@ sub ImportContentFile
   return;
 }
 
+sub ImportXLS
+{
+  my $self = shift;
+  my( $file, $chd ) = @_;
+
+  my $xmltvid = $chd->{xmltvid};
+  my $channel_id = $chd->{id};
+  my $dsh = $self->{datastorehelper};
+  my $ds = $self->{datastore};
+
+  return if( $file !~ /\.xls$/i );
+
+  progress( "MTVAdria XLS: $xmltvid: Processing $file" );
+
+  my $coltime = 0;
+  my $date;
+  my $currdate = "x";
+
+  my $oBook = Spreadsheet::ParseExcel::Workbook->Parse( $file );
+  if( not defined( $oBook ) ) {
+    error( "MTVAdria XLS: $file: Failed to parse xls" );
+    return;
+  }
+
+  for(my $iSheet=0; $iSheet < $oBook->{SheetCount} ; $iSheet++) {
+
+    my $oWkS = $oBook->{Worksheet}[$iSheet];
+    progress("MTVAdria XLS: $xmltvid: processing worksheet named '$oWkS->{Name}'");
+
+    # read the columns
+    for(my $iC = 1 ; $iC <= 7 ; $iC++) {
+
+      for(my $iR = $oWkS->{MinRow} ; defined $oWkS->{MaxRow} && $iR <= $oWkS->{MaxRow} ; $iR++) {
+
+        my $title;
+        my $episode;
+        my $time;
+
+        my $oWkC = $oWkS->{Cells}[$iR][$iC];
+        next if( ! $oWkC );
+        next if( ! $oWkC->Value );
+
+        if( isDate( $oWkC->Value ) ){
+
+          $date = ParseDate( $oWkC->Value );
+
+          if( $date ne $currdate ) {
+
+            if( $currdate ne "x" ){
+              $dsh->EndBatch( 1 );
+            }
+
+            my $batch_id = "${xmltvid}_" . $date;
+            $dsh->StartBatch( $batch_id, $channel_id );
+            $dsh->StartDate( $date , "06:00" );
+            $currdate = $date;
+
+            progress("MTVAdria TXT: $xmltvid: Date is $date");
+          }
+
+        } else {
+
+          if( $oWkC->Value =~ /^#\d+$/ ){
+            ( $episode ) = ( $oWkC->Value =~ /^#(\d+)$/ );
+          } else {
+            $title = $oWkC->Value;
+
+            # check the $coltime column
+            my $toWkC = $oWkS->{Cells}[$iR][$coltime];
+            if( ! $toWkC or ! $toWkC->Value ){
+              for(my $tiR = $iR ; $tiR >= 0 ; $tiR--) {
+                $toWkC = $oWkS->{Cells}[$tiR][$coltime];
+                if( $toWkC and $toWkC->Value ){
+                  $time = ParseTime( $toWkC->Value );
+                  last;
+                }
+              }
+            } else {
+              $time = ParseTime( $toWkC->Value );
+            }
+          }
+
+        }
+
+        next if( ! $time );
+        next if( ! $title );
+
+        progress("MTVAdria XLS: $xmltvid: $time - $title");
+
+        my $ce = {
+          channel_id => $chd->{id},
+          start_time => $time,
+          title => norm($title),
+        };
+
+        $dsh->AddProgramme( $ce );
+
+      } # next row
+
+    } # next column
+  } # next sheet
+
+  $dsh->EndBatch( 1 );
+
+  return;
+}
+
 sub isDate {
   my ( $text ) = @_;
 
+#print "$text\n";
+
   # format '2008-06-26 Thursday'
   if( $text =~ /^\s*\d+-\d+-\d+\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\s*$/i ){
+    return 1;
+
+  # format '40081'
+  } elsif( $text =~ /^\d{5}$/i ){
     return 1;
   }
 
@@ -138,11 +273,33 @@ sub isDate {
 sub ParseDate {
   my( $text ) = @_;
 
-  my( $year, $month, $day, $dayname ) = ( $text =~ /^\s*(\d+)-(\d+)-(\d+)\s+(\S+)\s*$/ );
+  my( $year, $month, $day, $dayname );
 
-  $year += 2000 if $year lt 2000;
+  if( $text =~ /^\s*\d+-\d+-\d+\s+\S+\s*$/ ){
+    ( $year, $month, $day, $dayname ) = ( $text =~ /^\s*(\d+)-(\d+)-(\d+)\s+(\S+)\s*$/ );
+    $year += 2000 if $year lt 2000;
+  } elsif( $text =~ /^\d{5}$/ ){
+    my $dt = DateTime::Format::Excel->parse_datetime( $text );
+    $year = $dt->year;
+    $month = $dt->month;
+    $day = $dt->day;
+  }
 
   return sprintf( '%d-%02d-%02d', $year, $month, $day );
+}
+
+sub ParseTime {
+  my( $text ) = @_;
+
+  my( $hour, $min );
+
+  if( $text =~ /^\d{4}$/ ){
+    ( $hour, $min ) = ( $text =~ /^(\d{2})(\d{2})$/ );
+  } else {
+    return undef;
+  }
+
+  return sprintf( '%02d:%02d', $hour, $min );
 }
 
 sub isShow {
