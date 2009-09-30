@@ -18,6 +18,7 @@ use POSIX;
 use DateTime;
 use XML::LibXML;
 use Spreadsheet::ParseExcel;
+use DateTime::Format::Excel;
 
 use NonameTV qw/MyGet Wordfile2Xml Htmlfile2Xml norm AddCategory/;
 use NonameTV::DataStore::Helper;
@@ -305,6 +306,11 @@ sub ParseDate {
     ( $year , $month , $day , $dayname ) = ( $text =~ /(\d{4})\.(\d{2})\.(\d{2})\.*\s+(\S+)/ );
   } elsif( $text =~ /^\d+-\d+-\d+$/ ){
     ( $month , $day , $year ) = ( $text =~ /(\d+)-(\d+)-(\d+)/ );
+  } elsif( $text =~ /^\d+$/ ){
+    my $dt = DateTime::Format::Excel->parse_datetime( $text );
+    $year = $dt->year;
+    $month = $dt->month;
+    $day = $dt->day;
   }
   
   $year += 2000 if $year lt 100;
