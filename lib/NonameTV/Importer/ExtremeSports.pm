@@ -5,7 +5,7 @@ use warnings;
 
 =pod
 
-Import data from Excel files delivered via e-mail.
+Import data from Excel files delivered via e-mail or fetched from web.
 
 Features:
 
@@ -19,6 +19,7 @@ use File::Temp qw/tempfile/;
 
 use NonameTV qw/norm AddCategory/;
 use NonameTV::Log qw/progress error/;
+use NonameTV::Config qw/ReadConfig/;
 
 use NonameTV::Importer::BaseFile;
 
@@ -30,6 +31,14 @@ sub new {
   my $self  = $class->SUPER::new( @_ );
   bless ($self, $class);
 
+  defined( $self->{UrlRoot} ) or die "You must specify UrlRoot";
+
+  $self->{MinMonths} = 1 unless defined $self->{MinMonths};
+  $self->{MaxMonths} = 12 unless defined $self->{MaxMonths};
+
+  my $conf = ReadConfig();
+
+  $self->{FileStore} = $conf->{FileStore};
 
   return $self;
 }
@@ -190,6 +199,46 @@ sub create_dt_addduration
 
   return $dt;
 }
+
+sub UpdateFiles {
+  my( $self ) = @_;
+
+  # get current month name
+  my $year = DateTime->today->strftime( '%g' );
+
+  # the url to fetch data from
+  # is in the format http://newsroom.zonemedia.net/Files/Schedules/EXPE1109L01.xls
+  # UrlRoot = http://newsroom.zonemedia.net/Files/Schedules/
+  # GrabberInfo = <empty>
+
+  foreach my $data ( @{$self->ListChannels()} ) {
+
+    my $xmltvid = $data->{xmltvid};
+
+    my $today = DateTime->today;
+
+    # do it for MaxMonths in advance
+    for(my $month=0; $month <= $self->{MaxMonths} ; $month++) {
+
+      my $dt = $today->clone->add( months => $month );
+
+      for( my $v=1; $v<=3; $v++ ){
+        my $filename = sprintf( "EXPE%02d%02dL%02d.xls", $dt->month, $dt->strftime( '%y' ), $v );
+        my $url = $self->{UrlRoot} . "/" . $filename;
+        progress("ZoneReality: $xmltvid: Fetching xls file from $url");
+        http_get( $url, $self->{FileStore} . '/' . $xmltvid . '/' . $filename );
+      }
+
+    }
+  }
+}
+
+sub http_get {
+  my( $url, $file ) = @_;
+
+  qx[curl -s -S -z "$file" -o "$file" "$url"];
+}
+
 
 1;
 

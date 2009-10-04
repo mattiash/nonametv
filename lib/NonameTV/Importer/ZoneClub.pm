@@ -21,6 +21,7 @@ use File::Temp qw/tempfile/;
 use NonameTV qw/norm AddCategory/;
 use NonameTV::DataStore::Helper;
 use NonameTV::Log qw/progress error/;
+use NonameTV::Config qw/ReadConfig/;
 
 use NonameTV::Importer::BaseFile;
 
@@ -32,6 +33,14 @@ sub new {
   my $self  = $class->SUPER::new( @_ );
   bless ($self, $class);
 
+  defined( $self->{UrlRoot} ) or die "You must specify UrlRoot";
+
+  $self->{MinMonths} = 1 unless defined $self->{MinMonths};
+  $self->{MaxMonths} = 12 unless defined $self->{MaxMonths};
+
+  my $conf = ReadConfig();
+
+  $self->{FileStore} = $conf->{FileStore};
 
   my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore} );
   $self->{datastorehelper} = $dsh;
@@ -65,10 +74,6 @@ sub ImportContentFile {
 
     my $oWkS = $oBook->{Worksheet}[$iSheet];
 
-    if( $oWkS->{Name} !~ /^English$/i ){
-      progress( "ZoneClub: $chd->{xmltvid}: Skipping worksheet: $oWkS->{Name}" );
-      next;
-    }
     progress( "ZoneClub: $chd->{xmltvid}: Processing worksheet: $oWkS->{Name}" );
 
     # browse through rows
@@ -89,8 +94,8 @@ sub ImportContentFile {
 
       my $oWkC;
 
-      # date - column 'date'
-      $oWkC = $oWkS->{Cells}[$iR][$columns{'schedule_date'}];
+      # date
+      $oWkC = $oWkS->{Cells}[$iR][$columns{'Schedule Date'}];
       next if( ! $oWkC );
 
       $date = ParseDate( $oWkC->Value );
@@ -98,7 +103,7 @@ sub ImportContentFile {
 
       if( $date ne $currdate ){
 
-        progress("ZoneClub: Date is $date");
+        progress("ZoneClub: $xmltvid: Date is $date");
 
         if( $currdate ne "x" ) {
           $dsh->EndBatch( 1 );
@@ -106,39 +111,31 @@ sub ImportContentFile {
 
         my $batch_id = $xmltvid . "_" . $date;
         $dsh->StartBatch( $batch_id , $channel_id );
-        $dsh->StartDate( $date , "00:00" );
+        $dsh->StartDate( $date , "06:00" );
         $currdate = $date;
       }
 
-      # time - column 'start_time'
-      $oWkC = $oWkS->{Cells}[$iR][$columns{'start_time'}];
+      # time
+      $oWkC = $oWkS->{Cells}[$iR][$columns{'Actual Start Time'}];
       next if( ! $oWkC );
       my $time = $oWkC->Value if( $oWkC->Value );
 
-      # duration - column 'duration'
-      $oWkC = $oWkS->{Cells}[$iR][$columns{'duration'}];
-      next if( ! $oWkC );
-      my $duration = $oWkC->Value if( $oWkC->Value );
-
-      # title - column 'event_title'
-      $oWkC = $oWkS->{Cells}[$iR][$columns{'event_title'}];
+      # title
+      $oWkC = $oWkS->{Cells}[$iR][$columns{'Slot Name'}];
       next if( ! $oWkC );
       my $title = $oWkC->Value if( $oWkC->Value );
 
-      # rating - column 'Rating'
-      $oWkC = $oWkS->{Cells}[$iR][$columns{'Rating'}];
-      next if( ! $oWkC );
-      my $rating = $oWkC->Value if( $oWkC->Value );
+      # episode_number
+      my $episode_number;
+      $oWkC = $oWkS->{Cells}[$iR][$columns{'Episode No.'}] if $columns{'Episode No.'};
+      if( $oWkC ){
+        $episode_number = $oWkC->Value if( $oWkC->Value );
+      }
 
-      # episode_number - column 'ep Number'
-      $oWkC = $oWkS->{Cells}[$iR][$columns{'ep Number'}];
+      # synopsis
+      $oWkC = $oWkS->{Cells}[$iR][$columns{'EPG Title Synopsis'}];
       next if( ! $oWkC );
-      my $episode_number = $oWkC->Value if( $oWkC->Value );
-
-      # description - column 'event_short_description'
-      $oWkC = $oWkS->{Cells}[$iR][$columns{'event_short_description'}];
-      next if( ! $oWkC );
-      my $description = $oWkC->Value if( $oWkC->Value );
+      my $synopsis = $oWkC->Value if( $oWkC->Value );
 
       progress("ZoneClub: $xmltvid: $time - $title");
 
@@ -148,13 +145,12 @@ sub ImportContentFile {
         title => norm($title),
       };
 
-      $ce->{subtitle} = "Duration: $duration" if $duration;
-      $ce->{description} = $description if $description;
-
-      if( $episode_number )
+      if( $episode_number > 0 )
       {
         $ce->{episode} = sprintf( ". %d .", $episode_number-1 );
       }
+
+      $ce->{description} = $synopsis if $synopsis;
 
       $dsh->AddProgramme( $ce );
     }
@@ -174,13 +170,57 @@ sub ParseDate
 
 #print ">$dinfo<\n";
 
-  my( $month, $day, $year ) = ( $dinfo =~ /(\d+)-(\d+)-(\d+)/ );
+  my( $day, $month, $year );
+
+  # format 10-31-09
+  if( $dinfo =~ /^\d+-\d+-\d+$/ ){
+    ( $month, $day, $year ) = ( $dinfo =~ /^(\d+)-(\d+)-(\d+)$/ );
+  }
 
   return undef if( ! $year );
 
   $year += 2000 if $year < 100;
 
   return sprintf( "%04d-%02d-%02d", $year, $month, $day );
+}
+
+sub UpdateFiles {
+  my( $self ) = @_;
+
+  # get current month name
+  my $year = DateTime->today->strftime( '%g' );
+
+  # the url to fetch data from
+  # is in the format http://newsroom.zonemedia.net/Files/Schedules/CLPE1009L01.xls
+  # UrlRoot = http://newsroom.zonemedia.net/Files/Schedules/
+  # GrabberInfo = <empty>
+
+  foreach my $data ( @{$self->ListChannels()} ) {
+
+    my $xmltvid = $data->{xmltvid};
+
+    my $today = DateTime->today;
+
+    # do it for MaxMonths in advance
+    for(my $month=0; $month <= $self->{MaxMonths} ; $month++) {
+
+      my $dt = $today->clone->add( months => $month );
+
+      for( my $v=1; $v<=3; $v++ ){
+        my $filename = sprintf( "CLPE%02d%02dL%02d.xls", $dt->month, $dt->strftime( '%y' ), $v );
+        my $url = $self->{UrlRoot} . "/" . $filename;
+        progress("ZoneClub: $xmltvid: Fetching xls file from $url");
+        http_get( $url, $self->{FileStore} . '/' . $xmltvid . '/' . $filename );
+      }
+
+    }
+  }
+}
+
+sub http_get {
+  my( $url, $file ) = @_;
+
+  qx[curl -s -S -z "$file" -o "$file" "$url"];
 }
 
 1;

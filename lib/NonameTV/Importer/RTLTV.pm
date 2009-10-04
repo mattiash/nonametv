@@ -96,7 +96,7 @@ sub ImportContent
 
   # clean some characters from xml that can not be parsed
   my $xmldata = $$cref;
-  $xmldata =~ s/\&amp\;bdquo\;/\"/;
+  $xmldata =~ s/&amp;bdquo;/\"/;
   $xmldata =~ s/&bdquo;//;
   $xmldata =~ s/&nbsp;//;
   $xmldata =~ s/&scaron;//;
