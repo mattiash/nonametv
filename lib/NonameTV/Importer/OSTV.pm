@@ -32,6 +32,8 @@ use base 'NonameTV::Importer::BaseFile';
 
 my $lastday;
 
+my @weekdays = qw/ponedjeljak utorak srijeda ČETVRTAK petak subota nedjelja/;
+
 sub new {
   my $proto = shift;
   my $class = ref($proto) || $proto;
@@ -63,6 +65,10 @@ sub ImportContentFile
 
   progress( "OSTV: $xmltvid: Processing $file" );
 
+  my( $startdate, $enddate ) = ParsePeriod( $file );
+print "SDATE $startdate\n";
+print "EDATE $enddate\n";
+
   my $doc;
   $doc = Wordfile2Xml( $file );
 
@@ -85,10 +91,10 @@ sub ImportContentFile
     return;
   }
 
-  my $currdate = "x";
   my $date = undef;
-  my @ces;
-  my $description;
+  my @ces = {};
+  my @weekces;
+  my $weekday;
 
   foreach my $div ($ns->get_nodelist) {
 
@@ -98,35 +104,26 @@ sub ImportContentFile
 
     if( isDate( $text ) ) { # the line with the date in format 'Friday 1st August 2008'
 
-      $date = ParseDate( $text, $file );
+      if( @ces ){
+        @weekces[$weekday] = [ @ces ];
+        @ces = {};
+      }
 
-      if( $date ) {
-
-        progress("OSTV: $xmltvid: Date is $date");
-
-        if( $date ne $currdate ) {
-
-          if( $currdate ne "x" ){
-            $dsh->EndBatch( 1 );
-          }
-
-          my $batch_id = "${xmltvid}_" . $date;
-          $dsh->StartBatch( $batch_id, $channel_id );
-          $dsh->StartDate( $date , "00:00" ); 
-          $currdate = $date;
+      for( $weekday = 0 ; $weekday < scalar(@weekdays) ; $weekday++ ){
+        if( $text =~ /$weekdays[$weekday]/i ){
+          last;
         }
       }
 
-      # empty last day array
-      undef @ces;
-      undef $description;
+      progress("OSTV: $xmltvid: Skupljam programe za dan $weekdays[$weekday]");
+
+      # initialize day and week array
+      @weekces[$weekday] = {};
 
     } elsif( isShow( $text ) ) {
 
       my( $time, $title, $genre, $episode ) = ParseShow( $text );
       #$title = decode( "iso-8859-2" , $title );
-
-      progress("OSTV: $xmltvid: $time - $title");
 
       my $ce = {
         channel_id => $chd->{id},
@@ -143,16 +140,97 @@ sub ImportContentFile
         $ce->{episode} = sprintf( ". %d .", $episode-1 );
       }
 
-      $dsh->AddProgramme( $ce );
+      push( @ces , $ce );
 
     } else {
         # skip
     }
   }
 
-  $dsh->EndBatch( 1 );
-    
+  @weekces[$weekday] = [ @ces ];
+  @ces = {};
+
+  $self->FlushData( $chd, $startdate, $enddate, @weekces );
+
   return;
+}
+
+sub FlushData {
+  my $self = shift;
+  my( $chd, $sdt, $edt, @weekces ) = @_;
+
+  my $xmltvid = $chd->{xmltvid};
+  my $channel_id = $chd->{id};
+  my $dsh = $self->{datastorehelper};
+
+  my $currdate = "x";
+
+  for( my $dt = $sdt ; $dt <= $edt ; $dt->add( days => 1 ) ){
+
+    if( $dt ne $currdate ) {
+
+      if( $currdate ne "x" ){
+        $dsh->EndBatch( 1 );
+      }
+
+      my $batch_id = "${xmltvid}_" . $dt->ymd();
+      $dsh->StartBatch( $batch_id, $channel_id );
+      $dsh->StartDate( $dt->ymd("-") , "00:00" ); 
+      $currdate = $dt->clone;
+
+      progress("OSTV: $xmltvid: Date is " . $dt->ymd("-") . " (" . $dt->day_name . ")" );
+    }
+
+    my $weekday = $dt->day_of_week - 1;
+    progress("OSTV: $xmltvid: " . $dt->day_name . " - " . $weekday );
+
+    next if not $weekces[$weekday];
+
+    foreach my $ce ( @{$weekces[$weekday]} ) {
+
+      next if not $ce;
+      next if not $ce->{title};
+      next if ( $ce->{start_time} !~ /^\d+:\d+$/ );
+
+      progress("OSTV: $xmltvid: $ce->{start_time} - $ce->{title}");
+      $dsh->AddProgramme( $ce );
+    }
+
+  }
+
+  $dsh->EndBatch( 1 );
+}
+
+sub ParsePeriod {
+  my ( $filename ) = @_;
+
+  my( $sday, $smon, $syear );
+  my( $eday, $emon, $eyear );
+
+  # format: 'TV RASPORED  12.10.2009  -  31.05.2010..doc'
+  if( $filename =~ /\d+\.\d+\.\d+\s*-\s*\d+\.\d+\.\d+/ ){
+    ( $sday, $smon, $syear, $eday, $emon, $eyear ) = ( $filename =~ /(\d+)\.(\d+)\.(\d+)\s*-\s*(\d+)\.(\d+)\.(\d+)/ );
+  }
+
+  my $sdt = DateTime->new( year   => $syear,
+                           month  => $smon,
+                           day    => $sday,
+                           hour   => 0,
+                           minute => 0,
+                           second => 0,
+                           time_zone => 'Europe/Zagreb',
+  );
+
+  my $edt = DateTime->new( year   => $eyear,
+                           month  => $emon,
+                           day    => $eday,
+                           hour   => 0,
+                           minute => 0,
+                           second => 0,
+                           time_zone => 'Europe/Zagreb',
+  );
+
+  return( $sdt, $edt );
 }
 
 sub isDate {

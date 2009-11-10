@@ -65,7 +65,7 @@ sub ImportContentFile
   my $self = shift;
   my( $file, $chd ) = @_;
 
-#return if( $chd->{xmltvid} !~ /disceur\.tv\.gonix\.net/ );
+#return if( $chd->{xmltvid} !~ /ngwildeu\.tv\.gonix\.net/ );
 
   defined( $chd->{sched_lang} ) or die "You must specify the language used for this channel (sched_lang)";
   if( $chd->{sched_lang} !~ /^en$/ and $chd->{sched_lang} !~ /^se$/ and $chd->{sched_lang} !~ /^hr$/ ){

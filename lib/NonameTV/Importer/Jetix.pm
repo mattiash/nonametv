@@ -59,7 +59,7 @@ sub ImportContentFile {
   my $ds = $self->{datastore};
 
 #print "FILE: $file\n";
-#return if ( $file !~ /Jetix\.July09/ );
+return if ( $file !~ /Disney/ );
 
   my $ft = CheckFileFormat( $file );
 
@@ -106,8 +106,11 @@ sub CheckFileFormat
     $oWkS = $oBook->{Worksheet}[1];
   }
   my $oWkC = $oWkS->{Cells}[0][0];
+print $oWkC->Value . "\n";
   if( $oWkC and $oWkC->Value ){
     if( $oWkC->Value =~ /Jetix.*EXCLUDING RUSSIA/ or $oWkC->Value =~ /Jetix Play/ or $oWkC->Value =~ /Hungary/ ){
+      return FT_GRIDXLS;
+    } elsif( $oWkC->Value =~ /Disney XD/i or $oWkC->Value =~ /Jetix/i ){
       return FT_GRIDXLS;
     }
   }
@@ -285,7 +288,7 @@ sub ImportGridXLS
     # browse through columns
     for(my $iC = $firstcol ; $iC <= $lastcol ; $iC++) {
 
-#print "kolona $iC dayno $dayno\n";
+print "kolona $iC dayno $dayno\n";
 
       # browse through rows
       # start at row firstrow

@@ -193,6 +193,11 @@ sub ImportFull
         $stereo = "stereo";
       }
 
+      my $quality;
+      if( $subinfo =~ /Dieses Programm wurde in HD produziert/ ){
+        $quality = "HDTV";
+      }
+
      $title =~ s/stereo.*$//i;
      $title =~ s/16:9.*$//i;
 
@@ -214,6 +219,7 @@ sub ImportFull
       $ce->{directors} = $directors if $directors;
       $ce->{actors} = $actors if $actors;
       $ce->{aspect} = $aspect if $aspect;
+      $ce->{quality} = $quality if $quality;
       $ce->{stereo} = $stereo if $stereo;
 
       $dsh->AddProgramme( $ce );

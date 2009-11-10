@@ -616,6 +616,11 @@ sub WriteEntry
     $d->{video} = { aspect => $data->{aspect} };
   }
 
+  if( $data->{quality} )
+  {
+    $d->{video} = { quality => $data->{quality} };
+  }
+
   if( $data->{stereo} =~ /\S/ )
   {
     $d->{audio} = { stereo => $data->{stereo} };

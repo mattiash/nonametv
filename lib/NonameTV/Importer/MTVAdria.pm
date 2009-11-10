@@ -57,7 +57,7 @@ sub ImportContentFile
   my $ds = $self->{datastore};
 
   if( $file =~ /\.txt$/i ){
-    $self->ImportXML( $file, $chd );
+    $self->ImportTXT( $file, $chd );
   } elsif( $file =~ /\.xls$/i ){
     $self->ImportXLS( $file, $chd );
   }
