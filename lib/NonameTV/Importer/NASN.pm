@@ -110,10 +110,10 @@ sub ImportContent {
   foreach my $text (@paragraphs) {
     # It should be possible to ignore these strings with a better
     # FilterContent, because they look slightly different in the html.
-    next if $text =~/^All times in (BST)|(GMT)/i;
+    next if $text =~/^All times in (BST)|(GMT)|(CET)/i;
     next if $text =~/^Subtitling now available on programs produced by ESPN Networks/i;
 
-    if( $text =~ /^\d+.\d\d\s*[ap]m$/ ) {
+    if( $text =~ /^\d+.\d\d\s*[ap]m$/ or $text =~ /^(\d+)\:(\d+)$/ ) {
       $dsh->AddProgramme( $ce ) if( defined( $ce ) );
 
       $ce = { start_time => ParseTime( $text ) };
@@ -142,13 +142,18 @@ sub ImportContent {
 sub ParseTime {
   my( $text ) = @_;
 
-  my( $hour, $minute, $m ) = ($text =~ /^(\d+)\.(\d{2})([ap]m)$/);
+  my( $hour, $minute, $m );
 
-  if( ($m eq "am") and ($hour == 12) ) {
-    $hour = 0;
-  }
-  elsif( ($m eq "pm") and ($hour != 12) ) {
-    $hour += 12;
+  if( $text =~ /^\d+\.\d{2}[ap]m$/ ){
+    ( $hour, $minute, $m ) = ($text =~ /^(\d+)\.(\d{2})([ap]m)$/);
+    if( ($m eq "am") and ($hour == 12) ) {
+      $hour = 0;
+    }
+    elsif( ($m eq "pm") and ($hour != 12) ) {
+      $hour += 12;
+    }
+  } elsif( $text =~ /^\d+\:\d+$/ ){
+    ( $hour, $minute ) = ($text =~ /^(\d+)\:(\d+)$/ );
   }
 
   return "$hour:$minute";
