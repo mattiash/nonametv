@@ -230,6 +230,8 @@ sub ImportFlatXLS
         #$ce->{episode} = sprintf( ". %d .", $episode-1 );
       #}
 
+      $ce->{quality} = 'HDTV';
+
       $dsh->AddProgramme( $ce );
 
     } # next row

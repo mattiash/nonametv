@@ -123,6 +123,8 @@ sub ImportContentFile {
         title => $title,
       };
 
+      $ce->{quality} = "HDTV";
+
       push( @ces, $ce );
 
     }

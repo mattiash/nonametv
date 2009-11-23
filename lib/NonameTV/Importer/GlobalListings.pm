@@ -232,7 +232,11 @@ sub ImportFull
       else
       {
 	extract_extra_info( $ce );
+
         progress("GlobalListings: $channel_xmltvid: $start - $title");
+
+        $ce->{quality} = 'HDTV' if( $channel_xmltvid =~ /hd\./ );
+
 	$dsh->AddProgramme( $ce );
 	$ce = {};
 	$state = ST_FDATE;

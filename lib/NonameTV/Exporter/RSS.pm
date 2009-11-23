@@ -14,13 +14,13 @@ use NonameTV::Exporter;
 use NonameTV::Language qw/LoadLanguage/;
 use NonameTV qw/norm/;
 
-use NonameTV::Log qw/progress error/;
+use NonameTV::Log qw/progress error d p w StartLogSection EndLogSection SetVerbosity/;
 
 use base 'NonameTV::Exporter';
 
 =pod
 
-Export data in xmltv format.
+Export data in RSS format.
 
 Options:
 
@@ -98,7 +98,7 @@ sub Export
   if( $p->{'help'} )
   {
     print << 'EOH';
-Export data in xmltv-format with one file per day and channel.
+Export data in RSS with one file per day and channel.
 
 Options:
 
@@ -121,7 +121,9 @@ EOH
     return;
   }
 
-  NonameTV::Log::SetVerbosity( $p->{verbose}, $p->{quiet} );
+  SetVerbosity( $p->{verbose}, $p->{quiet} );
+
+  StartLogSection( "RSS", 0 );
 
   if( $p->{'export-nowongroup'} )
   {
@@ -155,6 +157,8 @@ EOH
   $self->ExportData( $todo );
 
   $self->WriteState( $update_started );
+
+  EndLogSection( "RSS" );
 }
 
 

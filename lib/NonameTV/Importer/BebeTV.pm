@@ -179,6 +179,10 @@ sub ImportDOC
 
       }
 
+      if( $chd->{xmltvid} =~ /bebetvhd/ ){
+        $ce->{quality} = "HDTV";
+      }
+
       $dsh->AddProgramme( $ce );
 
     }
@@ -273,6 +277,10 @@ sub ImportXLS
       };
 
       $ce->{description} = $synopsis if $synopsis;
+
+      if( $chd->{xmltvid} =~ /bebetvhd/ ){
+        $ce->{quality} = "HDTV";
+      }
 
       $dsh->AddProgramme( $ce );
 

@@ -129,16 +129,18 @@ EOH
 
   SetVerbosity( $p->{verbose}, $p->{quiet} );
 
+  StartLogSection( "Conax", 0 );
+
   if( $p->{'export-networks'} )
   {
     $self->ExportNetworks( $epgserver );
-    return;
+    #return;
   }
 
   if( $p->{'remove-old'} )
   {
     $self->RemoveOld();
-    return;
+    #return;
   }
 
   my $exportedlist = $p->{'exportedlist'};
@@ -180,7 +182,7 @@ EOH
         my( $sres, $ssth ) = $ds->sa->Sql( $squery );
         while( my $sdata = $ssth->fetchrow_hashref() )
         {
-          progress("Conax: Exporting service $ndata->{id}/$tdata->{id}/$sdata->{serviceid} - $sdata->{servicename}");
+          #progress("Conax: Exporting service $ndata->{id}/$tdata->{id}/$sdata->{serviceid} - $sdata->{servicename}");
           $self->ExportData( $edata, $ndata, $tdata, $sdata, $todo );
         }
       }
@@ -188,6 +190,8 @@ EOH
   }
 
   $self->WriteState( $update_started );
+
+  EndLogSection( "Conax" );
 }
 
 
@@ -556,7 +560,7 @@ sub CreateWriter
   my $path = $self->{Root} . "/" . $edata->{name};
   my $filename = sprintf( "EPG%d_NET%d_TS%d_SID%d_%s.xml", $edata->{id}, $ndata->{nid}, $tdata->{tsid}, $sdata->{serviceid}, $date );
 
-  progress( "Conax: $filename" );
+  #progress( "Conax: $filename" );
 
   $self->{writer_path} = $path;
   $self->{writer_filename} = $filename;
@@ -596,12 +600,12 @@ sub CloseWriter
 
   my $docstring = $w->toString( 1 );
 
-  open( my $fh, '>', $path . "/" . $filename );
+  open( my $fh, '>', $path . "/" . $filename . ".new" );
   binmode $fh;
   print $fh $docstring;
   close( $fh );
 
-  progress("Conax: Service schedule exported to $filename");
+  #progress("Conax: Service schedule exported to $filename");
 
   if( -f "$path/$filename" )
   {
@@ -616,12 +620,6 @@ sub CloseWriter
       }
       elsif( $self->{writer_entries} > 0 )
       {
-#        my @errors = ValidateFile( "$path/$filename" );
-#        if( scalar( @errors ) > 0 )
-#        {
-#          error( "Conax: $filename contains errors: " . 
-#                 join( ", ", @errors ) );
-#        }
       }
     }
     else
@@ -639,12 +637,6 @@ sub CloseWriter
     }
     elsif( $self->{writer_entries} > 0 )
     {
-#      my @errors = ValidateFile( "$path/$filename" );
-#      if( scalar( @errors ) > 0 )
-#      {
-#        error( "Conax: $filename contains errors: " . 
-#               join( ", ", @errors ) );
-#      }
     }
   }
 
