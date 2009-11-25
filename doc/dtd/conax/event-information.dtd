@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--DTD for Event Information - produced by Conax AS-->
+<!-- The root element <event-information> -->
+<!ELEMENT event-information (service+)>
+<!ATTLIST event-information
+	operator CDATA #IMPLIED
+	utc-offset (0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12) "0"
+	utc-polarity (POSITIVE | NEGATIVE) "POSITIVE"
+>
+<!-- Section describing the service element -->
+<!ELEMENT service (event+)>
+<!ATTLIST service
+	service-name CDATA #REQUIRED
+>
+<!-- Section describing the event element-->
+<!ELEMENT event (short-event-descriptor+, extended-event-descriptor*, parental-rating-descriptor*, content-descriptor?, component-descriptor*)>
+<!ATTLIST event
+	event-id CDATA #REQUIRED
+	start-time CDATA #REQUIRED
+	duration CDATA #REQUIRED
+	free-ca-mode (true | false) "false"
+>
+<!-- Section describing the short-event-descriptor element -->
+<!ELEMENT short-event-descriptor (event-name, short-description)>
+<!ATTLIST short-event-descriptor
+	language-code CDATA #REQUIRED
+>
+<!ELEMENT event-name (#PCDATA)>
+<!ELEMENT short-description (#PCDATA)>
+<!-- Section describing the extended event descriptor -->
+<!ELEMENT extended-event-descriptor (extended-description, items*)>
+<!ATTLIST extended-event-descriptor
+	language-code CDATA #REQUIRED
+>
+<!ELEMENT extended-description (#PCDATA)>
+<!-- The items will contain what is defined in EN 300 468 as item description and item text -->
+<!ELEMENT items EMPTY>
+<!ATTLIST items
+	item-description CDATA #IMPLIED
+	item-text CDATA #IMPLIED
+>
+<!-- Section describing the parental rating descriptor -->
+<!ELEMENT parental-rating-descriptor EMPTY>
+<!ATTLIST parental-rating-descriptor
+	country-code CDATA #REQUIRED
+	rating (4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18) "4"
+>
+<!-- Section describing the content descriptor -->
+<!ELEMENT content-descriptor (content-categories+)>
+<!ELEMENT content-categories EMPTY>
+<!ATTLIST content-categories
+	content-type (0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15) #REQUIRED
+	content-number (0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15) #REQUIRED
+	user-type (0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15) "0"
+	user-number (0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15) "0"
+>
+<!-- Section describing the component descriptor. -->
+<!ELEMENT component-descriptor (stream-description?)>
+<!ATTLIST component-descriptor
+	stream-content (0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15) #REQUIRED
+	component-type CDATA #REQUIRED
+	language-code CDATA "eng"
+>
+<!ELEMENT stream-description (#PCDATA)>

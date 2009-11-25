@@ -465,7 +465,7 @@ sub ImportXLS
       next if( ! $oWkC->Value );
       my $actors = $oWkC->Value;
 
-      progress( "HBOAdria XLS: $chd->{xmltvid}: $time - $origtitle" );
+      #progress( "HBOAdria XLS: $chd->{xmltvid}: $time - $origtitle" );
 
       my $ce = {
         channel_id => $chd->{id},
@@ -805,7 +805,7 @@ sub FlushData {
         progress("HBOAdria: $xmltvid: Date is $date");
       }
 
-      progress("HBOAdria: $xmltvid: $ce->{start_time} - $ce->{title}");
+      #progress("HBOAdria: $xmltvid: $ce->{start_time} - $ce->{title}");
 
       $dsh->AddProgramme( $ce );
     }

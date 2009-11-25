@@ -35,7 +35,7 @@ sub new {
   my $self  = $class->SUPER::new( @_ );
   bless ($self, $class);
 
-  my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore}, "Europe/Madrid" );
+  my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore}, "Europe/London" );
   $self->{datastorehelper} = $dsh;
 
   return $self;
@@ -75,7 +75,7 @@ sub ImportXLS
 
   progress( "RMTV: $channel_xmltvid: Processing XLS $file" );
 
-return if( $file !~ /28-03 Abril\.xls/ );
+#return if( $file !~ /28-03 Abril\.xls/ );
 
   my( $oBook, $oWkS, $oWkC );
   $oBook = Spreadsheet::ParseExcel::Workbook->Parse( $file );
@@ -99,6 +99,8 @@ return if( $file !~ /28-03 Abril\.xls/ );
       for( my $iC = 0 ; $iC <= 1 ; $iC++ ){
 
         my $oWkC = $oWkS->{Cells}[$iR][$iC];
+        next if( ! $oWkC );
+        next if( ! $oWkC->Value );
 
         if( isDate( $oWkC->Value ) ){
 
@@ -124,8 +126,16 @@ return if( $file !~ /28-03 Abril\.xls/ );
       next if( ! $oWkC );
       next if( ! $oWkC->Value );
       my $time = $oWkC->Value;
-      next if ( $time !~ /^\d{2}:\d{2}$/ );
-      my( $hour, $min ) = ( $time =~ /^(\d{2}):(\d{2})$/ );
+
+      my( $hour, $min );
+      if( $time =~ /^\d{2}:\d{2}$/ ){
+        ( $hour, $min ) = ( $time =~ /^(\d{2}):(\d{2})$/ );
+      } elsif( $time =~ /^\d{2}:\d{2}:\d{2}$/ ){
+        ( $hour, $min ) = ( $time =~ /^(\d{2}):(\d{2}):\d{2}$/ );
+      } else {
+        next;
+      }
+
       if( $hour gt 23 ){
         $hour -= 24;
         $time = sprintf( "%02d:%02d", $hour, $min );
@@ -151,9 +161,7 @@ return if( $file !~ /28-03 Abril\.xls/ );
 
       # check the 8th column for the reference
       $oWkC = $oWkS->{Cells}[$iR][7];
-      next if( ! $oWkC );
-      next if( ! $oWkC->Value );
-      my $ref = $oWkC->Value;
+      my $ref = $oWkC->Value if $oWkC->Value;
 
       progress( "RMTV: $channel_xmltvid: $time - $title" );
 
@@ -217,7 +225,7 @@ sub ParseDate {
 
   $month = 3 if( ! $month and ( $monthname =~ /Marzo/ ) );
   $month = 4 if( ! $month and ( $monthname =~ /Abril/ ) );
-print "MONTH $month\n";
+#print "MONTH $month\n";
 
   return sprintf( '%d-%02d-%02d', $year, $month, $day );
 }
