@@ -5,6 +5,7 @@ use warnings;
 
 #use utf8;
 
+use File::Util;
 use IO::File;
 use DateTime;
 use File::Copy;
@@ -721,6 +722,28 @@ sub WriteEntry
     $prd->setAttribute( 'rating' => "4" );
     $event->appendChild( $prd );
 
+    if( defined( $data->{category} ) and ($data->{category} =~ /\S/) ){
+print $data->{program_type} . "\n";
+print $data->{category} . "\n";
+
+      my( $dvbcatl1, $dvbcatl2 ) = DVBCategory( $data->{category} , $data->{program_type} );
+
+print "$dvbcatl1\n";
+print "$dvbcatl2\n";
+
+      my $cdesc = $odoc->createElement( 'content-descriptor' );
+      $cdesc->setAttribute( 'content-type' => $dvbcatl1 );
+      $cdesc->setAttribute( 'content-number' => $dvbcatl2 );
+      $event->appendChild( $cdesc );
+
+    } elsif( defined( $chd->{def_pty} ) and ($chd->{def_pty} =~ /\S/) ){
+
+      my( $dvbcatl1, $dvbcatl2 ) = DVBCategory( $chd->{def_cat} , $chd->{def_pty} );
+      my $cdesc = $odoc->createElement( 'content-descriptor' );
+      $cdesc->setAttribute( 'content-type' => $dvbcatl1 );
+      $cdesc->setAttribute( 'content-number' => $dvbcatl2 );
+      $event->appendChild( $cdesc );
+    }
 }
 
 sub ExportFileNameToList
@@ -847,33 +870,41 @@ sub RemoveOld
 {
   my( $self ) = @_;
 
+  my $removed = 0;
   my $ds = $self->{datastore};
  
   # Keep files for the last week.
   my $keep_date = DateTime->today->subtract( days => 8 )->ymd("-");
 
-  my @files = glob( $self->{Root} . "*" );
-  my $removed = 0;
+  my $f = File::Util->new();
 
-  foreach my $file (@files)
-  {
-    my($date) = 
-      ($file =~ /(\d\d\d\d-\d\d-\d\d)\.xml/);
+  my @dirs = $f->list_dir( $self->{Root}, '--no-fsdots' );
+  foreach my $dir( @dirs ){
 
-    if( defined( $date ) )
+  my $ftype = join(',', File::Util->file_type( $self->{Root} . "/" . $dir ) );
+    if( $ftype =~ /DIRECTORY/ )
     {
-      # Compare date-strings.
-      if( $date lt $keep_date )
+      progress( "Conax: Removing old files in directory $dir" );
+
+      my @files = glob( $self->{Root} . "/$dir/" . "*" );
+      foreach my $file (@files)
       {
-        info( "Conax: Removing $file" );
-        unlink( $file );
-        $removed++;
+        my($date) = ($file =~ /(\d\d\d\d-\d\d-\d\d)\.xml/);
+
+        if( defined( $date ) )
+        {
+          # Compare date-strings.
+          if( $date lt $keep_date )
+          {
+            unlink( $file );
+            $removed++;
+          }
+        }
       }
     }
   }
 
-  progress( "Conax: Removed $removed files" )
-    if( $removed > 0 );
+  progress( "Conax: Removed $removed files" ) if( $removed > 0 );
 }
 
 sub myEncode
@@ -910,6 +941,57 @@ sub hdump {
         $offset += 16;
     }
 }
+
+sub DVBCategory {
+  my( $category, $type ) = @_;
+
+  my( $dvbcatl1, $dvbcatl2 );
+
+  $dvbcatl2 = 0;
+
+  if( $category =~ /drama/i ){
+    $dvbcatl1 = 1;
+  } elsif( $category =~ /news/i ){
+    $dvbcatl1 = 2;
+  } elsif( $category =~ /show/i ){
+    $dvbcatl1 = 3;
+  } elsif( $category =~ /sport/i ){
+    $dvbcatl1 = 4;
+  } elsif( $category =~ /children/i ){
+    $dvbcatl1 = 5;
+  } elsif( $category =~ /music/i ){
+    $dvbcatl1 = 6;
+  } elsif( $category =~ /arts/i ){
+    $dvbcatl1 = 7;
+  } elsif( $category =~ /politic/i ){
+    $dvbcatl1 = 8;
+  } elsif( $category =~ /science/i ){
+    $dvbcatl1 = 9;
+  } elsif( $category =~ /magazine/i ){
+    $dvbcatl1 = 10;
+  } elsif( $category =~ /misc/i ){
+    $dvbcatl1 = 11;
+  } else {
+    $dvbcatl1 = 0;
+  }
+
+  return( $dvbcatl1, $dvbcatl2 );
+
+# 0x1 : "Movie/Drama",
+# 0x2 : "News/Current Affairs",
+# 0x3 : "Show/Game show",
+# 0x4 : "Sports",
+# 0x5 : "Children's/Youth",
+# 0x6 : "Music/Ballet/Dance",
+# 0x7 : "Arts/Culture (without music)",
+# 0x8 : "Social/Political issues/Economics",
+# 0x9 : "Childrens/Youth Education/Science/Factual",
+# 0xa : "Leisure hobbies",
+# 0xb : "Misc",
+# 0xf : "Drama", # user defined (specified in the UK "D book")
+
+}
+
 
 1;
 
