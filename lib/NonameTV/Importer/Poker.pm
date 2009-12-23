@@ -5,7 +5,10 @@ use warnings;
 
 =pod
 
-Import data from Poker Channel Europe website.
+channel: Poker
+
+Import data from Excel-files delivered via e-mail.
+Each file contains more sheets, one sheet per week.
 
 Features:
 
@@ -14,16 +17,22 @@ Features:
 use utf8;
 
 use DateTime;
-use XML::LibXML;
-use Encode qw/decode encode/;
+use Spreadsheet::ParseExcel;
 
-use NonameTV qw/MyGet Html2Xml FindParagraphs norm/;
 use NonameTV::DataStore::Helper;
 use NonameTV::Log qw/progress error/;
+use NonameTV qw/AddCategory norm MonthNumber/;
 
-use NonameTV::Importer::BaseOne;
+use NonameTV::Importer::BaseFile;
 
-use base 'NonameTV::Importer::BaseOne';
+use base 'NonameTV::Importer::BaseFile';
+
+# File types
+use constant {
+  FT_UNKNOWN  => 0,  # unknown
+  FT_FLATXLS  => 1,  # flat xls file
+  FT_GRIDXLS  => 2,  # xls file with grid
+};
 
 sub new {
   my $proto = shift;
@@ -31,141 +40,162 @@ sub new {
   my $self  = $class->SUPER::new( @_ );
   bless ($self, $class);
 
-  defined( $self->{UrlRoot} ) or die "You must specify UrlRoot";
-
-  my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore}, "Europe/London" );
+  my $dsh = NonameTV::DataStore::Helper->new( $self->{datastore}, "Europe/Zagreb" );
   $self->{datastorehelper} = $dsh;
 
   return $self;
 }
 
-sub FetchDataFromSite
-{
+sub ImportContentFile {
   my $self = shift;
-  my( $batch_id, $data ) = @_;
+  my( $file, $chd ) = @_;
 
-  # the url is the one that is specified in UrlRoot and it never changes
-  my $url = $self->{UrlRoot};
+  $self->{fileerror} = 0;
 
-  my( $content, $code ) = MyGet( $url );
+  my $xmltvid = $chd->{xmltvid};
+  my $channel_id = $chd->{id};
+  my $dsh = $self->{datastorehelper};
+  my $ds = $self->{datastore};
 
-  return( $content, $code );
+  $self->ImportGridXLS( $file, $channel_id, $xmltvid );
+
+  return;
 }
 
-sub ImportContent
+sub ImportGridXLS
 {
   my $self = shift;
-  my( $batch_id, $cref, $chd ) = @_;
+  my( $file, $channel_id, $xmltvid ) = @_;
 
-  my $ds = $self->{datastore};
-  $ds->{SILENCE_END_START_OVERLAP}=1;
+  $self->{fileerror} = 0;
 
   my $dsh = $self->{datastorehelper};
+  my $ds = $self->{datastore};
 
-  my $doc = Html2Xml( $$cref );
-  if( not defined $doc ) {
-    return (undef, "Html2Xml failed" );
-  }
+  my( $oBook, $oWkS, $oWkC );
 
-  my $paragraphs = FindParagraphs( $doc, "//div//p//." );
-
-  my $str = join( "\n", @{$paragraphs} );
-
-  if( scalar(@{$paragraphs}) == 0 ) {
-    error( "$batch_id: No paragraphs found." ) ;
-    return 0;
-  }
-
-  my $date;
+  # Only process .xls files.
+  return if $file !~  /\.xls$/i;
+  progress( "Poker: $xmltvid: Processing $file" );
+  
   my $currdate = "x";
+  my $date;
 
-  foreach my $text (@{$paragraphs}) {
+  $oBook = Spreadsheet::ParseExcel::Workbook->Parse( $file );
 
-#print ">$text<\n";
+  for(my $iSheet=0; $iSheet < $oBook->{SheetCount} ; $iSheet++) {
 
-    if( isDate( $text ) ){
+    $oWkS = $oBook->{Worksheet}[$iSheet];
 
-      $date = ParseDate( $text );
-      next if not $date;
+    progress( "Poker: $xmltvid: Processing worksheet: $oWkS->{Name}" );
 
-      if( $date ne $currdate ) {
+    # extract the month from cell[2][5]
+    # the month is in the format 'Jan-10'
+    $oWkC = $oWkS->{Cells}[1][5];
+    if( ! $oWkC or ! $oWkC->Value or $oWkC->Value !~ /^\S+-\d+$/ ){
+      $oWkC = $oWkS->{Cells}[2][5];
+    }
+    if( ! $oWkC or ! $oWkC->Value ){
+      progress( "Poker: $xmltvid: Unable to extract the month of this sheet" );
+      next;
+    }
+    my( $monthname, $year ) = ( $oWkC->Value =~ /^(\S+)-(\d+)$/ );
+    $year += 2000 if $year < 100;
+    my $month = MonthNumber( $monthname, "en" );
+
+    # Each column contains data for one day
+    # starting with column 3 for monday to column 9 for sunday
+    for(my $iC = 3; $iC <= 9 ; $iC++ ) {
+
+      # DATE is in the 14th row
+      $oWkC = $oWkS->{Cells}[14][$iC];
+      next if( ! $oWkC );
+      next if( ! $oWkC->Value );
+      $date = ParseDate( $year, $month, $oWkC->Value );
+      next if ( ! $date );
+
+      if( $date ne $currdate ){
+
         if( $currdate ne "x" ) {
-          #$dsh->EndBatch( 1 );
+          $dsh->EndBatch( 1 );
         }
 
-        $dsh->StartDate( $date , "00:00" );
+        my $batch_id = $xmltvid . "_" . $date;
+        $dsh->StartBatch( $batch_id , $channel_id );
+        $dsh->StartDate( $date , "07:00" );
         $currdate = $date;
-
-        progress("Poker: $chd->{xmltvid}: Date is: $date");
       }
 
-    } elsif( isShow( $text ) ){
+      progress("Poker: $xmltvid: Date is: $date");
 
-      my( $time, $title ) = ParseShow( $text );
+      # programmes start from row 15
+      for(my $iR = 15 ; defined $oWkS->{MaxRow} && $iR <= $oWkS->{MaxRow} ; $iR++) {
 
-      progress( "Poker: $chd->{xmltvid}: $time - $title" );
+        # Time - column 0
+        $oWkC = $oWkS->{Cells}[$iR][0];
+        next if( ! $oWkC );
+        next if( ! $oWkC->Value );
+        my $time = ParseTime( $oWkC->Value );
+        next if ( ! $time );
 
-      my $ce = {
-        channel_id => $chd->{id},
-        title => $title,
-        start_time => $time,
-      };
+        # Title
+        $oWkC = $oWkS->{Cells}[$iR][$iC];
+        next if( ! $oWkC );
+        next if( ! $oWkC->Value );
+        my $title = $oWkC->Value;
+        next if ( ! $title );
 
-      $dsh->AddProgramme( $ce );
+        progress("Poker: $xmltvid: $time - $title");
 
-    } else {
-      #error( "$batch_id: Unexpected text: '$text'" );
-    }
-  }
-  
-  return 1;
+        my $ce = {
+          channel_id   => $channel_id,
+          start_time   => $time,
+          title        => norm($title),
+        };
+
+        $dsh->AddProgramme( $ce );
+
+      } # next row (next show)
+
+    } # next column (next day)
+
+    $dsh->EndBatch( 1 );
+    $currdate = "x";
+
+  } # next worksheet
+
+  return;
 }
 
-sub isDate
+sub ParseTime
 {
-  my( $text ) = @_;
+  my ( $tinfo ) = @_;
 
-  # the date is in format 'Wednesday 19th'
-  if( $text =~ /^(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\s+\d+(st|nd|rd|th)$/i ){
-    return 1;
-  }
+  # format 'hh:mm'
+  my( $h, $m ) = ( $tinfo =~ /^(\d+):(\d+)$/ );
 
-  return 0;
-}
+  $h -= 24 if $h >= 24;
 
-sub isShow
-{
-  my( $text ) = @_;
-
-  # the show is in format '1800- Premiere: World Series Gold: WSOP 05: Pot Limit Hold'em ($2K) (11/32)
-  if( $text =~ /^\d{4}-\s+.*$/i ){
-    return 1;
-  }
-
-  return 0;
+  return sprintf( "%02d:%02d", $h, $m );
 }
 
 sub ParseDate
 {
-  my( $text ) = @_;
+  my ( $wksyear, $wksmonth, $text ) = @_;
 
-  # the date is in format 'Wednesday 19th'
-  my( $dayname, $day ) = ( $text =~ /^(\S+)\s+(\d+)/ );
+#print ">$text<\n";
 
-  my $year = DateTime->today->year;
-  my $month = DateTime->today->month;
+  my( $day, $month, $monthname );
 
-  return sprintf( "%04d-%02d-%02d", $year, $month, $day );
-}
+  # format '8-Jan'
+  if( $text =~ /^\d+-\S+$/ ){
+    ( $day, $monthname ) = ( $text =~ /^(\d+)-(\S+)$/ );
+    $month = MonthNumber( $monthname, "en" );
+  } else {
+    return undef;
+  }
 
-sub ParseShow
-{
-  my( $text ) = @_;
-
-  # the show is in format '1800- Premiere: World Series Gold: WSOP 05: Pot Limit Hold'em ($2K) (11/32)
-  my( $hour, $min, $title ) = ( $text =~ /^(\d{2})(\d{2})-\s+(.*)$/ );
-
-  return( $hour . ":" . $min, $title );
+  return sprintf( "%04d-%02d-%02d" , $wksyear, $month, $day );
 }
 
 1;

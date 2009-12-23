@@ -722,28 +722,28 @@ sub WriteEntry
     $prd->setAttribute( 'rating' => "4" );
     $event->appendChild( $prd );
 
-    if( defined( $data->{category} ) and ($data->{category} =~ /\S/) ){
-print $data->{program_type} . "\n";
-print $data->{category} . "\n";
-
-      my( $dvbcatl1, $dvbcatl2 ) = DVBCategory( $data->{category} , $data->{program_type} );
-
-print "$dvbcatl1\n";
-print "$dvbcatl2\n";
-
-      my $cdesc = $odoc->createElement( 'content-descriptor' );
-      $cdesc->setAttribute( 'content-type' => $dvbcatl1 );
-      $cdesc->setAttribute( 'content-number' => $dvbcatl2 );
-      $event->appendChild( $cdesc );
-
-    } elsif( defined( $chd->{def_pty} ) and ($chd->{def_pty} =~ /\S/) ){
-
-      my( $dvbcatl1, $dvbcatl2 ) = DVBCategory( $chd->{def_cat} , $chd->{def_pty} );
-      my $cdesc = $odoc->createElement( 'content-descriptor' );
-      $cdesc->setAttribute( 'content-type' => $dvbcatl1 );
-      $cdesc->setAttribute( 'content-number' => $dvbcatl2 );
-      $event->appendChild( $cdesc );
-    }
+#    if( defined( $data->{category} ) and ($data->{category} =~ /\S/) ){
+#print $data->{program_type} . "\n";
+#print $data->{category} . "\n";
+#
+#      my( $dvbcatl1, $dvbcatl2 ) = DVBCategory( $data->{category} , $data->{program_type} );
+#
+#print "$dvbcatl1\n";
+#print "$dvbcatl2\n";
+#
+#      my $cdesc = $odoc->createElement( 'content-descriptor' );
+#      $cdesc->setAttribute( 'content-type' => $dvbcatl1 );
+#      $cdesc->setAttribute( 'content-number' => $dvbcatl2 );
+#      $event->appendChild( $cdesc );
+#
+#    } elsif( defined( $chd->{def_pty} ) and ($chd->{def_pty} =~ /\S/) ){
+#
+#      my( $dvbcatl1, $dvbcatl2 ) = DVBCategory( $chd->{def_cat} , $chd->{def_pty} );
+#      my $cdesc = $odoc->createElement( 'content-descriptor' );
+#      $cdesc->setAttribute( 'content-type' => $dvbcatl1 );
+#      $cdesc->setAttribute( 'content-number' => $dvbcatl2 );
+#      $event->appendChild( $cdesc );
+#    }
 }
 
 sub ExportFileNameToList

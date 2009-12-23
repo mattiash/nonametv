@@ -106,7 +106,7 @@ sub ImportContentFile
 
     my( $text ) = norm( $div->findvalue( '.' ) );
 
-#print ">$text<\n";
+print ">$text<\n";
 
     if( isHeader( $text ) ){ # the header in format 'PRVI PROGRAM RTV ZA 7. OKTOBAR 2008. - UTORAK'
 #print "HEADER\n";

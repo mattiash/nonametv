@@ -373,7 +373,11 @@ sub ExtractDate {
 
   # format: 'Programa 15 - 21 Sep 08 CRO.xls'
   } elsif( $fn =~ m/.*\s+\d+\s*-\s*\d+\s+\S+.*/ ){
-    ( $day , $monthname ) = ($fn =~ m/.*\s+(\d+)\s*-\s*\d+\s+(\S+).*/ );
+    ( $day , $monthname ) = ($fn =~ m/.*\s+(\d+)\s*-\s*\d+\s+(\S{3}).*/ );
+
+  # format: 'Life Programa 24 DecCRO.xls'
+  } elsif( $fn =~ m/.*\s+\d+\s*\S+.*/ ){
+    ( $day , $monthname ) = ($fn =~ m/.*\s+(\d+)\s*(\S{3}).*/ );
   }
 
   # try the first format

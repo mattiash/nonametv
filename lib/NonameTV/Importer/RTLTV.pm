@@ -55,9 +55,9 @@ sub Object2Url {
                           time_zone   => 'Europe/Zagreb',
   );
 
-  if( $dt eq $today ){
+#  if( $dt eq $today ){
 #print "DANAS........\n";
-  }
+#  }
 
   #my $dur = $dt->subtract_datetime($today);
   my $dur = $dt - $today;
@@ -96,14 +96,12 @@ sub ImportContent
 
   # clean some characters from xml that can not be parsed
   my $xmldata = $$cref;
+  $xmldata =~ s/\&bdquo;/\"/;
   $xmldata =~ s/&amp;bdquo;/\"/;
-  $xmldata =~ s/\&bdquo\;//;
   $xmldata =~ s/&nbsp;//;
   $xmldata =~ s/&scaron;//;
   $xmldata =~ s/&eacute;//;
-
-  #$xmldata =~ s/&amp;/and/;
-  #$xmldata =~ s/ \& / and /g;
+  $xmldata =~ s/ \& / and /g;
 
   my $xml = XML::LibXML->new;
   my $doc;
@@ -120,7 +118,6 @@ sub ImportContent
   # Start date
   $dsh->StartDate( $date , "05:00" );
   progress("RTLTV: $chd->{xmltvid}: Date is: $date");
-#return;
 
   foreach my $sc ($ns->get_nodelist)
   {
@@ -141,6 +138,7 @@ sub ImportContent
 
     my $title = $sc->getElementsByTagName( 'title' );
     next if( ! $title );
+
     my $genre = $sc->getElementsByTagName( 'category' );
     my $description = $sc->getElementsByTagName( 'desc' );
     my $url = $sc->getElementsByTagName( 'url' );
@@ -150,10 +148,9 @@ sub ImportContent
     my $ce = {
       channel_id => $chd->{id},
       start_time => $time,
-      title => norm( $title ),
-      description => norm( $description ),
+      title => norm($title),
+      description => norm($description),
     };
-
 
     if( $genre ){
       my($program_type, $category ) = $ds->LookupCat( "RTLTV", norm($genre) );

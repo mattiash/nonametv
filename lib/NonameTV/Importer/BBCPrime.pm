@@ -17,7 +17,7 @@ use Spreadsheet::ParseExcel;
 use Data::Dumper;
 use File::Temp qw/tempfile/;
 
-use NonameTV qw/MyGet norm/;
+use NonameTV qw/MyGet norm MonthNumber/;
 use NonameTV::DataStore::Helper;
 use NonameTV::Log qw/progress error/;
 
@@ -57,9 +57,13 @@ sub ImportContentFile
   my $dsh = $self->{datastorehelper};
   my $ds = $self->{datastore};
 
+  my %columns = ();
+  my $date;
   my $currdate = "x";
 
+return if( $file !~ /Entertainment/i );
   progress( "BBCPrime: $channel_xmltvid: Processing $file" );
+
 
   my $oBook = Spreadsheet::ParseExcel::Workbook->Parse( $file );
 
@@ -76,25 +80,58 @@ sub ImportContentFile
     # read the rows with data
     for(my $iR = $oWkS->{MinRow} ; defined $oWkS->{MaxRow} && $iR <= $oWkS->{MaxRow} ; $iR++) {
 
-      my $oWkC;
+      if( not %columns ){
+        # the column names are stored in the first row
+        # so read them and store their column positions
+        # for further findvalue() calls
 
-      # PROGRAMME - column 1
-      $oWkC = $oWkS->{Cells}[$iR][1];
-      next if( ! $oWkC );
-      my $title = $oWkC->Value;
-      if( $title =~ /FLOG IT/i ){
-        next;
+        my $colrow;
+
+        for(my $iC = $oWkS->{MinCol} ; defined $oWkS->{MaxCol} && $iC <= $oWkS->{MaxCol} ; $iC++) {
+
+          if( $oWkS->{Cells}[$iR][$iC] ){
+
+            my $value = $oWkS->{Cells}[$iR][$iC]->Value;
+            $value =~ s/\s+//;
+
+            $columns{$value} = $iC;
+
+            $columns{'DATETIME'} = $iC if( $value =~ /^DATE\s*CET$/ );
+
+            $colrow = $iR if( $value =~ /^PROGRAMME$/ );
+
+            next;
+          }
+        }
+
+        if( $colrow ){
+          progress("BBCPrime: $channel_xmltvid: Found column names at row $iR" );
+#foreach my $col (%columns) {
+#print ">$col<\n";
+#}
+        } else {
+          %columns = ();
+          next;
+        }
+
       }
 
-      # DATETIME - column 0
-      $oWkC = $oWkS->{Cells}[$iR][0];
-      next if( ! $oWkC );
-      my $datetime = $oWkC->Value;
+      my $oWkC;
+      my $time;
 
-      my $starttime = create_dt( $datetime );
-      next if not $starttime;
-
-      my $date = $starttime->ymd("-");
+      if( defined $columns{'DATETIME'} ){ # old BBC Prime date column format
+        $oWkC = $oWkS->{Cells}[$iR][$columns{'DATETIME'}];
+        next if( ! $oWkC );
+        next if( ! $oWkC->Value );
+        $date = ParseDate( $oWkC->Value );
+        $time = ParseTime( $oWkC->Value );
+      } elsif( defined $columns{'DATE'} ){ # new BBC Entertainment date column format
+        $oWkC = $oWkS->{Cells}[$iR][$columns{'DATE'}];
+        next if( ! $oWkC );
+        next if( ! $oWkC->Value );
+        $date = ParseDate( $oWkC->Value );
+      }
+      next if( ! $date );
 
       if( $date ne $currdate ) {
         if( $currdate ne "x" ) {
@@ -109,44 +146,36 @@ sub ImportContentFile
         progress("BBCPrime: $channel_xmltvid: Date is: $date");
       }
 
-      # SRS - column 2
-      $oWkC = $oWkS->{Cells}[$iR][2];
-      my $srs = $oWkC->Value if $oWkC;
+      if( defined $columns{'TIME'} ){
+        $oWkC = $oWkS->{Cells}[$iR][$columns{'TIME'}];
+        next if( ! $oWkC );
+        next if( ! $oWkC->Value );
+        $time = ParseTime( $oWkC->Value );
+      }
+      next if( ! $time );
 
-      # EP - column 3
-      $oWkC = $oWkS->{Cells}[$iR][3];
-      my $ep = $oWkC->Value if $oWkC;
+      # title - column PROGRAMME
+      $oWkC = $oWkS->{Cells}[$iR][$columns{'PROGRAMME'}];
+      next if( ! $oWkC );
+      next if( ! $oWkC->Value );
+      my $title = $oWkC->Value;
+      next if( $title =~ /FLOG IT/i );
 
-      # EPISODE TITLE - column 4
-      $oWkC = $oWkS->{Cells}[$iR][4];
-      my $episodetitle = $oWkC->Value if $oWkC;
+      #my $srs = $oWkS->{Cells}[$iR][$columns{'SRS'}]->Value if defined $columns{'SRS'};
+      my $ep = $oWkS->{Cells}[$iR][$columns{'EP'}]->Value if defined $columns{'EP'};
+      my $episodetitle = $oWkS->{Cells}[$iR][$columns{'EPISODETITLE'}]->Value if defined $columns{'EPISODETITLE'};
+      my $billing = $oWkS->{Cells}[$iR][$columns{'BILLING'}]->Value if defined $columns{'BILLING'};
+      my $genre = $oWkS->{Cells}[$iR][$columns{'GENRE'}]->Value if defined $columns{'GENRE'};
+      my $rpt = $oWkS->{Cells}[$iR][$columns{'RPT'}]->Value if defined $columns{'RPT'};
+      my $subs = $oWkS->{Cells}[$iR][$columns{'SUBS'}]->Value if defined $columns{'SUBS'};
+      my $cert = $oWkS->{Cells}[$iR][$columns{'CERT'}]->Value if defined $columns{'CERT'};
 
-      # BILLING - column 5
-      $oWkC = $oWkS->{Cells}[$iR][5];
-      my $description = $oWkC->Value if $oWkC;
-
-      # GENRE - column 6
-      $oWkC = $oWkS->{Cells}[$iR][6];
-      my $genre = $oWkC->Value if $oWkC;
-
-      # RPT - column 7
-      $oWkC = $oWkS->{Cells}[$iR][7];
-      my $rpt = $oWkC->Value if $oWkC;
-
-      # SUBS - column 8
-      $oWkC = $oWkS->{Cells}[$iR][8];
-      my $subs = $oWkC->Value if $oWkC;
-
-      # CERT - column 9
-      $oWkC = $oWkS->{Cells}[$iR][9];
-      my $cert = $oWkC->Value if $oWkC;
-
-      progress( "BBCPrime: $channel_xmltvid: $starttime - $title" );
+      progress( "BBCPrime: $channel_xmltvid: $time - $title" );
 
       my $ce = {
         channel_id => $channel_id,
         title => $title,
-        start_time => $starttime->hms(":"),
+        start_time => $time,
       };
 
       if( $ep ){
@@ -157,8 +186,8 @@ sub ImportContentFile
         $ce->{subtitle} = $episodetitle;
       }
 
-      if( $description ){
-        $ce->{description} = $description;
+      if( $billing ){
+        $ce->{description} = $billing;
       }
 
       if( $genre ){
@@ -181,27 +210,44 @@ sub ImportContentFile
   return;
 }
 
-sub create_dt {
+sub ParseDate
+{
   my( $text ) = @_;
 
-  my( $day, $month, $year, $hour, $min );
+#print ">$text<\n";
 
-  if( $text =~ /^\d+\/\d+\/\d+\s+\d+\:\d+$/ ){
-    ( $day, $month, $year, $hour, $min ) = ( $text =~ /^(\d+)\/(\d+)\/(\d+)\s+(\d+)\:(\d+)$/ );
+  my( $day, $monthname, $month, $year );
+
+  if( $text =~ /^\d+\/\d+\/\d+\s+\d+\:\d+$/ ){ # old BBC Prime date format '04/11/2009 23:25'
+    ( $day, $month, $year ) = ( $text =~ /^(\d+)\/(\d+)\/(\d+)\s+\d+\:\d+$/ );
+  } elsif( $text =~ /^\d+-\S+-\d+$/ ){ # new BBC Entertainment date format '31-Dec-09'
+    ( $day, $monthname, $year ) = ( $text =~ /^(\d+)-(\S+)-(\d+)$/ );
+    $year += 2000 if $year < 100;
+    $month = MonthNumber( $monthname, "en" );
   } else {
     return undef;
   }
 
-  my $dt = DateTime->new( year   => $year,
-                          month  => $month,
-                          day    => $day,
-                          hour   => $hour,
-                          minute => $min,
-                          second => 0,
-                          time_zone => 'Europe/Zagreb',
-                          );
+  return sprintf( "%04d-%02d-%02d", $year, $month, $day );
+}
 
-  return $dt;
+sub ParseTime
+{
+  my( $text ) = @_;
+
+#print ">$text<\n";
+
+  my( $hour, $min );
+
+  if( $text =~ /^\d+\/\d+\/\d+\s+\d+\:\d+$/ ){ # old BBC Prime time format '04/11/2009 23:25'
+    ( $hour, $min ) = ( $text =~ /^\d+\/\d+\/\d+\s+(\d+)\:(\d+)$/ );
+  } elsif( $text =~ /^\d+\:\d+$/ ){ # new BBC Entertainment time format '22:10'
+    ( $hour, $min ) = ( $text =~ /^(\d+)\:(\d+)$/ );
+  } else {
+    return undef;
+  }
+
+  return sprintf( "%02d:%02d", $hour, $min );
 }
 
 sub UpdateFiles {

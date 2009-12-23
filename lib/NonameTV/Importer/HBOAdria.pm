@@ -805,7 +805,7 @@ sub FlushData {
         progress("HBOAdria: $xmltvid: Date is $date");
       }
 
-      #progress("HBOAdria: $xmltvid: $ce->{start_time} - $ce->{title}");
+      progress("HBOAdria: $xmltvid: $ce->{start_time} - $ce->{title}");
 
       $dsh->AddProgramme( $ce );
     }
