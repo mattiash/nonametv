@@ -85,8 +85,7 @@ sub FilterContent {
   my $ns = $doc->find( "//schedule" );
 
   if( $ns->size() == 0 ) {
-    error( "No schedules found" );
-    return 0;
+    return (undef, "No schedules found" );
   }
 
   foreach my $ch ($ns->get_nodelist) {

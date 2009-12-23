@@ -1,0 +1,6 @@
+1,RadioX,radiox.de,RADIO,RadioXDE,1,,1,,,de,0,\N
+2,TechnoBase.FM,technobase.fm,RADIO,TechnoBaseFM,1,,1,,,de,0,\N
+3,HouseTime.FM,housetime.fm,RADIO,TechnoBaseFM,1,,1,,,de,0,\N
+4,HardBase.FM,hardbase.fm,RADIO,TechnoBaseFM,1,,1,,,de,0,\N
+5,TranceBase.FM,trancebase.fm,RADIO,TechnoBaseFM,1,,1,,,de,0,\N
+6,CoreTime.FM,coretime.fm,RADIO,TechnoBaseFM,1,,1,,,de,0,\N

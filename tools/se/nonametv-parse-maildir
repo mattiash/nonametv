@@ -164,8 +164,11 @@ sub guess_channel
 
   if( $dir =~ /Disney/ ) {
     # The Disney filenames are very unreliable. 
-    if( $filename =~ /\btoon/i ) {
-      return "toon.disneychannel.se";
+    if( $filename =~ /\bxd/i ) {
+      return "xd.disneychannel.se";
+    }
+    if( $filename =~ /\bdxd/i ) {
+      return "xd.disneychannel.se";
     }
     elsif( $filename =~ /playhouse/i ) {
       return "playhouse.disneychannel.se";
@@ -201,8 +204,8 @@ sub guess_channel
   }
 
   if( $dir =~ /NationalGeographic/ and $filename =~ /\.doc$/i ) {
-    return "hd.ngcsverige.com" if $filename =~ /^ngswehd\b/i;
-    return "ngcsverige.com" if $filename =~ /^ngswe\b/i;
+    return "hd.ngcsverige.com" if $filename =~ /^ng\s*swe\s*hd\b/i;
+    return "ngcsverige.com" if $filename =~ /^ng\s*swe\b/i;
   }
 
   if( $dir =~ /KanalLokal/ and $filename =~ /\.xml$/i ) {
