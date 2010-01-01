@@ -90,8 +90,8 @@ sub ImportContentFile {
       if( $oWkS->{Cells}[0][$iC]->Value =~ /NOVEMBER/i ){ push( @months, 11 ); }
       if( $oWkS->{Cells}[0][$iC]->Value =~ /DECEMBER/i ){ push( @months, 12 ); }
 
-      if( $oWkS->{Cells}[0][$iC]->Value =~ /\d{4}$/i ){
-        ( $year ) = ( $oWkS->{Cells}[0][$iC]->Value =~ /(\d{4})$/i );
+      if( $oWkS->{Cells}[0][$iC]->Value =~ /\d{4}\s*$/i ){
+        ( $year ) = ( $oWkS->{Cells}[0][$iC]->Value =~ /(\d{4})\s*$/i );
       }
     }
 

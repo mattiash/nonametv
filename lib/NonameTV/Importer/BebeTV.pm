@@ -252,7 +252,7 @@ sub ImportXLS
       $oWkC = $oWkS->{Cells}[$iR][$coltime];
       next if( ! $oWkC );
       next if( ! $oWkC->Value );
-      my $time = $oWkC->Value;
+      my $time = ParseTime( $oWkC->Value );
       next if( ! $time );
 
       # title
@@ -324,6 +324,25 @@ sub ParseDate {
   $year += 2000 if $year lt 100;
 
   return sprintf( "%04d-%02d-%02d", $year, $month, $day );
+}
+
+sub ParseTime {
+  my( $text ) = @_;
+
+#print ">$text<\n";
+
+  my( $hour , $min );
+
+  if( $text =~ /^\d+:\d+$/ ){
+    ( $hour , $min ) = ( $text =~ /^(\d+):(\d+)$/ );
+  } elsif( $text =~ /^0\.\d+$/){ # format '0.377962962962964'
+    my $daysecs = int( 86400 * $text );
+    $hour = int( $daysecs / 3600 );
+    $min =  int( ( $daysecs - ( $hour * 3600 ) ) / 60 );
+  }
+    
+
+  return sprintf( "%02d:%02d", $hour, $min );
 }
 
 sub isShow {

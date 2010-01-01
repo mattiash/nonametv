@@ -233,6 +233,9 @@ sub ImportXLS
     error( "FOX XLS: $file: Unable to extract date from file name" );
     next;
   }
+  if( $month lt DateTime->today->month() ){
+    $year += 1;
+  }
 
 #my @list = Encode->encodings();
 #foreach my $e (@list) {

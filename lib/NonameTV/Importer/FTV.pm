@@ -80,7 +80,7 @@ sub ImportXLS
   my $dsh = $self->{datastorehelper};
   my $ds = $self->{datastore};
 
-  if( $file !~ /HOTBIRD/i and $file !~ /FTV-SEE/i and $file !~ /FTV-HD/i and $file !~ /F-MEN/i ){
+  if( $file !~ /HOTBIRD/i and $file !~ /SEE/i and $file !~ /FTV-HD/i and $file !~ /F-MEN/i ){
     progress( "FTV: $channel_xmltvid: Skipping file $file" );
     return 1;
   }

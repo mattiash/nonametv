@@ -250,8 +250,8 @@ sub ParseTime
 
   if( $text =~ /^\d+$/ ){ # Excel time
     my $dt = DateTime::Format::Excel->parse_datetime( $text );
-    $hour = $dt->year;
-    $min = $dt->month;
+    $hour = $dt->hour;
+    $min = $dt->min;
   } elsif( $text =~ /^\d{2}:\d{2}:\d{2}:\d{2}$/ ){
     ( $hour, $min ) = ( $text =~ /^(\d{2}):(\d{2}):\d{2}:\d{2}$/ );
   } else {
