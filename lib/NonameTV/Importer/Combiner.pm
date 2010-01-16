@@ -139,12 +139,14 @@ $channel_data{ "svtb-kunskap.svt.se" } =
       [ 
         {
           day => 'all',
+         time => "0530-2000",
         },
       ],
     "kunskapskanalen.svt.se" =>
       [
         {
           day => 'all',
+         time => "2000-0100",
         },
       ],
   };
