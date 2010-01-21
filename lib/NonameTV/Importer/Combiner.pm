@@ -133,20 +133,18 @@ inkluderar alla program på båda kanalerna.
 
 =cut
 
-$channel_data{ "svtb-kunskap.svt.se" } =
+$channel_data{ "svtb-svt24.svt.se" } =
   { 
     "svtb.svt.se" => 
       [ 
         {
           day => 'all',
-         time => "0530-2000",
         },
       ],
-    "kunskapskanalen.svt.se" =>
+    "svt24.svt.se" =>
       [
         {
           day => 'all',
-         time => "2000-0100",
         },
       ],
   };
